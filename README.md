@@ -1,24 +1,27 @@
 ### Develop on macOS (^Catalina)
-git clone this repo
-install gcc/clang
-install homebrew
-brew install sdl2 sdl2_image sdl2_mixer sdl2_net sdl2_ttf
-clang -std=c18 -Wall -pedantic *.c -lSDL2
+
+- git clone this repo
+- install gcc/clang
+- install homebrew
+- brew install sdl2 sdl2_image sdl2_mixer sdl2_net sdl2_ttf
+- clang -std=c18 -Wall -pedantic \*.c -lSDL2
 
 ### Develop on windows (^10)
-Download SDL from https://www.libsdl.org/
-probably named SDL2-devel-2.30.0-VC.zip
-Install Visual Studio 2019 & Desktop development with C++ package.
-Create new Empty C++ Console Project
-In VS Project Property Pages/Configuration Properties/:
-VC++ Directories:
-add include directories folder to the include folder of SDL
-add Library directories folder to the lib folder of SDL (x86)
-take the dll file in the sdl2/lib folder and copy it to your project folder.
-Manually copy all c & h files to Source Files.
+
+- Download SDL from https://www.libsdl.org/
+  probably named SDL2-devel-2.30.0-VC.zip.
+- Install Visual Studio 2019 & Desktop development with C++ package.
+- Create new Empty C++ Console Project
+- In VS Project Property Pages/Configuration Properties/:
+- VC++ Directories:
+- add include directories folder to the include folder of SDL
+- add Library directories folder to the lib folder of SDL (x86)
+  take the dll file in the sdl2/lib folder and copy it to your project folder.
+- Manually copy all c & h files to Source Files.
 
 ### Develop on linux(ubuntu)
-git clone this repo
-install gcc?
-sudo apt install libsdl2-dev
-gcc -std=c18 -Wall -pedantic *.c -lSDL2
+
+- git clone this repo
+- install gcc?
+- sudo apt install libsdl2-dev
+- gcc -std=c18 -Wall -pedantic \*.c -lSDL2

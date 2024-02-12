@@ -28,10 +28,6 @@
 
 #include "utils.h"
 
-
-//clang -std=c18 -Wall -pedantic test_sdl2.c -lSDL2
-//clang -std=c18 -Wall -pedantic test_sdl2.c `pkg-config --libs sdl2`
-
 // Utility macros
 #define CHECK_ERROR(test, message) \
     do { \
@@ -45,59 +41,89 @@
 int randInt(int rmin, int rmax) {
     return rand() % rmax + rmin;
 }
+
+SDL_Window* window = NULL;
+SDL_Renderer* renderer = NULL;
+SDL_Event event;
+int running = 1;
     
 // Window dimensions
 static const int width = 800;
 static const int height = 600;
 
-int main(int argc, char **argv) {
-    // Initialize the random number generator
-    srand((unsigned int)time(NULL));
-
-    print_hello();
-    
+void initWindow() {
     // Initialize SDL
     CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
-
     // Create an SDL window
-    SDL_Window *window = SDL_CreateWindow("Hello, SDL2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("Hello, SDL2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_OPENGL);
     CHECK_ERROR(window == NULL, SDL_GetError());
+}
 
+void initRenderer() {
     // Create a renderer (accelerated and in sync with the display refresh rate)
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);    
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);    
     CHECK_ERROR(renderer == NULL, SDL_GetError());
+}
 
+void setRenderDrawColor(int r,int g, int b, int a) {
     // Initial renderer color
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
+}
 
-    bool running = true;
-    SDL_Event event;
-    while(running) {
-        // Process events
-        while(SDL_PollEvent(&event)) {
-            if(event.type == SDL_QUIT) {
-                running = false;
-            } else if(event.type == SDL_KEYDOWN) {
-                const char *key = SDL_GetKeyName(event.key.keysym.sym);
-                if(strcmp(key, "C") == 0) {
-                    SDL_SetRenderDrawColor(renderer, randInt(0, 255), randInt(0, 255), randInt(0, 255), 255);
-                }                    
-            }
+int pollEvent(){
+    return SDL_PollEvent(&event);
+}
+
+void processInput() {
+    // Process events
+    while(pollEvent()) {
+        if(event.type == SDL_QUIT) {
+            running = 0;
+        } else if(event.type == SDL_KEYDOWN) {
+            const char *key = SDL_GetKeyName(event.key.keysym.sym);
+            if(strcmp(key, "C") == 0) {
+                SDL_SetRenderDrawColor(renderer, randInt(0, 255), randInt(0, 255), randInt(0, 255), 255);
+            }                    
         }
-
-        // Clear screen
-        SDL_RenderClear(renderer);
-
-        // Draw
-
-        // Show what was drawn
-        SDL_RenderPresent(renderer);
     }
+}
 
+void update(){
+    // Update game objects
+}
+
+void clearRenderScreen(){
+    SDL_RenderClear(renderer);
+}
+
+void render(){
+    // Show what was drawn
+    SDL_RenderPresent(renderer);
+}
+
+void quit(){
     // Release resources
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+}
 
+int main(int argc, char **argv) {
+    // Initialize the random number generator
+    srand((unsigned int)time(NULL));
+    print_hello();
+    
+    initWindow();
+    initRenderer();
+    setRenderDrawColor(255, 255, 255, 255);
+
+    while(running) {
+        processInput();
+        update();
+        clearRenderScreen();
+        render();
+    }
+
+    quit();
     return 0;
 }
