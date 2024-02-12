@@ -26,6 +26,8 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include "utils.h"
+
 
 //clang -std=c18 -Wall -pedantic test_sdl2.c -lSDL2
 //clang -std=c18 -Wall -pedantic test_sdl2.c `pkg-config --libs sdl2`
@@ -51,6 +53,8 @@ static const int height = 600;
 int main(int argc, char **argv) {
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
+
+    print_hello();
     
     // Initialize SDL
     CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
