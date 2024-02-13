@@ -25,3 +25,11 @@
 - install gcc?
 - sudo apt install libsdl2-dev
 - gcc -std=c18 -Wall -pedantic \*.c -lSDL2
+
+### Develop for Webassembly (wasm)
+
+- install emscripten/emsdk
+- activate emsdk in project by typing emsdk activate
+- emcc -v to verify installation
+
+## Deploy
