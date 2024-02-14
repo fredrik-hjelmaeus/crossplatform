@@ -26,7 +26,11 @@
 #include <stdbool.h>
 #include <time.h>
 
-#include "utils.h"
+//#include "utils.h"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 // Utility macros
 #define CHECK_ERROR(test, message) \
@@ -108,21 +112,32 @@ void quit(){
     SDL_Quit();
 }
 
+void testloop() {
+    processInput();
+    update();
+    clearRenderScreen();
+    render();
+}
+
 int main(int argc, char **argv) {
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
-    print_hello();
+   // print_hello();
     
     initWindow();
     initRenderer();
     setRenderDrawColor(255, 255, 255, 255);
 
+    #ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(testloop, 0, 1);
+    #else
     while(running) {
         processInput();
         update();
         clearRenderScreen();
         render();
     }
+    #endif
 
     quit();
     return 0;
