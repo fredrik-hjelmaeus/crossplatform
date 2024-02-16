@@ -87,7 +87,10 @@ void processInput() {
             const char *key = SDL_GetKeyName(event.key.keysym.sym);
             if(strcmp(key, "C") == 0) {
                 SDL_SetRenderDrawColor(renderer, randInt(0, 255), randInt(0, 255), randInt(0, 255), 255);
-            }                    
+            }
+            if(strcmp(key, "Escape") == 0) {
+                running = 0;
+            }
         }
     }
 }
@@ -111,13 +114,20 @@ void quit(){
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
-
-void testloop() {
+#ifdef __EMSCRIPTEN__
+void emscriptenLoop() {
+    if(!running){
+        printf("Closing sdl canvas!\n");
+        quit();
+        printf("Goodbye!\n");
+        emscripten_cancel_main_loop();
+    }
     processInput();
     update();
     clearRenderScreen();
     render();
 }
+#endif
 
 int main(int argc, char **argv) {
     // Initialize the random number generator
@@ -129,7 +139,7 @@ int main(int argc, char **argv) {
     setRenderDrawColor(255, 255, 255, 255);
 
     #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(testloop, 0, 1);
+    emscripten_set_main_loop(emscriptenLoop, 0, 1);
     #else
     while(running) {
         processInput();
@@ -137,8 +147,8 @@ int main(int argc, char **argv) {
         clearRenderScreen();
         render();
     }
-    #endif
-
     quit();
+    printf("Non emscripten shutdown complete!\n");
     return 0;
+    #endif
 }

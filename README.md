@@ -34,8 +34,8 @@
 - include <emscripten.h>
 - setup ifdef for emscripten include & emscripten_set_main_loop
 - compile:
-  emcc main.c -c -o output.o -s USE_SDL=2
-  emcc output.o -o index.html -s USE_SDL=2
-  open index.html with liveserver.
+  - emcc main.c -c -o output.o -s USE_SDL=2
+  - emcc output.o -o index.html -s USE_SDL=2
+  - open index.html with liveserver.
 
 ## Deploy
