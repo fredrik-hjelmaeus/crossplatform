@@ -36,5 +36,6 @@
 - compile:
   - emcc \*.c -o index.html -s USE_SDL=2 without the /
   - open index.html with liveserver.
+  - on linux: emcc *.c -s USE_SDL=2 -o index.html & then live-server --browser="firefox"
 
 ## Deploy
