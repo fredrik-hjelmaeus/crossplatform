@@ -26,7 +26,7 @@
 #include <stdbool.h>
 #include <time.h>
 
-//#include "utils.h"
+#include "utils.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -132,7 +132,7 @@ void emscriptenLoop() {
 int main(int argc, char **argv) {
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
-   // print_hello();
+    print_hello();
     
     initWindow();
     initRenderer();
