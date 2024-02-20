@@ -6,7 +6,7 @@ Note we compile to native OpenGL, except for webassembly,where we compile OpenGL
 - install gcc/clang
 - install homebrew
 - brew install sdl2 sdl2_image sdl2_mixer sdl2_net sdl2_ttf
-- clang -std=c18 -Wall -pedantic \*.c -lSDL2 -framework OpenGL
+- clang -std=c18 -Wall -pedantic \*.c -lSDL2 -framework OpenGL -DGL_SILENCE_DEPRECATION
 
 ### Develop on windows (^10) native OpenGL
 
@@ -36,7 +36,7 @@ Note we compile to native OpenGL, except for webassembly,where we compile OpenGL
 - include <emscripten.h>
 - setup ifdef for emscripten include & emscripten_set_main_loop
 - compile:
-  - emcc \*.c -o index.html -s USE_SDL=2 without the /
+  - emcc \*.c -o index.html -s USE_SDL=2 -s USE_WEBGL2=1 without the /
   - open index.html with liveserver.
   - on linux: emcc \*.c -s USE_SDL=2 -o index.html & then live-server --browser="firefox"
   - on mac/zsh: emcc \*.c -s USE_SDL=2 -o index.html & then live-server

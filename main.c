@@ -66,9 +66,39 @@ void setRenderDrawColor(int r,int g, int b, int a) {
     SDL_SetRenderDrawColor(renderer, r, g, b, a);
 }
 
+#ifdef __EMSCRIPTEN__
+void setVersion() {
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES) != 0){
+        printf("Failed to set OpenGL ES profile: %s\n", SDL_GetError());
+    }
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) != 0){
+        printf("Failed to set OpenGL ES major version: %s\n", SDL_GetError());
+    }
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) != 0){
+        printf("Failed to set OpenGL ES minor version: %s\n", SDL_GetError());
+    }
+} 
+#else
+void setVersion() {
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) != 0){
+        printf("Failed to set OpenGL core profile: %s\n", SDL_GetError());
+    }
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) != 0){
+        printf("Failed to set OpenGL major version: %s\n", SDL_GetError());
+    }
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3) != 0){
+        printf("Failed to set OpenGL minor version: %s\n", SDL_GetError());
+    }
+}
+#endif
+
 void initWindow() {
     // Initialize SDL
     CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
+
+    // Set OpenGL version (3.0) or webgl won't be 2.0
+    setVersion();
+
     // Create an SDL window
     window = SDL_CreateWindow(
         "Hello, SDL2", 
@@ -80,6 +110,7 @@ void initWindow() {
     );
     CHECK_ERROR(window == NULL, SDL_GetError());
 }
+
 
 void initProgram(){
     initWindow();
@@ -115,6 +146,8 @@ void render(){
     // Clear the window
     glClear(GL_COLOR_BUFFER_BIT);
 
+    opengl_render();
+
     // Swap the window buffers to show the new frame
     SDL_GL_SwapWindow(window); 
 }
@@ -139,6 +172,7 @@ void initOpenGLWindow(){
 }
 
 
+
 #ifdef __EMSCRIPTEN__
 void emscriptenLoop() {
     if(!running){
@@ -160,7 +194,7 @@ int main(int argc, char **argv) {
     
     initProgram();
     initOpenGLWindow();
-    opengl();
+    opengl_setup();
   
     // Wasm code
     #ifdef __EMSCRIPTEN__

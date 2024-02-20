@@ -1,2 +1,3 @@
 void print_hello();
-void opengl();
+void opengl_setup();
+void opengl_render();
