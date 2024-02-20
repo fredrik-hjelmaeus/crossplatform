@@ -9,6 +9,7 @@
 // Allegro
 // Cairo
 // opengl
+#include <SDL2/SDL_opengl.h>
 // metal
 // scenekit
 // Core Animation
@@ -22,7 +23,6 @@
 // Raylib
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
 
@@ -45,40 +45,51 @@
 int randInt(int rmin, int rmax) {
     return rand() % rmax + rmin;
 }
+float randFloat(float rmin, float rmax) {
+    return (float)rand() / (float)RAND_MAX * (rmax - rmin) + rmin;
+}
 
+
+// Globals
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_Event event;
+SDL_GLContext gl_context = NULL;
 int running = 1;
     
 // Window dimensions
 static const int width = 800;
 static const int height = 600;
 
+void setRenderDrawColor(int r,int g, int b, int a) {
+    // Initial renderer color
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
+}
+
 void initWindow() {
     // Initialize SDL
     CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
     // Create an SDL window
-    window = SDL_CreateWindow("Hello, SDL2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow(
+        "Hello, SDL2", 
+        SDL_WINDOWPOS_UNDEFINED, 
+        SDL_WINDOWPOS_UNDEFINED, 
+        width, 
+        height, 
+        SDL_WINDOW_OPENGL
+    );
     CHECK_ERROR(window == NULL, SDL_GetError());
 }
 
-void initRenderer() {
-    // Create a renderer (accelerated and in sync with the display refresh rate)
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);    
-    CHECK_ERROR(renderer == NULL, SDL_GetError());
-}
-
-void setRenderDrawColor(int r,int g, int b, int a) {
-    // Initial renderer color
-    SDL_SetRenderDrawColor(renderer, r, g, b, a);
+void initProgram(){
+    initWindow();
 }
 
 int pollEvent(){
     return SDL_PollEvent(&event);
 }
 
-void processInput() {
+void input() {
     // Process events
     while(pollEvent()) {
         if(event.type == SDL_QUIT) {
@@ -86,7 +97,7 @@ void processInput() {
         } else if(event.type == SDL_KEYDOWN) {
             const char *key = SDL_GetKeyName(event.key.keysym.sym);
             if(strcmp(key, "C") == 0) {
-                SDL_SetRenderDrawColor(renderer, randInt(0, 255), randInt(0, 255), randInt(0, 255), 255);
+                glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
             }
             if(strcmp(key, "Escape") == 0) {
                 running = 0;
@@ -97,23 +108,37 @@ void processInput() {
 
 void update(){
     // Update game objects
-}
-
-void clearRenderScreen(){
-    SDL_RenderClear(renderer);
+    
 }
 
 void render(){
-    // Show what was drawn
-    SDL_RenderPresent(renderer);
+    // Clear the window
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Swap the window buffers to show the new frame
+    SDL_GL_SwapWindow(window); 
 }
 
 void quit(){
     // Release resources
+    SDL_GL_DeleteContext(gl_context);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
+
+void initOpenGLWindow(){
+  // Create an OpenGL context associated with the window.
+   gl_context = SDL_GL_CreateContext(window);
+   if (!gl_context) {
+      printf("Failed to create OpenGL context: %s\n", SDL_GetError());
+      exit(1);
+   }
+   
+   printf("OpenGL context created!\n");
+}
+
+
 #ifdef __EMSCRIPTEN__
 void emscriptenLoop() {
     if(!running){
@@ -122,9 +147,8 @@ void emscriptenLoop() {
         printf("Goodbye!\n");
         emscripten_cancel_main_loop();
     }
-    processInput();
+    input();
     update();
-    clearRenderScreen();
     render();
 }
 #endif
@@ -134,17 +158,18 @@ int main(int argc, char **argv) {
     srand((unsigned int)time(NULL));
     print_hello();
     
-    initWindow();
-    initRenderer();
-    setRenderDrawColor(255, 255, 255, 255);
-
+    initProgram();
+    initOpenGLWindow();
+    opengl();
+  
+    // Wasm code
     #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(emscriptenLoop, 0, 1);
     #else
+    // native code
     while(running) {
-        processInput();
+        input();
         update();
-        clearRenderScreen();
         render();
     }
     quit();

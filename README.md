@@ -1,12 +1,14 @@
-### Develop on macOS (^Catalina)
+Note we compile to native OpenGL, except for webassembly,where we compile OpenGL ES 3.0
+
+### Develop on macOS (^Catalina) native OpenGL
 
 - git clone this repo
 - install gcc/clang
 - install homebrew
 - brew install sdl2 sdl2_image sdl2_mixer sdl2_net sdl2_ttf
-- clang -std=c18 -Wall -pedantic \*.c -lSDL2
+- clang -std=c18 -Wall -pedantic \*.c -lSDL2 -framework OpenGL
 
-### Develop on windows (^10)
+### Develop on windows (^10) native OpenGL
 
 - Download SDL from https://www.libsdl.org/
   probably named SDL2-devel-2.30.0-VC.zip.
@@ -19,14 +21,14 @@
   take the dll file in the sdl2/lib folder and copy it to your project folder.
 - Manually copy all c & h files to Source Files.
 
-### Develop on linux(ubuntu)
+### Develop on linux(ubuntu) native OpenGL
 
 - git clone this repo
 - install gcc?
 - sudo apt install libsdl2-dev
 - gcc -std=c18 -Wall -pedantic \*.c -lSDL2
 
-### Develop for Webassembly (wasm)
+### Develop for Webassembly (wasm) OpenGL ES 3.0
 
 - install emscripten/emsdk
 - activate emsdk in project by typing emsdk activate
@@ -36,6 +38,7 @@
 - compile:
   - emcc \*.c -o index.html -s USE_SDL=2 without the /
   - open index.html with liveserver.
-  - on linux: emcc *.c -s USE_SDL=2 -o index.html & then live-server --browser="firefox"
+  - on linux: emcc \*.c -s USE_SDL=2 -o index.html & then live-server --browser="firefox"
+  - on mac/zsh: emcc \*.c -s USE_SDL=2 -o index.html & then live-server
 
 ## Deploy
