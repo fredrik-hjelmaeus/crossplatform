@@ -9,7 +9,6 @@
 // Allegro
 // Cairo
 // opengl
-#include <SDL2/SDL_opengl.h>
 // metal
 // scenekit
 // Core Animation
@@ -23,12 +22,12 @@
 // Raylib
 
 #include <stdio.h>
-#include <stdbool.h>
-#include <time.h>
 
+#include "opengl.h"
 #include "utils.h"
 
 #ifdef __EMSCRIPTEN__
+#include <time.h>
 #include <emscripten.h>
 #endif
 
@@ -139,7 +138,6 @@ void input() {
 
 void update(){
     // Update game objects
-    
 }
 
 void render(){
@@ -190,7 +188,6 @@ void emscriptenLoop() {
 int main(int argc, char **argv) {
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
-    print_hello();
     
     initProgram();
     initOpenGLWindow();

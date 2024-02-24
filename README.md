@@ -36,7 +36,7 @@ Note we compile to native OpenGL, except for webassembly,where we compile OpenGL
 - include <emscripten.h>
 - setup ifdef for emscripten include & emscripten_set_main_loop
 - compile:
-  - emcc \*.c -o index.html -s USE_SDL=2 -s USE_WEBGL2=1 without the /
+  - emcc \*.c -o index.html -s USE_SDL=2 -s USE_WEBGL2=1 --preload-file shaders/wasm/ without the /
   - open index.html with liveserver.
   - on linux: emcc \*.c -s USE_SDL=2 -o index.html & then live-server --browser="firefox"
   - on mac/zsh: emcc \*.c -s USE_SDL=2 -o index.html & then live-server
