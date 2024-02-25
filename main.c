@@ -105,7 +105,8 @@ void initWindow() {
         SDL_WINDOWPOS_UNDEFINED, 
         width, 
         height, 
-        SDL_WINDOW_OPENGL
+        SDL_WINDOW_OPENGL |
+        SDL_WINDOW_RESIZABLE
     );
     CHECK_ERROR(window == NULL, SDL_GetError());
 }
@@ -122,9 +123,11 @@ int pollEvent(){
 void input() {
     // Process events
     while(pollEvent()) {
+        
         if(event.type == SDL_QUIT) {
             running = 0;
-        } else if(event.type == SDL_KEYDOWN) {
+        } 
+        if(event.type == SDL_KEYDOWN) {
             const char *key = SDL_GetKeyName(event.key.keysym.sym);
             if(strcmp(key, "C") == 0) {
                 glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
@@ -132,11 +135,30 @@ void input() {
             if(strcmp(key, "Escape") == 0) {
                 running = 0;
             }
+            if(strcmp(key, "F") == 0) {
+                Uint32 windowFlags = SDL_GetWindowFlags(window);
+                if(windowFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
+                    SDL_SetWindowFullscreen(window, 0);
+                } else {
+                    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                }
+            }
+        }
+        if(event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
+            int w, h; 
+            SDL_GetWindowSize(window, &w, &h);
+            printf("New Window size: %d x %d\n", w, h);
+            // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
+            glViewport(0, 0, w, h);
         }
     }
 }
 
+
+
 void update(){
+   
+    
     // Update game objects
 }
 
