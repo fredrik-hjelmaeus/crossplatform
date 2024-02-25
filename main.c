@@ -25,9 +25,9 @@
 
 #include "opengl.h"
 #include "utils.h"
+#include <time.h>
 
 #ifdef __EMSCRIPTEN__
-#include <time.h>
 #include <emscripten.h>
 #endif
 

@@ -14,7 +14,7 @@
 #include <OpenGL/gl3.h> // works but deprecated
 
 #elif __linux__
-#include <GL3/gl3.h> // check this
+#include <GLES3/gl3.h>
 
 #elif _WIN32
 // TBD
