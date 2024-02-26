@@ -49,12 +49,25 @@ float randFloat(float rmin, float rmax) {
 }
 
 
+
 // Globals
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_Event event;
 SDL_GLContext gl_context = NULL;
 int running = 1;
+struct view {
+    int x;
+    int y;
+    int width;
+    int height;
+};
+struct view views[3] = {
+    {0, 200, 800, 400},
+    {0, 0, 800, 200},
+    {0, 0, 800, 600}
+};
+
     
 // Window dimensions
 static const int width = 800;
@@ -109,8 +122,12 @@ void initWindow() {
         SDL_WINDOW_RESIZABLE
     );
     CHECK_ERROR(window == NULL, SDL_GetError());
+
 }
 
+void setViewport(struct view view) {
+    glViewport(view.x, view.y, view.width, view.height);
+}
 
 void initProgram(){
     initWindow();
@@ -149,7 +166,7 @@ void input() {
             SDL_GetWindowSize(window, &w, &h);
             printf("New Window size: %d x %d\n", w, h);
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
-            glViewport(0, 0, w, h);
+            glViewport(0, 0, w / 2, h);
         }
     }
 }
@@ -157,16 +174,25 @@ void input() {
 
 
 void update(){
-   
-    
     // Update game objects
 }
 
 void render(){
-    // Clear the window
+
+    // Clear the entire window
     glClear(GL_COLOR_BUFFER_BIT);
 
-    opengl_render();
+    // Render without ui on wasm
+    #ifdef __EMSCRIPTEN__
+    setViewport(views[2]);
+    render_scene();
+    #else
+    // Render scene and ui on native
+    setViewport(views[0]);
+    render_scene();
+    setViewport(views[1]);
+    render_ui();
+    #endif
 
     // Swap the window buffers to show the new frame
     SDL_GL_SwapWindow(window); 
@@ -213,7 +239,8 @@ int main(int argc, char **argv) {
     
     initProgram();
     initOpenGLWindow();
-    opengl_setup();
+    setup_scene();
+    setup_ui();
   
     // Wasm code
     #ifdef __EMSCRIPTEN__

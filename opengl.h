@@ -22,8 +22,10 @@
 //#include <GL/glew.h>
 #endif
 
-void opengl_setup();
-void opengl_render();
+void setup_scene();
+void render_scene();
+void setup_ui();
+void render_ui();
 
 #endif // End of the OPENGL_H definition
 

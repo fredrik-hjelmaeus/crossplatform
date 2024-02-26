@@ -26,12 +26,16 @@ char* loadShaderSource(const char *filename) {
     char* buffer = malloc(sizeof(char) * filesize + 1);
     
     // read the file into the buffer
-    size_t result = fread(buffer, sizeof(char), filesize + 1, fp);
+    size_t result = fread(buffer, sizeof(char), filesize, fp);
     if(result != filesize) {
         printf("Error reading file %s", filename);
         return NULL;
     }
 
+    // Null terminate the buffer
+    buffer[filesize] = '\0';
+
+    fclose(fp);
     return buffer;
 }
 
