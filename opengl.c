@@ -1,17 +1,23 @@
 #include "opengl.h"
 
-GLuint sceneVBO, sceneVAO, uiVBO, uiVAO;
+struct Scene {
+    GLuint VBO;
+    GLuint VAO;
+};
+struct Scene scene3D;
+struct Scene sceneUI;
+
+//GLuint sceneVBO, sceneVAO, uiVBO, uiVAO;
 GLuint sceneShaderProgram, uiShaderProgram;
 
-void setup_scene() {
-
-#ifdef __EMSCRIPTEN__
-    char* vertexShaderSource = loadShaderSource("shaders/wasm/vertex_wasm.glsl");
-    char* fragmentShaderSource = loadShaderSource("shaders/wasm/fragment_wasm.glsl");
-#else
-    char* vertexShaderSource = loadShaderSource("shaders/vertex.glsl");
-    char* fragmentShaderSource = loadShaderSource("shaders/fragment.glsl");
-#endif
+void create_triangle(GLuint* VBO, GLuint* VAO) {
+    #ifdef __EMSCRIPTEN__
+        char* vertexShaderSource = loadShaderSource("shaders/wasm/vertex_wasm.glsl");
+        char* fragmentShaderSource = loadShaderSource("shaders/wasm/fragment_wasm.glsl");
+    #else
+        char* vertexShaderSource = loadShaderSource("shaders/vertex.glsl");
+        char* fragmentShaderSource = loadShaderSource("shaders/fragment.glsl");
+    #endif
 
     if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
         printf("Error loading shader source\n");
@@ -79,12 +85,12 @@ void setup_scene() {
     };
    
     // Generate VAO(vertex array object) and VBO(vertex buffer object)
-    glGenVertexArrays(1, &sceneVAO);
-    glGenBuffers(1, &sceneVBO);
-    glBindVertexArray(sceneVAO);
+    glGenVertexArrays(1, VAO);
+    glGenBuffers(1, VBO);
+    glBindVertexArray(*VAO);
 
     // Bind/Activate VBO
-    glBindBuffer(GL_ARRAY_BUFFER, sceneVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
 
     // Copy vertices to buffer
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -102,28 +108,14 @@ void setup_scene() {
     glBindVertexArray(0);
 }
 
-void render_scene() {
-    glUseProgram(sceneShaderProgram);
-
-       // Set the color uniform
-    GLint colorLocation = glGetUniformLocation(sceneShaderProgram, "color");
-    glUniform4f(colorLocation, 0.0f, 0.0f, 1.0f, 1.0f); 
-
-    glBindVertexArray(sceneVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glBindVertexArray(0);
-}
-
-// UI
-void setup_ui() {
-
-#ifdef __EMSCRIPTEN__
-    char* vertexShaderSource = loadShaderSource("shaders/wasm/vertex_wasm.glsl");
-    char* fragmentShaderSource = loadShaderSource("shaders/wasm/fragment_wasm.glsl");
-#else
-    char* vertexShaderSource = loadShaderSource("shaders/vertex.glsl");
-    char* fragmentShaderSource = loadShaderSource("shaders/fragment.glsl");
-#endif
+void create_rectangle(GLuint* VBO, GLuint* VAO) {
+     #ifdef __EMSCRIPTEN__
+        char* vertexShaderSource = loadShaderSource("shaders/wasm/vertex_wasm.glsl");
+        char* fragmentShaderSource = loadShaderSource("shaders/wasm/fragment_wasm.glsl");
+    #else
+        char* vertexShaderSource = loadShaderSource("shaders/vertex.glsl");
+        char* fragmentShaderSource = loadShaderSource("shaders/fragment.glsl");
+    #endif
 
     if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
         printf("Error loading shader source\n");
@@ -195,12 +187,12 @@ void setup_ui() {
     };
    
     // Generate VAO(vertex array object) and VBO(vertex buffer object)
-    glGenVertexArrays(1, &uiVAO);
-    glGenBuffers(1, &uiVBO);
-    glBindVertexArray(uiVAO);
+    glGenVertexArrays(1, VAO);
+    glGenBuffers(1, VBO);
+    glBindVertexArray(*VAO);
 
     // Bind/Activate VBO
-    glBindBuffer(GL_ARRAY_BUFFER, uiVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
 
     // Copy vertices to buffer
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -218,6 +210,27 @@ void setup_ui() {
     glBindVertexArray(0);
 }
 
+void setup_scene() {
+    create_triangle(&scene3D.VBO, &scene3D.VAO);
+}
+
+void render_scene() {
+    glUseProgram(sceneShaderProgram);
+
+    // Set the color uniform
+    GLint colorLocation = glGetUniformLocation(sceneShaderProgram, "color");
+    glUniform4f(colorLocation, 0.0f, 0.0f, 1.0f, 1.0f); 
+
+    glBindVertexArray(scene3D.VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(0);
+}
+
+// UI
+void setup_ui() {
+    create_rectangle(&sceneUI.VBO, &sceneUI.VAO);
+}
+
 void render_ui() {
     glUseProgram(uiShaderProgram);
 
@@ -225,7 +238,7 @@ void render_ui() {
     GLint colorLocation = glGetUniformLocation(uiShaderProgram, "color");
     glUniform4f(colorLocation, 1.0f, 0.0f, 0.0f, 1.0f);  // Red color
 
-    glBindVertexArray(uiVAO);
+    glBindVertexArray(sceneUI.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
 }

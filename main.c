@@ -51,18 +51,22 @@ float randFloat(float rmin, float rmax) {
 
 
 // Globals
-SDL_Window* window = NULL;
-SDL_Renderer* renderer = NULL;
-SDL_Event event;
-SDL_GLContext gl_context = NULL;
-int running = 1;
-struct view {
+struct Globals {
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    SDL_Event event;
+    SDL_GLContext gl_context;
+    int running;
+};
+struct Globals globals = {NULL,NULL,{0},NULL,1};
+
+struct View {
     int x;
     int y;
     int width;
     int height;
 };
-struct view views[3] = {
+struct View views[3] = {
     {0, 200, 800, 400},
     {0, 0, 800, 200},
     {0, 0, 800, 600}
@@ -75,7 +79,7 @@ static const int height = 600;
 
 void setRenderDrawColor(int r,int g, int b, int a) {
     // Initial renderer color
-    SDL_SetRenderDrawColor(renderer, r, g, b, a);
+    SDL_SetRenderDrawColor(globals.renderer, r, g, b, a);
 }
 
 #ifdef __EMSCRIPTEN__
@@ -112,7 +116,7 @@ void initWindow() {
     setVersion();
 
     // Create an SDL window
-    window = SDL_CreateWindow(
+    globals.window = SDL_CreateWindow(
         "Hello, SDL2", 
         SDL_WINDOWPOS_UNDEFINED, 
         SDL_WINDOWPOS_UNDEFINED, 
@@ -121,11 +125,11 @@ void initWindow() {
         SDL_WINDOW_OPENGL |
         SDL_WINDOW_RESIZABLE
     );
-    CHECK_ERROR(window == NULL, SDL_GetError());
+    CHECK_ERROR(globals.window == NULL, SDL_GetError());
 
 }
 
-void setViewport(struct view view) {
+void setViewport(struct View view) {
     glViewport(view.x, view.y, view.width, view.height);
 }
 
@@ -134,36 +138,36 @@ void initProgram(){
 }
 
 int pollEvent(){
-    return SDL_PollEvent(&event);
+    return SDL_PollEvent(&globals.event);
 }
 
 void input() {
     // Process events
     while(pollEvent()) {
         
-        if(event.type == SDL_QUIT) {
-            running = 0;
+        if(globals.event.type == SDL_QUIT) {
+            globals.running = 0;
         } 
-        if(event.type == SDL_KEYDOWN) {
-            const char *key = SDL_GetKeyName(event.key.keysym.sym);
+        if(globals.event.type == SDL_KEYDOWN) {
+            const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
             if(strcmp(key, "C") == 0) {
                 glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
             }
             if(strcmp(key, "Escape") == 0) {
-                running = 0;
+                globals.running = 0;
             }
             if(strcmp(key, "F") == 0) {
-                Uint32 windowFlags = SDL_GetWindowFlags(window);
+                Uint32 windowFlags = SDL_GetWindowFlags(globals.window);
                 if(windowFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
-                    SDL_SetWindowFullscreen(window, 0);
+                    SDL_SetWindowFullscreen(globals.window, 0);
                 } else {
-                    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                    SDL_SetWindowFullscreen(globals.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
                 }
             }
         }
-        if(event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
+        if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
-            SDL_GetWindowSize(window, &w, &h);
+            SDL_GetWindowSize(globals.window, &w, &h);
             printf("New Window size: %d x %d\n", w, h);
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
             glViewport(0, 0, w / 2, h);
@@ -195,21 +199,21 @@ void render(){
     #endif
 
     // Swap the window buffers to show the new frame
-    SDL_GL_SwapWindow(window); 
+    SDL_GL_SwapWindow(globals.window); 
 }
 
 void quit(){
     // Release resources
-    SDL_GL_DeleteContext(gl_context);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+    SDL_GL_DeleteContext(globals.gl_context);
+    SDL_DestroyRenderer(globals.renderer);
+    SDL_DestroyWindow(globals.window);
     SDL_Quit();
 }
 
 void initOpenGLWindow(){
   // Create an OpenGL context associated with the window.
-   gl_context = SDL_GL_CreateContext(window);
-   if (!gl_context) {
+   globals.gl_context = SDL_GL_CreateContext(globals.window);
+   if (!globals.gl_context) {
       printf("Failed to create OpenGL context: %s\n", SDL_GetError());
       exit(1);
    }
@@ -221,7 +225,7 @@ void initOpenGLWindow(){
 
 #ifdef __EMSCRIPTEN__
 void emscriptenLoop() {
-    if(!running){
+    if(!globals.running){
         printf("Closing sdl canvas!\n");
         quit();
         printf("Goodbye!\n");
@@ -247,7 +251,7 @@ int main(int argc, char **argv) {
     emscripten_set_main_loop(emscriptenLoop, 0, 1);
     #else
     // native code
-    while(running) {
+    while(globals.running) {
         input();
         update();
         render();
