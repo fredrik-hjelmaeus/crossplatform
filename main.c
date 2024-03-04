@@ -26,6 +26,7 @@
 #include "opengl.h"
 #include "utils.h"
 #include <time.h>
+#include "types.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -48,8 +49,6 @@ float randFloat(float rmin, float rmax) {
     return (float)rand() / (float)RAND_MAX * (rmax - rmin) + rmin;
 }
 
-
-
 // Globals
 struct Globals {
     SDL_Window* window;
@@ -57,22 +56,19 @@ struct Globals {
     SDL_Event event;
     SDL_GLContext gl_context;
     int running;
+    Entity* entities;
+    int vertex_count;
+    float delta_time;
 };
-struct Globals globals = {NULL,NULL,{0},NULL,1};
+struct Globals globals = {.window=NULL,.renderer=NULL,.event={0},.gl_context=NULL,.running=1,.entities=NULL,.vertex_count=0,.delta_time=0.0f};
 
-struct View {
-    int x;
-    int y;
-    int width;
-    int height;
-};
+
 struct View views[3] = {
     {0, 200, 800, 400},
     {0, 0, 800, 200},
     {0, 0, 800, 600}
 };
 
-    
 // Window dimensions
 static const int width = 800;
 static const int height = 600;
@@ -133,8 +129,212 @@ void setViewport(struct View view) {
     glViewport(view.x, view.y, view.width, view.height);
 }
 
+
+
+// Max entities constant
+#define MAX_ENTITIES 100
+
+void* allocateComponentMemory(size_t componentSize, const char* componentName) {
+    void* components = calloc(MAX_ENTITIES, componentSize);
+    if(components == NULL) {
+        printf("Failed to allocate memory for %s components\n", componentName);
+        exit(1);
+    }
+    return components;
+}
+
+void initializeTransformComponent(TransformComponent* transformComponent){
+    transformComponent->active = 0;
+    transformComponent->position.x = 0.0f;
+    transformComponent->position.y = 0.0f;
+    transformComponent->position.z = 0.0f;
+    transformComponent->scale.x = 1.0f;
+    transformComponent->scale.y = 1.0f;
+    transformComponent->scale.z = 1.0f;
+    transformComponent->rotation.x = 0.0f;
+    transformComponent->rotation.y = 0.0f;
+    transformComponent->rotation.z = 0.0f;
+    transformComponent->isDirty = 1;
+}
+
+void initializeMatrix4(Matrix4* matrix) {
+    for(int i = 0; i < 4; i++) {
+        for(int j = 0; j < 4; j++) {
+            matrix->m[i][j] = 0.0f;
+        }
+    }
+}
+
+void initializeGroupComponent(GroupComponent* groupComponent){
+    groupComponent->active = 0;
+    initializeMatrix4(&groupComponent->transform);
+}
+
+void initializeMeshComponent(MeshComponent* meshComponent){
+    meshComponent->active = 0;
+    meshComponent->vertices = NULL;
+    meshComponent->vertexCount = 5;
+    meshComponent->indices = NULL;
+    meshComponent->indexCount = 0;
+    meshComponent->gpuBuffer = (GpuBuffer*)malloc(sizeof(GpuBuffer));
+    if(meshComponent->gpuBuffer == NULL) {
+        printf("Failed to allocate memory for gpuBuffer\n");
+        exit(1);
+    }
+}
+
+void initializeMaterialComponent(MaterialComponent* materialComponent){
+    materialComponent->active = 0;
+    materialComponent->ambient.r = 0.0f;
+    materialComponent->ambient.g = 0.0f;
+    materialComponent->ambient.b = 0.20f;
+    materialComponent->ambient.a = 1.0f;
+    materialComponent->diffuse.r = 0.0f;
+    materialComponent->diffuse.g = 0.0f;
+    materialComponent->diffuse.b = 0.0f;
+    materialComponent->diffuse.a = 1.0f;
+    materialComponent->specular.r = 0.0f;
+    materialComponent->specular.g = 0.0f;
+    materialComponent->specular.b = 0.0f;
+    materialComponent->specular.a = 1.0f;
+    materialComponent->shininess = 0.0f;
+}
+
+void initECS(){
+    // Allocate memory for MAX_ENTITIES Components structs
+    TransformComponent* transformComponents = allocateComponentMemory(sizeof(TransformComponent), "transform");
+    GroupComponent* groupComponents = allocateComponentMemory(sizeof(GroupComponent), "group");
+    MeshComponent* meshComponents = allocateComponentMemory(sizeof(MeshComponent), "mesh");
+    MaterialComponent* materialComponents = allocateComponentMemory(sizeof(MaterialComponent), "material");
+
+    // Allocate memory for MAX_ENTITIES Entity structs
+    Entity* entities = (Entity*)calloc(MAX_ENTITIES, sizeof(Entity));
+    if(entities == NULL) {
+        printf("Failed to allocate memory for entities\n");
+        exit(1);
+    }
+
+    // Initialize entities
+    for (int i = 0; i < MAX_ENTITIES; i++) {
+        entities[i].alive = 0;
+        entities[i].id = i;
+        entities[i].tag = UNINITIALIZED;
+        entities[i].transformComponent = &transformComponents[i];
+        initializeTransformComponent(entities[i].transformComponent);
+        entities[i].groupComponent = &groupComponents[i];
+        initializeGroupComponent(entities[i].groupComponent);
+        entities[i].meshComponent = &meshComponents[i];
+        initializeMeshComponent(entities[i].meshComponent);
+        entities[i].materialComponent = &materialComponents[i];
+        initializeMaterialComponent(entities[i].materialComponent); 
+    }
+
+    globals.entities = entities;
+}
+
+
+Entity* addEntity(enum Tag tag){
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 0) {
+            globals.entities[i].alive = 1;
+            globals.entities[i].tag = tag;
+
+            //printf("Entity with id %d added!\n", i);
+            return &globals.entities[i];
+        }
+    }
+    // if we get here we are out of entities and need to increase the MAX_ENTITIES constant 
+    // for now, we just exit the program
+    printf("Out of entities\n");
+    exit(1);
+}
+
+
+
+void createMesh(){
+    
+     // Set up vertex data and buffers
+   const float verts[] = {
+         0.0f,  0.5f, 0.0f,  // top
+        -0.5f, -0.5f, 0.0f,  // bottom left
+         0.5f, -0.5f, 0.0f   // bottom right
+    };
+
+ 
+    const unsigned int indices[] = {
+        0, 1, 2,  // first triangle
+        1, 2, 3   // second triangle
+    }; 
+
+    Entity* entity = addEntity(MODEL);
+    
+    entity->meshComponent->active = 1;
+
+    // vertex data
+    entity->meshComponent->vertices = (Vertex*)malloc(3 * sizeof(Vertex));
+     if (entity->meshComponent->vertices == NULL) {
+        printf("Failed to allocate memory for vertices\n");
+        exit(1);
+    }
+    for(int i = 0; i < 3; i++) {
+        entity->meshComponent->vertices[i].position.x = verts[i * 3];
+        entity->meshComponent->vertices[i].position.y = verts[i * 3 + 1];
+        entity->meshComponent->vertices[i].position.z = verts[i * 3 + 2];
+    }
+    entity->meshComponent->vertexCount = 3;
+
+    // index data
+    entity->meshComponent->indices = (unsigned int*)malloc(6 * sizeof(unsigned int));
+    if(entity->meshComponent->indices == NULL) {
+        printf("Failed to allocate memory for indices\n");
+        exit(1);
+    }
+    for(int i = 0; i < 6; i++) {
+        entity->meshComponent->indices[i] = indices[i];
+    }
+    entity->meshComponent->indexCount = 6;
+
+    // transform data
+    entity->transformComponent->active = 1;
+    entity->transformComponent->position.x = 0.0f;
+    entity->transformComponent->position.y = 0.0f;
+    entity->transformComponent->position.z = 0.0f;
+    entity->transformComponent->scale.x = 1.0f;
+    entity->transformComponent->scale.y = 1.0f;
+    entity->transformComponent->scale.z = 1.0f;
+    entity->transformComponent->rotation.x = 0.0f;
+    entity->transformComponent->rotation.y = 0.0f;
+    entity->transformComponent->rotation.z = 0.0f;
+    entity->transformComponent->isDirty = 1;
+
+    // material data
+    entity->materialComponent->active = 1;
+    entity->materialComponent->ambient.r = 0.1f;
+    entity->materialComponent->ambient.g = 0.1f;
+    entity->materialComponent->ambient.b = 0.1f;
+    entity->materialComponent->ambient.a = 1.0f;
+    entity->materialComponent->diffuse.r = 0.6f;
+    entity->materialComponent->diffuse.g = 0.6f;
+    entity->materialComponent->diffuse.b = 0.6f;
+    entity->materialComponent->diffuse.a = 1.0f;
+    entity->materialComponent->specular.r = 0.6f;
+    entity->materialComponent->specular.g = 0.6f;
+    entity->materialComponent->specular.b = 0.6f;
+    entity->materialComponent->specular.a = 1.0f;
+    entity->materialComponent->shininess = 32.0f;
+
+    setupMesh(  entity->meshComponent->vertices, 
+                entity->meshComponent->vertexCount, 
+                entity->meshComponent->indices, 
+                entity->meshComponent->indexCount,
+                entity->meshComponent->gpuBuffer );
+
+    setupMaterial( entity->meshComponent->gpuBuffer ); 
+}
+
 void initProgram(){
     initWindow();
+    initECS();
 }
 
 int pollEvent(){
@@ -175,10 +375,25 @@ void input() {
     }
 }
 
-
+// Time variables
+#define FPS 60
+#define FRAME_TARGET_TIME (1000 / FPS)
+int last_frame_time = 0;
 
 void update(){
-    // Update game objects
+
+    // Time 
+    Uint32 ticks = SDL_GetTicks();
+
+    // Cap the frame rate
+    int time_to_wait = FRAME_TARGET_TIME - (ticks - last_frame_time);
+    if(time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
+        SDL_Delay(time_to_wait);
+    }
+
+    // Set delta time in seconds
+    globals.delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
+  
 }
 
 void render(){
@@ -189,11 +404,27 @@ void render(){
     // Render without ui on wasm
     #ifdef __EMSCRIPTEN__
     setViewport(views[2]);
-    render_scene();
+     for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                renderMesh(globals.entities[i].meshComponent->gpuBuffer);
+            }
+        }
+    }
     #else
-    // Render scene and ui on native
+
+    // Native
+    // Render 3d scene 
     setViewport(views[0]);
-    render_scene();
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                renderMesh(globals.entities[i].meshComponent->gpuBuffer);
+            }
+        }
+    }
+   
+    // Render ui scene
     setViewport(views[1]);
     render_ui();
     #endif
@@ -221,8 +452,6 @@ void initOpenGLWindow(){
    printf("OpenGL context created!\n");
 }
 
-
-
 #ifdef __EMSCRIPTEN__
 void emscriptenLoop() {
     if(!globals.running){
@@ -242,8 +471,13 @@ int main(int argc, char **argv) {
     srand((unsigned int)time(NULL));
     
     initProgram();
+   
     initOpenGLWindow();
-    setup_scene();
+    
+    // 3d scene objects creation
+    createMesh();
+
+    // ui scene objects creation
     setup_ui();
   
     // Wasm code

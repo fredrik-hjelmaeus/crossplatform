@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 // wasm/OpenGL ES 3.0
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -21,11 +22,14 @@
 //#include <GL/gl3.h>
 //#include <GL/glew.h>
 #endif
+#include "types.h"
 
-void setup_scene();
-void render_scene();
+
+void renderMesh(GpuBuffer* buffer);
 void setup_ui();
 void render_ui();
+void setupMaterial(GpuBuffer* buffer);
+void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuBuffer* buffer);
 
 #endif // End of the OPENGL_H definition
 

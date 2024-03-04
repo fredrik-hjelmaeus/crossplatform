@@ -27,7 +27,8 @@ Note we compile to native OpenGL, except for webassembly,where we compile OpenGL
 - install gcc?
 - sudo apt install libsdl2-dev
 - sudo apt-get install libgles2-mesa-dev
-- gcc -std=c18 -Wall -pedantic \*.c -lSDL2 -lGLESv2
+- gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2
+- to debug: gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2 -g 
 
 ### Develop for Webassembly (wasm) OpenGL ES 3.0
 
@@ -38,7 +39,7 @@ Note we compile to native OpenGL, except for webassembly,where we compile OpenGL
 - setup ifdef for emscripten include & emscripten_set_main_loop
 - install live-server
 - compile:
-  - emcc \*.c -o index.html -s USE_SDL=2 -s USE_WEBGL2=1 --preload-file shaders/wasm/ without the /
+  - emcc *.c -o index.html -s USE_SDL=2 -s USE_WEBGL2=1 --preload-file shaders/wasm/ -s INITIAL_MEMORY=33554432 -s ALLOW_MEMORY_GROWTH=1
 - run:
   - live-server
 ## Deploy
