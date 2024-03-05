@@ -25,11 +25,11 @@
 #include "types.h"
 
 
-void renderMesh(GpuBuffer* buffer);
+void renderMesh(GpuData* buffer,Color* ambient,Color* diffuse, Color* specular,float shininess);
 void setup_ui();
 void render_ui();
-void setupMaterial(GpuBuffer* buffer);
-void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuBuffer* buffer);
+void setupMaterial(GpuData* buffer);
+void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
 
 #endif // End of the OPENGL_H definition
 

@@ -129,10 +129,12 @@ void setViewport(struct View view) {
     glViewport(view.x, view.y, view.width, view.height);
 }
 
-
+//------------------------------------------------------
+//  ECS
+//------------------------------------------------------
 
 // Max entities constant
-#define MAX_ENTITIES 100
+#define MAX_ENTITIES 100000
 
 void* allocateComponentMemory(size_t componentSize, const char* componentName) {
     void* components = calloc(MAX_ENTITIES, componentSize);
@@ -176,9 +178,9 @@ void initializeMeshComponent(MeshComponent* meshComponent){
     meshComponent->vertexCount = 5;
     meshComponent->indices = NULL;
     meshComponent->indexCount = 0;
-    meshComponent->gpuBuffer = (GpuBuffer*)malloc(sizeof(GpuBuffer));
-    if(meshComponent->gpuBuffer == NULL) {
-        printf("Failed to allocate memory for gpuBuffer\n");
+    meshComponent->gpuData = (GpuData*)malloc(sizeof(GpuData));
+    if(meshComponent->gpuData == NULL) {
+        printf("Failed to allocate memory for gpuData\n");
         exit(1);
     }
 }
@@ -187,7 +189,7 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->active = 0;
     materialComponent->ambient.r = 0.0f;
     materialComponent->ambient.g = 0.0f;
-    materialComponent->ambient.b = 0.20f;
+    materialComponent->ambient.b = 0.0f;
     materialComponent->ambient.a = 1.0f;
     materialComponent->diffuse.r = 0.0f;
     materialComponent->diffuse.g = 0.0f;
@@ -200,12 +202,22 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->shininess = 0.0f;
 }
 
+void initializeUIComponent(UIComponent* uiComponent){
+    uiComponent->active = 0;
+}
+
+
+/**
+ * @brief Initialize the ECS
+ * Allocates memory pools for the components and entities
+*/
 void initECS(){
     // Allocate memory for MAX_ENTITIES Components structs
     TransformComponent* transformComponents = allocateComponentMemory(sizeof(TransformComponent), "transform");
     GroupComponent* groupComponents = allocateComponentMemory(sizeof(GroupComponent), "group");
     MeshComponent* meshComponents = allocateComponentMemory(sizeof(MeshComponent), "mesh");
     MaterialComponent* materialComponents = allocateComponentMemory(sizeof(MaterialComponent), "material");
+    UIComponent* uiComponents = allocateComponentMemory(sizeof(UIComponent), "ui");
 
     // Allocate memory for MAX_ENTITIES Entity structs
     Entity* entities = (Entity*)calloc(MAX_ENTITIES, sizeof(Entity));
@@ -227,19 +239,18 @@ void initECS(){
         initializeMeshComponent(entities[i].meshComponent);
         entities[i].materialComponent = &materialComponents[i];
         initializeMaterialComponent(entities[i].materialComponent); 
+        entities[i].uiComponent = &uiComponents[i];
+        initializeUIComponent(entities[i].uiComponent);
     }
 
     globals.entities = entities;
 }
-
 
 Entity* addEntity(enum Tag tag){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 0) {
             globals.entities[i].alive = 1;
             globals.entities[i].tag = tag;
-
-            //printf("Entity with id %d added!\n", i);
             return &globals.entities[i];
         }
     }
@@ -249,39 +260,46 @@ Entity* addEntity(enum Tag tag){
     exit(1);
 }
 
+// remove entity
+// get entity by id
+// get entities by tag
 
 
-void createMesh(){
-    
-     // Set up vertex data and buffers
-   const float verts[] = {
-         0.0f,  0.5f, 0.0f,  // top
-        -0.5f, -0.5f, 0.0f,  // bottom left
-         0.5f, -0.5f, 0.0f   // bottom right
-    };
 
- 
-    const unsigned int indices[] = {
-        0, 1, 2,  // first triangle
-        1, 2, 3   // second triangle
-    }; 
+
+//------------------------------------------------------
+//  PROGRAM ACTIONS
+//------------------------------------------------------
+
+/**
+ * @brief Create a mesh
+ * Main function to create a mesh. 
+ *  - vertex data
+ *  - index data
+ *  - transform data
+ *  - material data
+*/
+void createMesh(float* verts,int num_of_vertex, unsigned int* indices,int numIndicies,Vector3* position,Vector3* scale,Vector3* rotation,Material* material,int ui){
 
     Entity* entity = addEntity(MODEL);
     
     entity->meshComponent->active = 1;
+    if(ui == 1){
+        entity->uiComponent->active = 1;
+    }
 
     // vertex data
-    entity->meshComponent->vertices = (Vertex*)malloc(3 * sizeof(Vertex));
+    entity->meshComponent->vertices = (Vertex*)malloc(num_of_vertex * sizeof(Vertex));
      if (entity->meshComponent->vertices == NULL) {
         printf("Failed to allocate memory for vertices\n");
         exit(1);
     }
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < num_of_vertex; i++) {
         entity->meshComponent->vertices[i].position.x = verts[i * 3];
         entity->meshComponent->vertices[i].position.y = verts[i * 3 + 1];
         entity->meshComponent->vertices[i].position.z = verts[i * 3 + 2];
     }
-    entity->meshComponent->vertexCount = 3;
+    entity->meshComponent->vertexCount = num_of_vertex;
 
     // index data
     entity->meshComponent->indices = (unsigned int*)malloc(6 * sizeof(unsigned int));
@@ -292,44 +310,95 @@ void createMesh(){
     for(int i = 0; i < 6; i++) {
         entity->meshComponent->indices[i] = indices[i];
     }
-    entity->meshComponent->indexCount = 6;
+    entity->meshComponent->indexCount = numIndicies;
 
     // transform data
     entity->transformComponent->active = 1;
-    entity->transformComponent->position.x = 0.0f;
-    entity->transformComponent->position.y = 0.0f;
-    entity->transformComponent->position.z = 0.0f;
-    entity->transformComponent->scale.x = 1.0f;
-    entity->transformComponent->scale.y = 1.0f;
-    entity->transformComponent->scale.z = 1.0f;
-    entity->transformComponent->rotation.x = 0.0f;
-    entity->transformComponent->rotation.y = 0.0f;
-    entity->transformComponent->rotation.z = 0.0f;
+    entity->transformComponent->position.x = position->x;
+    entity->transformComponent->position.y = position->y;
+    entity->transformComponent->position.z = position->z;
+    entity->transformComponent->scale.x = scale->x;
+    entity->transformComponent->scale.y = scale->y;
+    entity->transformComponent->scale.z = scale->z;
+    entity->transformComponent->rotation.x = rotation->x;
+    entity->transformComponent->rotation.y = rotation->y;
+    entity->transformComponent->rotation.z = rotation->z;
     entity->transformComponent->isDirty = 1;
 
     // material data
     entity->materialComponent->active = 1;
-    entity->materialComponent->ambient.r = 0.1f;
-    entity->materialComponent->ambient.g = 0.1f;
-    entity->materialComponent->ambient.b = 0.1f;
-    entity->materialComponent->ambient.a = 1.0f;
-    entity->materialComponent->diffuse.r = 0.6f;
-    entity->materialComponent->diffuse.g = 0.6f;
-    entity->materialComponent->diffuse.b = 0.6f;
-    entity->materialComponent->diffuse.a = 1.0f;
-    entity->materialComponent->specular.r = 0.6f;
-    entity->materialComponent->specular.g = 0.6f;
-    entity->materialComponent->specular.b = 0.6f;
-    entity->materialComponent->specular.a = 1.0f;
-    entity->materialComponent->shininess = 32.0f;
+    entity->materialComponent->ambient = material->ambient;
+    entity->materialComponent->diffuse = material->diffuse;
+    entity->materialComponent->specular = material->specular;
+    entity->materialComponent->shininess = material->shininess;
+   
 
     setupMesh(  entity->meshComponent->vertices, 
                 entity->meshComponent->vertexCount, 
                 entity->meshComponent->indices, 
                 entity->meshComponent->indexCount,
-                entity->meshComponent->gpuBuffer );
+                entity->meshComponent->gpuData );
 
-    setupMaterial( entity->meshComponent->gpuBuffer ); 
+    setupMaterial( entity->meshComponent->gpuData ); 
+}
+
+void createTriangle(int ui,Color diffuse){
+    // vertex data
+    float verts[] = {
+         0.0f,  0.5f, 0.0f,  // top
+        -0.5f, -0.5f, 0.0f,  // bottom left
+         0.5f, -0.5f, 0.0f   // bottom right
+    };
+    // index data
+    unsigned int indices[] = {
+        0, 1, 2,  // first triangle
+        1, 2, 3   // second triangle
+    }; 
+    // transform
+    Vector3 position = {0.0f, 0.0f, 0.0f};
+    Vector3 scale = {1.0f, 1.0f, 1.0f};
+    Vector3 rotation = {0.0f, 0.0f, 0.0f};
+
+    //material
+    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
+    //Color diffuse = diffuseColor;
+    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
+    float shininess = 32.0f;
+    Material material = {ambient, diffuse, specular, shininess};
+
+    createMesh(verts,3,indices,6,&position,&scale,&rotation,&material,ui);
+}
+
+void createRectangle(int ui,Color diffuse){
+    // vertex data
+    GLfloat vertices[] = {
+    // triangle one
+    -1.0f, -1.0f, 0.0f,  // bottom left
+
+    // shared vertices
+    -1.0f,  1.0f, 0.0f,  // top left
+     1.0f, -1.0f, 0.0f,  // bottom right
+    // triangle two
+     1.0f,  1.0f, 0.0f   // top right
+    };
+    // index data
+    unsigned int indices[] = {
+        0, 1, 2,  // first triangle
+        2, 1, 3   // second triangle
+    }; 
+    // transform
+    Vector3 position = {0.0f, 0.0f, 0.0f};
+    Vector3 scale = {1.0f, 1.0f, 1.0f};
+    Vector3 rotation = {0.0f, 0.0f, 0.0f};
+
+    //material
+    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
+   // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
+    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
+    float shininess = 32.0f;
+    Material material = {ambient, diffuse, specular, shininess};
+
+    createMesh(vertices,4,indices,6,&position,&scale,&rotation,&material,ui);
 }
 
 void initProgram(){
@@ -406,8 +475,12 @@ void render(){
     setViewport(views[2]);
      for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                renderMesh(globals.entities[i].meshComponent->gpuBuffer);
+            if(globals.entities[i].meshComponent->active == 1 && globals.entities[i].uiComponent->active == 0) {
+                Color* diff = &globals.entities[i].materialComponent->diffuse;
+                Color* amb = &globals.entities[i].materialComponent->ambient;
+                Color* spec = &globals.entities[i].materialComponent->specular;
+                float shin = globals.entities[i].materialComponent->shininess;
+                renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
             }
         }
     }
@@ -415,18 +488,30 @@ void render(){
 
     // Native
     // Render 3d scene 
-    setViewport(views[0]);
+    
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
-                renderMesh(globals.entities[i].meshComponent->gpuBuffer);
+                if(globals.entities[i].uiComponent->active == 1){
+                    // render ui, could be overhead with switching viewports?. profile.
+                    setViewport(views[1]);
+                    Color* diff = &globals.entities[i].materialComponent->diffuse;
+                    Color* amb = &globals.entities[i].materialComponent->ambient;
+                    Color* spec = &globals.entities[i].materialComponent->specular;
+                    float shin = globals.entities[i].materialComponent->shininess;
+                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
+                }else {
+                    setViewport(views[0]);
+                    Color* diff = &globals.entities[i].materialComponent->diffuse;
+                    Color* amb = &globals.entities[i].materialComponent->ambient;
+                    Color* spec = &globals.entities[i].materialComponent->specular;
+                    float shin = globals.entities[i].materialComponent->shininess;
+                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
+                }
             }
         }
     }
-   
-    // Render ui scene
-    setViewport(views[1]);
-    render_ui();
+
     #endif
 
     // Swap the window buffers to show the new frame
@@ -474,11 +559,17 @@ int main(int argc, char **argv) {
    
     initOpenGLWindow();
     
+    Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
+    Color red = {1.0f, 0.0f, 0.0f, 1.0f};
+    Color green = {0.0f, 1.0f, 0.0f, 1.0f};
+
     // 3d scene objects creation
-    createMesh();
+    createRectangle(0,red);
+    createTriangle(0, blue);
+   
 
     // ui scene objects creation
-    setup_ui();
+    createRectangle(1, green);
   
     // Wasm code
     #ifdef __EMSCRIPTEN__

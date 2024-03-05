@@ -28,10 +28,10 @@ typedef struct Vector2 {
 } Vector2;
 
 typedef struct Color {
-    float r;
-    float g;
-    float b;
-    float a;
+    GLfloat  r;
+    GLfloat  g;
+    GLfloat  b;
+    GLfloat  a;
 } Color;
 
 typedef struct Matrix4 {
@@ -50,12 +50,24 @@ typedef struct Texture {
     char* type;
 } Texture;
 
-typedef struct GpuBuffer {
+typedef struct GpuData {
     GLuint VBO;
     GLuint VAO;
     GLuint EBO;
     GLuint shaderProgram;
-} GpuBuffer;
+    unsigned int numIndicies;
+} GpuData;
+
+typedef struct Material {
+    Color ambient;
+    Color diffuse;
+    Color specular;
+    float shininess;
+   /*  Texture* diffuseMap;
+    Texture* specularMap;
+    Texture* normalMap; */
+} Material;
+
 
 
 
@@ -87,8 +99,12 @@ typedef struct MeshComponent {
     size_t vertexCount;
     unsigned int* indices;
     size_t indexCount;
-    GpuBuffer* gpuBuffer;
+    GpuData* gpuData;
 } MeshComponent;
+
+typedef struct UIComponent {
+    int active;
+} UIComponent;
 
 typedef struct MaterialComponent {
     int active;
@@ -109,6 +125,7 @@ typedef struct Entity {
     GroupComponent* groupComponent;
     MeshComponent* meshComponent;
     MaterialComponent* materialComponent;
+    UIComponent* uiComponent;
 } Entity;
 
 

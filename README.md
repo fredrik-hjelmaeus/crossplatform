@@ -1,4 +1,9 @@
 Note we compile to native OpenGL, except for webassembly,where we compile OpenGL ES 3.0
+Dependencies:
+  -SDL
+  -opengl
+  -emscripten
+  
 
 ### Develop on macOS (^Catalina) native OpenGL
 
