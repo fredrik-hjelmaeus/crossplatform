@@ -32,24 +32,13 @@
 #include <emscripten.h>
 #endif
 
-// Utility macros
-#define CHECK_ERROR(test, message) \
-    do { \
-        if((test)) { \
-            fprintf(stderr, "%s\n", (message)); \
-            exit(1); \
-        } \
-    } while(0)
+// Prototypes
+void createTriangle(int ui,Color diffuse);
+void createRectangle(int ui,Color diffuse);
 
-// Get a random number from 0 to 255
-int randInt(int rmin, int rmax) {
-    return rand() % rmax + rmin;
-}
-float randFloat(float rmin, float rmax) {
-    return (float)rand() / (float)RAND_MAX * (rmax - rmin) + rmin;
-}
-
-// Globals
+//------------------------------------------------------
+// Global variables
+//------------------------------------------------------
 struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -60,74 +49,38 @@ struct Globals {
     int vertex_count;
     float delta_time;
 };
-struct Globals globals = {.window=NULL,.renderer=NULL,.event={0},.gl_context=NULL,.running=1,.entities=NULL,.vertex_count=0,.delta_time=0.0f};
+struct Globals globals = {
+    .window=NULL,
+    .renderer=NULL,
+    .event={0},
+    .gl_context=NULL,
+    .running=1,
+    .entities=NULL,
+    .vertex_count=0,
+    .delta_time=0.0f
+};
 
-
+// Viewports
 struct View views[3] = {
     {0, 200, 800, 400},
     {0, 0, 800, 200},
     {0, 0, 800, 600}
 };
 
+// Colors
+Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
+Color red = {1.0f, 0.0f, 0.0f, 1.0f};
+Color green = {0.0f, 1.0f, 0.0f, 1.0f};
+
 // Window dimensions
 static const int width = 800;
 static const int height = 600;
 
-void setRenderDrawColor(int r,int g, int b, int a) {
-    // Initial renderer color
-    SDL_SetRenderDrawColor(globals.renderer, r, g, b, a);
-}
+// Time variables
+#define FPS 60
+#define FRAME_TARGET_TIME (1000 / FPS)
+int last_frame_time = 0;
 
-#ifdef __EMSCRIPTEN__
-void setVersion() {
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES) != 0){
-        printf("Failed to set OpenGL ES profile: %s\n", SDL_GetError());
-    }
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) != 0){
-        printf("Failed to set OpenGL ES major version: %s\n", SDL_GetError());
-    }
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) != 0){
-        printf("Failed to set OpenGL ES minor version: %s\n", SDL_GetError());
-    }
-} 
-#else
-void setVersion() {
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) != 0){
-        printf("Failed to set OpenGL core profile: %s\n", SDL_GetError());
-    }
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) != 0){
-        printf("Failed to set OpenGL major version: %s\n", SDL_GetError());
-    }
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3) != 0){
-        printf("Failed to set OpenGL minor version: %s\n", SDL_GetError());
-    }
-}
-#endif
-
-void initWindow() {
-    // Initialize SDL
-    CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
-
-    // Set OpenGL version (3.0) or webgl won't be 2.0
-    setVersion();
-
-    // Create an SDL window
-    globals.window = SDL_CreateWindow(
-        "Hello, SDL2", 
-        SDL_WINDOWPOS_UNDEFINED, 
-        SDL_WINDOWPOS_UNDEFINED, 
-        width, 
-        height, 
-        SDL_WINDOW_OPENGL |
-        SDL_WINDOW_RESIZABLE
-    );
-    CHECK_ERROR(globals.window == NULL, SDL_GetError());
-
-}
-
-void setViewport(struct View view) {
-    glViewport(view.x, view.y, view.width, view.height);
-}
 
 //------------------------------------------------------
 //  ECS
@@ -268,7 +221,260 @@ Entity* addEntity(enum Tag tag){
 
 
 //------------------------------------------------------
-//  PROGRAM ACTIONS
+// SDL, OpenGL & PROGRAM INITIALIZATION
+//------------------------------------------------------
+
+void setRenderDrawColor(int r,int g, int b, int a) {
+    // Initial renderer color
+    SDL_SetRenderDrawColor(globals.renderer, r, g, b, a);
+}
+
+int pollEvent(){
+    return SDL_PollEvent(&globals.event);
+}
+
+#ifdef __EMSCRIPTEN__
+void setVersion() {
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES) != 0){
+        printf("Failed to set OpenGL ES profile: %s\n", SDL_GetError());
+    }
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) != 0){
+        printf("Failed to set OpenGL ES major version: %s\n", SDL_GetError());
+    }
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) != 0){
+        printf("Failed to set OpenGL ES minor version: %s\n", SDL_GetError());
+    }
+} 
+#else
+void setVersion() {
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) != 0){
+        printf("Failed to set OpenGL core profile: %s\n", SDL_GetError());
+    }
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) != 0){
+        printf("Failed to set OpenGL major version: %s\n", SDL_GetError());
+    }
+    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3) != 0){
+        printf("Failed to set OpenGL minor version: %s\n", SDL_GetError());
+    }
+}
+#endif
+
+void initWindow() {
+    // Initialize SDL
+    CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
+
+    // Set OpenGL version (3.0) or webgl won't be 2.0
+    setVersion();
+
+    // Create an SDL window
+    globals.window = SDL_CreateWindow(
+        "Hello, SDL2", 
+        SDL_WINDOWPOS_UNDEFINED, 
+        SDL_WINDOWPOS_UNDEFINED, 
+        width, 
+        height, 
+        SDL_WINDOW_OPENGL |
+        SDL_WINDOW_RESIZABLE
+    );
+    CHECK_ERROR(globals.window == NULL, SDL_GetError());
+
+}
+
+void setViewport(struct View view) {
+    glViewport(view.x, view.y, view.width, view.height);
+}
+
+void initProgram(){
+    initWindow();
+    initECS();
+}
+
+void input() {
+    // Process events
+    while(pollEvent()) {
+        
+        if(globals.event.type == SDL_QUIT) {
+            globals.running = 0;
+        } 
+        if(globals.event.type == SDL_KEYDOWN) {
+            const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
+            if(strcmp(key, "C") == 0) {
+                glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
+            }
+            if(strcmp(key, "Escape") == 0) {
+                globals.running = 0;
+            }
+            if(strcmp(key, "F") == 0) {
+                Uint32 windowFlags = SDL_GetWindowFlags(globals.window);
+                if(windowFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
+                    SDL_SetWindowFullscreen(globals.window, 0);
+                } else {
+                    SDL_SetWindowFullscreen(globals.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                }
+            }
+        }
+        if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
+            int w, h; 
+            SDL_GetWindowSize(globals.window, &w, &h);
+            printf("New Window size: %d x %d\n", w, h);
+            // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
+            glViewport(0, 0, w / 2, h);
+        }
+    }
+}
+
+void update(){
+
+    // Time 
+    Uint32 ticks = SDL_GetTicks();
+
+    // Cap the frame rate
+    int time_to_wait = FRAME_TARGET_TIME - (ticks - last_frame_time);
+    if(time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
+        SDL_Delay(time_to_wait);
+    }
+
+    // Set delta time in seconds
+    globals.delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
+  
+}
+
+void render(){
+
+    // Clear the entire window
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Render without ui on wasm
+    #ifdef __EMSCRIPTEN__
+    setViewport(views[2]);
+     for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1 && globals.entities[i].uiComponent->active == 0) {
+                Color* diff = &globals.entities[i].materialComponent->diffuse;
+                Color* amb = &globals.entities[i].materialComponent->ambient;
+                Color* spec = &globals.entities[i].materialComponent->specular;
+                float shin = globals.entities[i].materialComponent->shininess;
+                renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
+            }
+        }
+    }
+    #else
+
+    // Native
+    // Render 3d scene 
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                if(globals.entities[i].uiComponent->active == 1){
+                    // render ui, could be overhead with switching viewports?. profile.
+                    setViewport(views[1]);
+                    Color* diff = &globals.entities[i].materialComponent->diffuse;
+                    Color* amb = &globals.entities[i].materialComponent->ambient;
+                    Color* spec = &globals.entities[i].materialComponent->specular;
+                    float shin = globals.entities[i].materialComponent->shininess;
+                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
+                }else {
+                    setViewport(views[0]);
+                    Color* diff = &globals.entities[i].materialComponent->diffuse;
+                    Color* amb = &globals.entities[i].materialComponent->ambient;
+                    Color* spec = &globals.entities[i].materialComponent->specular;
+                    float shin = globals.entities[i].materialComponent->shininess;
+                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
+                }
+            }
+        }
+    }
+
+    #endif
+
+    // Swap the window buffers to show the new frame
+    SDL_GL_SwapWindow(globals.window); 
+}
+
+void quit(){
+    // Release resources
+    SDL_GL_DeleteContext(globals.gl_context);
+    SDL_DestroyRenderer(globals.renderer);
+    SDL_DestroyWindow(globals.window);
+    SDL_Quit();
+}
+
+void initOpenGLWindow(){
+  // Create an OpenGL context associated with the window.
+   globals.gl_context = SDL_GL_CreateContext(globals.window);
+   if (!globals.gl_context) {
+      printf("Failed to create OpenGL context: %s\n", SDL_GetError());
+      exit(1);
+   }
+   
+   printf("OpenGL context created!\n");
+}
+
+#ifdef __EMSCRIPTEN__
+void emscriptenLoop() {
+    if(!globals.running){
+        printf("Closing sdl canvas!\n");
+        quit();
+        printf("Goodbye!\n");
+        emscripten_cancel_main_loop();
+    }
+    input();
+    update();
+    render();
+}
+#endif
+
+/**
+ * @brief Initialize the scene
+ * Create the 3d and ui scene objects
+*/
+void initScene(){
+
+    // 3d scene objects creation
+    createRectangle(0,red);
+    createTriangle(0, blue);
+   
+
+    // ui scene objects creation
+    createRectangle(1, green);
+}
+
+int main(int argc, char **argv) {
+    // Initialize the random number generator
+    srand((unsigned int)time(NULL));
+    
+    initProgram();
+   
+    initOpenGLWindow();
+    
+    // Starting state for program
+    initScene();
+
+    //------------------------------------------------------
+    // Main loop
+    // -----------------------------------------------------
+    // Wasm code
+    #ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(emscriptenLoop, 0, 1);
+    #else
+    // native code
+    while(globals.running) {
+        input();
+        update();
+        render();
+    }
+
+    // -----------------------------------------------------
+    // Quit
+    // -----------------------------------------------------
+    quit();
+    printf("Non emscripten shutdown complete!\n");
+    return 0;
+    #endif
+}
+
+//------------------------------------------------------
+//  PROGRAM ACTIONS API
 //------------------------------------------------------
 
 /**
@@ -342,6 +548,12 @@ void createMesh(float* verts,int num_of_vertex, unsigned int* indices,int numInd
     setupMaterial( entity->meshComponent->gpuData ); 
 }
 
+/**
+ * @brief Create a triangle
+ * Create a triangle mesh
+ * @param ui - 1 for ui, 0 for 3d scene
+ * @param diffuse - color of the triangle
+*/
 void createTriangle(int ui,Color diffuse){
     // vertex data
     float verts[] = {
@@ -368,7 +580,12 @@ void createTriangle(int ui,Color diffuse){
 
     createMesh(verts,3,indices,6,&position,&scale,&rotation,&material,ui);
 }
-
+/**
+ * @brief Create a rectangle
+ * Create a rectangle mesh
+ * @param ui - 1 for ui, 0 for 3d scene
+ * @param diffuse - color of the rectangle
+*/
 void createRectangle(int ui,Color diffuse){
     // vertex data
     GLfloat vertices[] = {
@@ -399,190 +616,4 @@ void createRectangle(int ui,Color diffuse){
     Material material = {ambient, diffuse, specular, shininess};
 
     createMesh(vertices,4,indices,6,&position,&scale,&rotation,&material,ui);
-}
-
-void initProgram(){
-    initWindow();
-    initECS();
-}
-
-int pollEvent(){
-    return SDL_PollEvent(&globals.event);
-}
-
-void input() {
-    // Process events
-    while(pollEvent()) {
-        
-        if(globals.event.type == SDL_QUIT) {
-            globals.running = 0;
-        } 
-        if(globals.event.type == SDL_KEYDOWN) {
-            const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
-            if(strcmp(key, "C") == 0) {
-                glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
-            }
-            if(strcmp(key, "Escape") == 0) {
-                globals.running = 0;
-            }
-            if(strcmp(key, "F") == 0) {
-                Uint32 windowFlags = SDL_GetWindowFlags(globals.window);
-                if(windowFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
-                    SDL_SetWindowFullscreen(globals.window, 0);
-                } else {
-                    SDL_SetWindowFullscreen(globals.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-                }
-            }
-        }
-        if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
-            int w, h; 
-            SDL_GetWindowSize(globals.window, &w, &h);
-            printf("New Window size: %d x %d\n", w, h);
-            // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
-            glViewport(0, 0, w / 2, h);
-        }
-    }
-}
-
-// Time variables
-#define FPS 60
-#define FRAME_TARGET_TIME (1000 / FPS)
-int last_frame_time = 0;
-
-void update(){
-
-    // Time 
-    Uint32 ticks = SDL_GetTicks();
-
-    // Cap the frame rate
-    int time_to_wait = FRAME_TARGET_TIME - (ticks - last_frame_time);
-    if(time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
-        SDL_Delay(time_to_wait);
-    }
-
-    // Set delta time in seconds
-    globals.delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
-  
-}
-
-void render(){
-
-    // Clear the entire window
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // Render without ui on wasm
-    #ifdef __EMSCRIPTEN__
-    setViewport(views[2]);
-     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1 && globals.entities[i].uiComponent->active == 0) {
-                Color* diff = &globals.entities[i].materialComponent->diffuse;
-                Color* amb = &globals.entities[i].materialComponent->ambient;
-                Color* spec = &globals.entities[i].materialComponent->specular;
-                float shin = globals.entities[i].materialComponent->shininess;
-                renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
-            }
-        }
-    }
-    #else
-
-    // Native
-    // Render 3d scene 
-    
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active == 1){
-                    // render ui, could be overhead with switching viewports?. profile.
-                    setViewport(views[1]);
-                    Color* diff = &globals.entities[i].materialComponent->diffuse;
-                    Color* amb = &globals.entities[i].materialComponent->ambient;
-                    Color* spec = &globals.entities[i].materialComponent->specular;
-                    float shin = globals.entities[i].materialComponent->shininess;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
-                }else {
-                    setViewport(views[0]);
-                    Color* diff = &globals.entities[i].materialComponent->diffuse;
-                    Color* amb = &globals.entities[i].materialComponent->ambient;
-                    Color* spec = &globals.entities[i].materialComponent->specular;
-                    float shin = globals.entities[i].materialComponent->shininess;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
-                }
-            }
-        }
-    }
-
-    #endif
-
-    // Swap the window buffers to show the new frame
-    SDL_GL_SwapWindow(globals.window); 
-}
-
-void quit(){
-    // Release resources
-    SDL_GL_DeleteContext(globals.gl_context);
-    SDL_DestroyRenderer(globals.renderer);
-    SDL_DestroyWindow(globals.window);
-    SDL_Quit();
-}
-
-void initOpenGLWindow(){
-  // Create an OpenGL context associated with the window.
-   globals.gl_context = SDL_GL_CreateContext(globals.window);
-   if (!globals.gl_context) {
-      printf("Failed to create OpenGL context: %s\n", SDL_GetError());
-      exit(1);
-   }
-   
-   printf("OpenGL context created!\n");
-}
-
-#ifdef __EMSCRIPTEN__
-void emscriptenLoop() {
-    if(!globals.running){
-        printf("Closing sdl canvas!\n");
-        quit();
-        printf("Goodbye!\n");
-        emscripten_cancel_main_loop();
-    }
-    input();
-    update();
-    render();
-}
-#endif
-
-int main(int argc, char **argv) {
-    // Initialize the random number generator
-    srand((unsigned int)time(NULL));
-    
-    initProgram();
-   
-    initOpenGLWindow();
-    
-    Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
-    Color red = {1.0f, 0.0f, 0.0f, 1.0f};
-    Color green = {0.0f, 1.0f, 0.0f, 1.0f};
-
-    // 3d scene objects creation
-    createRectangle(0,red);
-    createTriangle(0, blue);
-   
-
-    // ui scene objects creation
-    createRectangle(1, green);
-  
-    // Wasm code
-    #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(emscriptenLoop, 0, 1);
-    #else
-    // native code
-    while(globals.running) {
-        input();
-        update();
-        render();
-    }
-    quit();
-    printf("Non emscripten shutdown complete!\n");
-    return 0;
-    #endif
 }

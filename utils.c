@@ -41,3 +41,13 @@ char* loadShaderSource(const char *filename) {
 
 
 
+// Get a random number from 0 to 255
+int randInt(int rmin, int rmax) {
+    return rand() % rmax + rmin;
+}
+float randFloat(float rmin, float rmax) {
+    return (float)rand() / (float)RAND_MAX * (rmax - rmin) + rmin;
+}
+
+
+
