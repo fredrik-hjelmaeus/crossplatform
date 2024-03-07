@@ -3,6 +3,12 @@ Dependencies:
   -SDL
   -opengl
   -emscripten
+  -linmath.h
+  -math.h
+  -string.h
+  -stdio.h
+  -time.h
+  -stdlib.h
   
 
 ### Develop on macOS (^Catalina) native OpenGL
@@ -47,4 +53,5 @@ Dependencies:
   - emcc *.c -o index.html -s USE_SDL=2 -s USE_WEBGL2=1 --preload-file shaders/wasm/ -s INITIAL_MEMORY=33554432 -s ALLOW_MEMORY_GROWTH=1
 - run:
   - live-server
+  
 ## Deploy

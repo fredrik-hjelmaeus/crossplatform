@@ -9,7 +9,7 @@ int randInt(int rmin, int rmax);
 float randFloat(float rmin, float rmax);
 
 // Utility macros
-#define CHECK_ERROR(test, message) \
+#define CHECK_SDL_ERROR(test, message) \
     do { \
         if((test)) { \
             fprintf(stderr, "%s\n", (message)); \

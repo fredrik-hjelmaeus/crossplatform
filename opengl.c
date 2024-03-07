@@ -5,6 +5,7 @@ GLuint sceneShaderProgram, uiShaderProgram;
 
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
     
+    buffer->drawMode = GL_TRIANGLES;
     buffer->numIndicies = indexCount;
     glGenVertexArrays(1, &(buffer->VAO));
     glGenBuffers(1, &(buffer->VBO));
@@ -116,6 +117,7 @@ void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,
     glUniform4f(colorLocation, diffuse->r, diffuse->g, diffuse->b, diffuse->a); 
 
     glBindVertexArray(buffer->VAO);
-    glDrawElements(GL_TRIANGLES,buffer->numIndicies,GL_UNSIGNED_INT,0);
+    glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);
     glBindVertexArray(0);
 }
+

@@ -4,7 +4,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "linmath.h"
 
 // wasm/OpenGL ES 3.0
 #ifdef __EMSCRIPTEN__
@@ -26,8 +26,6 @@
 
 
 void renderMesh(GpuData* buffer,Color* ambient,Color* diffuse, Color* specular,float shininess);
-void setup_ui();
-void render_ui();
 void setupMaterial(GpuData* buffer);
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
 

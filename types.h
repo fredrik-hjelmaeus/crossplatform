@@ -4,28 +4,12 @@
 #include <stdio.h>
 #include "opengl.h"
 
-typedef struct Scene {
-    GLuint VBO;
-    GLuint VAO;
-} Scene;
-
 typedef struct View {
     int x;
     int y;
     int width;
     int height;
 } View;
-
-typedef struct Vector3 {
-    float x;
-    float y;
-    float z;
-} Vector3;
-
-typedef struct Vector2 {
-    float x;
-    float y;
-} Vector2;
 
 typedef struct Color {
     GLfloat  r;
@@ -34,19 +18,15 @@ typedef struct Color {
     GLfloat  a;
 } Color;
 
-typedef struct Matrix4 {
-    float m[4][4];
-} Matrix4;
-
 typedef struct Vertex {
-    Vector3 position;
+    vec3 position;
    // Vector3 normal;
    // Vector2 texcoord;
 } Vertex;
 
 
 typedef struct Texture {
-    unsigned int id;
+    GLuint id;
     char* type;
 } Texture;
 
@@ -55,14 +35,15 @@ typedef struct GpuData {
     GLuint VAO;
     GLuint EBO;
     GLuint shaderProgram;
-    unsigned int numIndicies;
+    GLuint numIndicies;
+    GLenum drawMode;
 } GpuData;
 
 typedef struct Material {
     Color ambient;
     Color diffuse;
     Color specular;
-    float shininess;
+    GLfloat shininess;
    /*  Texture* diffuseMap;
     Texture* specularMap;
     Texture* normalMap; */
@@ -81,15 +62,15 @@ enum Tag {
 typedef struct TransformComponent {
     int active;
     int isDirty;
-    Vector3 position;
-    Vector3 rotation;
-    Vector3 scale;
-    Matrix4 transform;
+    vec3 position;
+    vec3 rotation;
+    vec3 scale;
+    mat4x4 transform;
 } TransformComponent;
 
 typedef struct GroupComponent {
     int active;
-    Matrix4 transform;
+    mat4x4 transform;
 } GroupComponent;
 
 typedef struct MeshComponent {

@@ -39,7 +39,7 @@ void createRectangle(int ui,Color diffuse);
 //------------------------------------------------------
 // Global variables
 //------------------------------------------------------
-struct Globals {
+ struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Event event;
@@ -48,7 +48,9 @@ struct Globals {
     Entity* entities;
     int vertex_count;
     float delta_time;
-};
+    GLenum overideDrawMode;
+    int overrideDrawModeBool;
+}; 
 struct Globals globals = {
     .window=NULL,
     .renderer=NULL,
@@ -57,7 +59,9 @@ struct Globals globals = {
     .running=1,
     .entities=NULL,
     .vertex_count=0,
-    .delta_time=0.0f
+    .delta_time=0.0f,
+    .overideDrawMode=GL_TRIANGLES,
+    .overrideDrawModeBool=0
 };
 
 // Viewports
@@ -87,7 +91,7 @@ int last_frame_time = 0;
 //------------------------------------------------------
 
 // Max entities constant
-#define MAX_ENTITIES 100000
+#define MAX_ENTITIES 1000
 
 void* allocateComponentMemory(size_t componentSize, const char* componentName) {
     void* components = calloc(MAX_ENTITIES, componentSize);
@@ -100,24 +104,20 @@ void* allocateComponentMemory(size_t componentSize, const char* componentName) {
 
 void initializeTransformComponent(TransformComponent* transformComponent){
     transformComponent->active = 0;
-    transformComponent->position.x = 0.0f;
-    transformComponent->position.y = 0.0f;
-    transformComponent->position.z = 0.0f;
-    transformComponent->scale.x = 1.0f;
-    transformComponent->scale.y = 1.0f;
-    transformComponent->scale.z = 1.0f;
-    transformComponent->rotation.x = 0.0f;
-    transformComponent->rotation.y = 0.0f;
-    transformComponent->rotation.z = 0.0f;
+    transformComponent->position[0] = 0.0f;
+    transformComponent->position[1] = 0.0f;
+    transformComponent->position[2] = 0.0f;
+    transformComponent->scale[0] = 1.0f;
+    transformComponent->scale[1] = 1.0f;
+    transformComponent->scale[2] = 1.0f;
+    transformComponent->rotation[0] = 0.0f;
+    transformComponent->rotation[1] = 0.0f;
+    transformComponent->rotation[2] = 0.0f;
     transformComponent->isDirty = 1;
 }
 
-void initializeMatrix4(Matrix4* matrix) {
-    for(int i = 0; i < 4; i++) {
-        for(int j = 0; j < 4; j++) {
-            matrix->m[i][j] = 0.0f;
-        }
-    }
+void initializeMatrix4(float (*matrix)[4][4]) {
+    mat4x4_identity(*matrix);
 }
 
 void initializeGroupComponent(GroupComponent* groupComponent){
@@ -261,7 +261,7 @@ void setVersion() {
 
 void initWindow() {
     // Initialize SDL
-    CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
+    CHECK_SDL_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
 
     // Set OpenGL version (3.0) or webgl won't be 2.0
     setVersion();
@@ -276,7 +276,7 @@ void initWindow() {
         SDL_WINDOW_OPENGL |
         SDL_WINDOW_RESIZABLE
     );
-    CHECK_ERROR(globals.window == NULL, SDL_GetError());
+    CHECK_SDL_ERROR(globals.window == NULL, SDL_GetError());
 
 }
 
@@ -349,11 +349,11 @@ void render(){
     setViewport(views[2]);
      for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1 && globals.entities[i].uiComponent->active == 0) {
+            if(globals.entities[i].meshComponent->active == 1) { // && globals.entities[i].uiComponent->active == 0
                 Color* diff = &globals.entities[i].materialComponent->diffuse;
                 Color* amb = &globals.entities[i].materialComponent->ambient;
                 Color* spec = &globals.entities[i].materialComponent->specular;
-                float shin = globals.entities[i].materialComponent->shininess;
+                GLfloat shin = globals.entities[i].materialComponent->shininess;
                 renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
             }
         }
@@ -371,14 +371,14 @@ void render(){
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
                     Color* amb = &globals.entities[i].materialComponent->ambient;
                     Color* spec = &globals.entities[i].materialComponent->specular;
-                    float shin = globals.entities[i].materialComponent->shininess;
+                    GLfloat shin = globals.entities[i].materialComponent->shininess;
                     renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
                 }else {
                     setViewport(views[0]);
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
                     Color* amb = &globals.entities[i].materialComponent->ambient;
                     Color* spec = &globals.entities[i].materialComponent->specular;
-                    float shin = globals.entities[i].materialComponent->shininess;
+                    GLfloat shin = globals.entities[i].materialComponent->shininess;
                     renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
                 }
             }
@@ -431,12 +431,14 @@ void emscriptenLoop() {
 void initScene(){
 
     // 3d scene objects creation
-    createRectangle(0,red);
-    createTriangle(0, blue);
+ //createRectangle(0,red);
+   createTriangle(0, red);
+   //createTriangle(0, red);
+//createTriangle(0,red);
    
 
     // ui scene objects creation
-    createRectangle(1, green);
+   createRectangle(1, green);
 }
 
 int main(int argc, char **argv) {
@@ -485,7 +487,18 @@ int main(int argc, char **argv) {
  *  - transform data
  *  - material data
 */
-void createMesh(float* verts,int num_of_vertex, unsigned int* indices,int numIndicies,Vector3* position,Vector3* scale,Vector3* rotation,Material* material,int ui){
+void createMesh(
+    GLfloat* verts,
+    GLuint num_of_vertex, 
+    GLuint* indices,
+    GLuint numIndicies,
+    vec3 position,
+    vec3 scale,
+    vec3 rotation,
+    Material* material,
+    int ui,
+    GLenum drawMode
+    ){
 
     Entity* entity = addEntity(MODEL);
     
@@ -501,9 +514,9 @@ void createMesh(float* verts,int num_of_vertex, unsigned int* indices,int numInd
         exit(1);
     }
     for(int i = 0; i < num_of_vertex; i++) {
-        entity->meshComponent->vertices[i].position.x = verts[i * 3];
-        entity->meshComponent->vertices[i].position.y = verts[i * 3 + 1];
-        entity->meshComponent->vertices[i].position.z = verts[i * 3 + 2];
+        entity->meshComponent->vertices[i].position[0] = verts[i * 3];
+        entity->meshComponent->vertices[i].position[1] = verts[i * 3 + 1];
+        entity->meshComponent->vertices[i].position[2] = verts[i * 3 + 2];
     }
     entity->meshComponent->vertexCount = num_of_vertex;
 
@@ -520,15 +533,15 @@ void createMesh(float* verts,int num_of_vertex, unsigned int* indices,int numInd
 
     // transform data
     entity->transformComponent->active = 1;
-    entity->transformComponent->position.x = position->x;
-    entity->transformComponent->position.y = position->y;
-    entity->transformComponent->position.z = position->z;
-    entity->transformComponent->scale.x = scale->x;
-    entity->transformComponent->scale.y = scale->y;
-    entity->transformComponent->scale.z = scale->z;
-    entity->transformComponent->rotation.x = rotation->x;
-    entity->transformComponent->rotation.y = rotation->y;
-    entity->transformComponent->rotation.z = rotation->z;
+    entity->transformComponent->position[0] = position[0];
+    entity->transformComponent->position[1] = position[1];
+    entity->transformComponent->position[2] = position[2];
+    entity->transformComponent->scale[0] = scale[0];
+    entity->transformComponent->scale[1] = scale[1];
+    entity->transformComponent->scale[2] = scale[2];
+    entity->transformComponent->rotation[0] = rotation[0];
+    entity->transformComponent->rotation[1] = rotation[1];
+    entity->transformComponent->rotation[2] = rotation[2];
     entity->transformComponent->isDirty = 1;
 
     // material data
@@ -538,7 +551,7 @@ void createMesh(float* verts,int num_of_vertex, unsigned int* indices,int numInd
     entity->materialComponent->specular = material->specular;
     entity->materialComponent->shininess = material->shininess;
    
-
+    
     setupMesh(  entity->meshComponent->vertices, 
                 entity->meshComponent->vertexCount, 
                 entity->meshComponent->indices, 
@@ -553,32 +566,33 @@ void createMesh(float* verts,int num_of_vertex, unsigned int* indices,int numInd
  * Create a triangle mesh
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the triangle
+ * TODO: does not work with wasm atm. indices? GLtype?
 */
 void createTriangle(int ui,Color diffuse){
     // vertex data
-    float verts[] = {
+    GLfloat verts[] = {
          0.0f,  0.5f, 0.0f,  // top
         -0.5f, -0.5f, 0.0f,  // bottom left
          0.5f, -0.5f, 0.0f   // bottom right
     };
     // index data
-    unsigned int indices[] = {
+    GLuint indices[] = {
         0, 1, 2,  // first triangle
         1, 2, 3   // second triangle
     }; 
     // transform
-    Vector3 position = {0.0f, 0.0f, 0.0f};
-    Vector3 scale = {1.0f, 1.0f, 1.0f};
-    Vector3 rotation = {0.0f, 0.0f, 0.0f};
+    vec3 position = {0.0f, 0.0f, 0.0f};
+    vec3 scale = {1.0f, 1.0f, 1.0f};
+    vec3 rotation = {0.0f, 0.0f, 0.0f};
 
     //material
     Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
     //Color diffuse = diffuseColor;
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    float shininess = 32.0f;
+    GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess};
 
-    createMesh(verts,3,indices,6,&position,&scale,&rotation,&material,ui);
+    createMesh(verts,3,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES);
 }
 /**
  * @brief Create a rectangle
@@ -599,21 +613,21 @@ void createRectangle(int ui,Color diffuse){
      1.0f,  1.0f, 0.0f   // top right
     };
     // index data
-    unsigned int indices[] = {
+    GLuint indices[] = {
         0, 1, 2,  // first triangle
         2, 1, 3   // second triangle
     }; 
     // transform
-    Vector3 position = {0.0f, 0.0f, 0.0f};
-    Vector3 scale = {1.0f, 1.0f, 1.0f};
-    Vector3 rotation = {0.0f, 0.0f, 0.0f};
+    vec3 position = {0.0f, 0.0f, 0.0f};
+    vec3 scale = {1.0f, 1.0f, 1.0f};
+    vec3 rotation = {0.0f, 0.0f, 0.0f};
 
     //material
     Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
    // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    float shininess = 32.0f;
+    GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess};
 
-    createMesh(vertices,4,indices,6,&position,&scale,&rotation,&material,ui);
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES);
 }
