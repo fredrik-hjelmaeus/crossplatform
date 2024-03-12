@@ -11,6 +11,11 @@ typedef struct View {
     int height;
 } View;
 
+enum Viewport {
+    VIEWPORT_MAIN = 0,
+    VIEWPORT_UI = 1
+};
+
 typedef struct Color {
     GLfloat  r;
     GLfloat  g;
@@ -20,8 +25,9 @@ typedef struct Color {
 
 typedef struct Vertex {
     vec3 position;
+    vec3 color;
+    vec2 texcoord;
    // Vector3 normal;
-   // Vector2 texcoord;
 } Vertex;
 
 

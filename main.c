@@ -431,14 +431,14 @@ void emscriptenLoop() {
 void initScene(){
 
     // 3d scene objects creation
- //createRectangle(0,red);
-   createTriangle(0, red);
+ createRectangle(VIEWPORT_MAIN,red);
+   //createTriangle(0, red);
    //createTriangle(0, red);
 //createTriangle(0,red);
    
 
     // ui scene objects creation
-   createRectangle(1, green);
+   createRectangle(VIEWPORT_UI, green);
 }
 
 int main(int argc, char **argv) {
@@ -513,10 +513,30 @@ void createMesh(
         printf("Failed to allocate memory for vertices\n");
         exit(1);
     }
-    for(int i = 0; i < num_of_vertex; i++) {
-        entity->meshComponent->vertices[i].position[0] = verts[i * 3];
-        entity->meshComponent->vertices[i].position[1] = verts[i * 3 + 1];
-        entity->meshComponent->vertices[i].position[2] = verts[i * 3 + 2];
+    
+    int stride = 8;
+    int vertexIndex = 0;
+    for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+        entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
+        printf("p 0: %f\n",verts[i]);
+        entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
+        printf("p 1: %f\n",verts[i + 1]);
+        entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+        printf("p 2: %f\n",verts[i + 2]);
+        entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
+        printf("---------------------\n");
+        printf("c 1: %f\n",verts[i + 3]);
+        entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
+        printf("c 2: %f\n",verts[i + 4]);
+        entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+        //entity->meshComponent->vertices[vertexIndex].diffuse[2] = verts[i + 6];
+        //entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 7];
+        printf("c 3: %f\n",verts[i + 5]);
+        printf("---------------------\n");
+        printf("u 3: %f\n",verts[i + 6]);
+        printf("v 3: %f\n",verts[i + 7]);
+        printf("                    \n");
+        vertexIndex++;
     }
     entity->meshComponent->vertexCount = num_of_vertex;
 
@@ -603,19 +623,16 @@ void createTriangle(int ui,Color diffuse){
 void createRectangle(int ui,Color diffuse){
     // vertex data
     GLfloat vertices[] = {
-    // triangle one
-    -1.0f, -1.0f, 0.0f,  // bottom left
-
-    // shared vertices
-    -1.0f,  1.0f, 0.0f,  // top left
-     1.0f, -1.0f, 0.0f,  // bottom right
-    // triangle two
-     1.0f,  1.0f, 0.0f   // top right
+    // positions             // colors              // texture coords
+     0.55f,  0.55f, 0.05f,   1.00f, 0.00f, 0.00f,   1.0f, 1.0f,   // top right       0
+     0.56f, -0.56f, 0.06f,   0.00f, 1.00f, 0.00f,   1.0f, 0.0f,   // bottom right    1
+    -0.57f, -0.57f, 0.07f,   0.00f, 0.00f, 1.00f,   0.0f, 0.0f,   // bottom left     2
+    -0.57f,  0.57f, 0.07f,   1.00f, 1.00f, 0.00f,   0.0f, 1.0f    // top left        3
     };
     // index data
     GLuint indices[] = {
-        0, 1, 2,  // first triangle
-        2, 1, 3   // second triangle
+        1, 2, 0, // first triangle
+        2, 3, 0,  // second triangle
     }; 
     // transform
     vec3 position = {0.0f, 0.0f, 0.0f};
