@@ -28,6 +28,9 @@
 #include <time.h>
 #include "types.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
