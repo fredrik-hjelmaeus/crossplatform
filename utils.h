@@ -3,10 +3,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "stb_image.h"
+
+
+// Text output colors
+#define TEXT_COLOR_ERROR     "\x1b[31m"
+#define TEXT_COLOR_WARNING   "\x1b[33m"
+#define TEXT_COLOR_RESET     "\x1b[0m"
 
 char* loadShaderSource(const char *filename);
 int randInt(int rmin, int rmax);
 float randFloat(float rmin, float rmax);
+unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
 
 // Utility macros
 #define CHECK_SDL_ERROR(test, message) \

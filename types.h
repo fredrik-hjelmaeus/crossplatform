@@ -30,6 +30,12 @@ typedef struct Vertex {
    // Vector3 normal;
 } Vertex;
 
+typedef struct TextureData {
+    unsigned char* data;
+    int width;
+    int height;
+    int channels;
+} TextureData;
 
 typedef struct Texture {
     GLuint id;
@@ -50,8 +56,8 @@ typedef struct Material {
     Color diffuse;
     Color specular;
     GLfloat shininess;
-   /*  Texture* diffuseMap;
-    Texture* specularMap;
+    GLuint diffuseMap;
+   /* Texture* specularMap;
     Texture* normalMap; */
 } Material;
 
@@ -99,7 +105,7 @@ typedef struct MaterialComponent {
     Color diffuse;
     Color specular;
     float shininess;
-   // Texture* diffuseMap;
+    GLuint diffuseMap;
   //  Texture* specularMap;
   //  Texture* normalMap;
 } MaterialComponent;

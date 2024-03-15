@@ -28,7 +28,7 @@ char* loadShaderSource(const char *filename) {
     // read the file into the buffer
     size_t result = fread(buffer, sizeof(char), filesize, fp);
     if(result != filesize) {
-        printf("Error reading file %s", filename);
+        printf(TEXT_COLOR_ERROR "Error reading file %s" TEXT_COLOR_RESET, filename);
         return NULL;
     }
 
@@ -49,5 +49,13 @@ float randFloat(float rmin, float rmax) {
     return (float)rand() / (float)RAND_MAX * (rmax - rmin) + rmin;
 }
 
-
+unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels){
+    unsigned char* result = stbi_load(filename, width, height, nrChannels, 0);
+    if(result == NULL) {
+        
+        printf(TEXT_COLOR_ERROR "Error loading image %s" TEXT_COLOR_RESET "\n", filename);
+        return NULL;
+    }
+    return result;
+}
 

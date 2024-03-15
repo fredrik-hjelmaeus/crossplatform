@@ -38,8 +38,8 @@ Dependencies:
 - install gcc?
 - sudo apt install libsdl2-dev
 - sudo apt-get install libgles2-mesa-dev
-- gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2
-- to debug: gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2 -g 
+- gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2 -lm
+- to debug: gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2 -lm -g 
 
 ### Develop for Webassembly (wasm) OpenGL ES 3.0
 

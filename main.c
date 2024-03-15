@@ -27,6 +27,7 @@
 #include "utils.h"
 #include <time.h>
 #include "types.h"
+#include "test.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -37,7 +38,8 @@
 
 // Prototypes
 void createTriangle(int ui,Color diffuse);
-void createRectangle(int ui,Color diffuse);
+void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId);
+TextureData loadTexture();
 
 //------------------------------------------------------
 // Global variables
@@ -357,7 +359,8 @@ void render(){
                 Color* amb = &globals.entities[i].materialComponent->ambient;
                 Color* spec = &globals.entities[i].materialComponent->specular;
                 GLfloat shin = globals.entities[i].materialComponent->shininess;
-                renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
+                GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
+                renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin,diffMap);
             }
         }
     }
@@ -375,14 +378,16 @@ void render(){
                     Color* amb = &globals.entities[i].materialComponent->ambient;
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
+                    GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
+                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin,diffMap);
                 }else {
                     setViewport(views[0]);
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
                     Color* amb = &globals.entities[i].materialComponent->ambient;
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin);
+                    GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
+                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin,diffMap);
                 }
             }
         }
@@ -433,15 +438,22 @@ void emscriptenLoop() {
 */
 void initScene(){
 
+
+    TextureData textureData = loadTexture();
+    GLuint diffuseTextureId = setupTexture(textureData);
+   printf("diffusetextureid: %d\n",diffuseTextureId);
+    //GLuint diffuseTextureId = 6;
+
+   test();
     // 3d scene objects creation
- createRectangle(VIEWPORT_MAIN,red);
+ //createRectangle(VIEWPORT_MAIN,red,diffuseTextureId);
    //createTriangle(0, red);
    //createTriangle(0, red);
 //createTriangle(0,red);
    
 
     // ui scene objects creation
-   createRectangle(VIEWPORT_UI, green);
+  // createRectangle(VIEWPORT_UI, green,diffuseTextureId);
 }
 
 int main(int argc, char **argv) {
@@ -467,6 +479,7 @@ int main(int argc, char **argv) {
         input();
         update();
         render();
+      
     }
 
     // -----------------------------------------------------
@@ -544,12 +557,12 @@ void createMesh(
     entity->meshComponent->vertexCount = num_of_vertex;
 
     // index data
-    entity->meshComponent->indices = (unsigned int*)malloc(6 * sizeof(unsigned int));
+    entity->meshComponent->indices = (GLuint*)malloc(numIndicies * sizeof(GLuint));
     if(entity->meshComponent->indices == NULL) {
         printf("Failed to allocate memory for indices\n");
         exit(1);
     }
-    for(int i = 0; i < 6; i++) {
+    for(int i = 0; i < numIndicies; i++) {
         entity->meshComponent->indices[i] = indices[i];
     }
     entity->meshComponent->indexCount = numIndicies;
@@ -573,6 +586,102 @@ void createMesh(
     entity->materialComponent->diffuse = material->diffuse;
     entity->materialComponent->specular = material->specular;
     entity->materialComponent->shininess = material->shininess;
+    entity->materialComponent->diffuseMap = material->diffuseMap;
+   
+    
+    setupMesh(  entity->meshComponent->vertices, 
+                entity->meshComponent->vertexCount, 
+                entity->meshComponent->indices, 
+                entity->meshComponent->indexCount,
+                entity->meshComponent->gpuData );
+
+    setupMaterial( entity->meshComponent->gpuData ); 
+}
+
+void createMeshTest(
+    GLfloat* verts,
+    GLuint num_of_vertex, 
+    GLuint* indices,
+    GLuint numIndicies,
+    vec3 position,
+    vec3 scale,
+    vec3 rotation,
+    Material* material,
+    int ui,
+    GLenum drawMode
+    ){
+
+    Entity* entity = addEntity(MODEL);
+    
+    entity->meshComponent->active = 1;
+    if(ui == 1){
+        entity->uiComponent->active = 1;
+    }
+
+    // vertex data
+    entity->meshComponent->vertices = (Vertex*)malloc(num_of_vertex * sizeof(Vertex));
+     if (entity->meshComponent->vertices == NULL) {
+        printf("Failed to allocate memory for vertices\n");
+        exit(1);
+    }
+    
+    int stride = 8;
+    int vertexIndex = 0;
+    for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+        entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
+        printf("p 0: %f\n",verts[i]);
+        entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
+        printf("p 1: %f\n",verts[i + 1]);
+        entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+        printf("p 2: %f\n",verts[i + 2]);
+        entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
+        printf("---------------------\n");
+        printf("c 1: %f\n",verts[i + 3]);
+        entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
+        printf("c 2: %f\n",verts[i + 4]);
+        entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+        //entity->meshComponent->vertices[vertexIndex].diffuse[2] = verts[i + 6];
+        //entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 7];
+        printf("c 3: %f\n",verts[i + 5]);
+        printf("---------------------\n");
+        printf("u 3: %f\n",verts[i + 6]);
+        printf("v 3: %f\n",verts[i + 7]);
+        printf("                    \n");
+        vertexIndex++;
+    }
+    entity->meshComponent->vertexCount = num_of_vertex;
+
+    // index data
+    entity->meshComponent->indices = (GLuint*)malloc(numIndicies * sizeof(GLuint));
+    if(entity->meshComponent->indices == NULL) {
+        printf("Failed to allocate memory for indices\n");
+        exit(1);
+    }
+    for(int i = 0; i < numIndicies; i++) {
+        entity->meshComponent->indices[i] = indices[i];
+    }
+    entity->meshComponent->indexCount = numIndicies;
+
+    // transform data
+    entity->transformComponent->active = 1;
+    entity->transformComponent->position[0] = position[0];
+    entity->transformComponent->position[1] = position[1];
+    entity->transformComponent->position[2] = position[2];
+    entity->transformComponent->scale[0] = scale[0];
+    entity->transformComponent->scale[1] = scale[1];
+    entity->transformComponent->scale[2] = scale[2];
+    entity->transformComponent->rotation[0] = rotation[0];
+    entity->transformComponent->rotation[1] = rotation[1];
+    entity->transformComponent->rotation[2] = rotation[2];
+    entity->transformComponent->isDirty = 1;
+
+    // material data
+    entity->materialComponent->active = 1;
+    entity->materialComponent->ambient = material->ambient;
+    entity->materialComponent->diffuse = material->diffuse;
+    entity->materialComponent->specular = material->specular;
+    entity->materialComponent->shininess = material->shininess;
+    entity->materialComponent->diffuseMap = material->diffuseMap;
    
     
     setupMesh(  entity->meshComponent->vertices, 
@@ -623,20 +732,28 @@ void createTriangle(int ui,Color diffuse){
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
-void createRectangle(int ui,Color diffuse){
+void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId){
     // vertex data
     GLfloat vertices[] = {
     // positions             // colors              // texture coords
-     0.55f,  0.55f, 0.05f,   1.00f, 0.00f, 0.00f,   1.0f, 1.0f,   // top right       0
+/*      0.55f,  0.55f, 0.05f,   1.00f, 0.00f, 0.00f,   1.0f, 1.0f,   // top right       0
      0.56f, -0.56f, 0.06f,   0.00f, 1.00f, 0.00f,   1.0f, 0.0f,   // bottom right    1
     -0.57f, -0.57f, 0.07f,   0.00f, 0.00f, 1.00f,   0.0f, 0.0f,   // bottom left     2
-    -0.57f,  0.57f, 0.07f,   1.00f, 1.00f, 0.00f,   0.0f, 1.0f    // top left        3
+    -0.57f,  0.57f, 0.07f,   1.00f, 1.00f, 0.00f,   0.0f, 1.0f    // top left        3 */
+           0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
     };
     // index data
-    GLuint indices[] = {
+ /*    GLuint indices[] = {
         1, 2, 0, // first triangle
         2, 3, 0,  // second triangle
-    }; 
+    };  */
+       GLuint indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
     // transform
     vec3 position = {0.0f, 0.0f, 0.0f};
     vec3 scale = {1.0f, 1.0f, 1.0f};
@@ -647,7 +764,25 @@ void createRectangle(int ui,Color diffuse){
    // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess};
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
 
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES);
+}
+
+// -----------------------------------------------------
+// ASSETS
+// -----------------------------------------------------
+/**
+ * @brief Load a texture
+ * Load a texture from file
+*/
+TextureData loadTexture(){
+    int width, height, nrChannels;
+    unsigned char *data = loadImage("awesomeface.png", &width, &height, &nrChannels); 
+    if(data == NULL) {
+        printf(TEXT_COLOR_ERROR "Failed to load texture\n" TEXT_COLOR_RESET);
+        exit(1);
+    }
+
+    return (TextureData){data, width, height, nrChannels};
 }
