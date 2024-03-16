@@ -1,8 +1,6 @@
 #include "opengl.h"
 #include "types.h"
 
-GLuint sceneShaderProgram, uiShaderProgram;
-
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
     
     buffer->drawMode = GL_TRIANGLES;
