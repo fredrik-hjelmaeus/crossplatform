@@ -50,7 +50,7 @@ Dependencies:
 - setup ifdef for emscripten include & emscripten_set_main_loop
 - install live-server
 - compile:
-  - emcc *.c -o index.html -s USE_SDL=2 -s USE_WEBGL2=1 --preload-file shaders/wasm/ -s INITIAL_MEMORY=33554432 -s ALLOW_MEMORY_GROWTH=1
+  - emcc *.c -o index.html -s USE_SDL=2 -s USE_WEBGL2=1 --preload-file shaders/wasm/ -s INITIAL_MEMORY=33554432 -s ALLOW_MEMORY_GROWTH=1 --preload-file container.jpg
 - run:
   - live-server
   

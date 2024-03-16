@@ -45,78 +45,6 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
 }
 
-GLuint tempSetupMaterial(){
-     #ifdef __EMSCRIPTEN__
-        char* vertexShaderSource = loadShaderSource("shaders/wasm/vertex_wasm.glsl");
-        char* fragmentShaderSource = loadShaderSource("shaders/wasm/fragment_wasm.glsl");
-    #else
-        char* vertexShaderSource = loadShaderSource("shaders/vertex.glsl");
-        char* fragmentShaderSource = loadShaderSource("shaders/fragment.glsl");
-    #endif
-
-    if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
-        printf("Error loading shader source\n");
-       // return;
-    }
-
-    printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
-
-    // Compile shaders
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    if(vertexShader == 0) {
-        printf("Error creating vertex shader\n");
-      //  return;
-    }
-    glShaderSource(vertexShader, 1, (const GLchar* const*)&vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // Check for shader compile errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s\n", infoLog);
-    }
-
-    // Fragment shader
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    if(fragmentShader == 0) {
-        printf("Error creating fragment shader\n");
-       // return;
-    }
-    glShaderSource(fragmentShader, 1, (const GLchar* const*)&fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // Check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
-    }
-
-    // free memory of shader sources
-    free(vertexShaderSource);
-    free(fragmentShaderSource);
-
-    GLuint shaderId;
-    // Link shaders
-    shaderId = glCreateProgram();
-    glAttachShader(shaderId, vertexShader);
-    glAttachShader(shaderId, fragmentShader);
-    glLinkProgram(shaderId);
-
-    printf("Shader program: %d\n", shaderId);
-
-    // Check for linking errors
-    glGetProgramiv(shaderId, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderId, 512, NULL, infoLog);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
-    }
-    return shaderId;
-}
-
 void setupMaterial(GpuData* buffer){
      #ifdef __EMSCRIPTEN__
         char* vertexShaderSource = loadShaderSource("shaders/wasm/vertex_wasm.glsl");
@@ -196,7 +124,7 @@ void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,
     glBindTexture(GL_TEXTURE_2D, diffuseMap);
     
     glUseProgram(buffer->shaderProgram);
-   // glUniform1i(glGetUniformLocation(buffer->shaderProgram, "texture1"), 0);
+    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "texture1"), 0);
 
     // Set the color uniform
     GLint colorLocation = glGetUniformLocation(buffer->shaderProgram, "color");
@@ -214,14 +142,30 @@ GLuint setupTexture(TextureData textureData){
     // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+    
+    // Use tightly packed data , this necessary?
+  //   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    
 
     printf("Texture width: %d\n", textureData.width);
     printf("Texture height: %d\n", textureData.height);
     printf("Texture channels: %d\n", textureData.channels);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureData.width, textureData.height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData.data);
+    if(textureData.data == NULL){
+        printf("Error: Texture data is null\n");
+        return 0;
+    }
+    if(textureData.channels < 3){
+        printf("Error: Texture must have at least 3 channels\n");
+        return 0;
+    }
+    if(textureData.channels == 4){
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureData.width, textureData.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data);
+    }
+    if(textureData.channels == 3){
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureData.width, textureData.height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData.data);
+    }
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(textureData.data);
