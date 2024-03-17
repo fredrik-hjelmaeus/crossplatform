@@ -1,5 +1,8 @@
 #include "opengl.h"
 #include "types.h"
+#include "linmath.h"
+#include "globals.h"
+
 
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
     
@@ -121,12 +124,25 @@ void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, diffuseMap);
     
+    // Set shader
     glUseProgram(buffer->shaderProgram);
+
+    // Set texture 1 diffuseMap
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "texture1"), 0);
 
     // Set the color uniform
     GLint colorLocation = glGetUniformLocation(buffer->shaderProgram, "color");
-    glUniform4f(colorLocation, diffuse->r, diffuse->g, diffuse->b, diffuse->a); 
+    glUniform4f(colorLocation, diffuse->r, diffuse->g, diffuse->b, diffuse->a);
+
+    // create transformations
+    mat4x4 transform;
+    mat4x4_identity(transform);
+    mat4x4_translate_in_place(transform, 0.5f, -0.5f, 0.0f);
+    mat4x4_rotate_Z(transform, transform, globals.delta_time);
+
+    // get matrix's uniform location and set matrix
+    unsigned int transformLoc = glGetUniformLocation(buffer->shaderProgram, "transform");
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (const GLfloat*)transform);
 
     glBindVertexArray(buffer->VAO);
     glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);

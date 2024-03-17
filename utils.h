@@ -25,6 +25,10 @@ unsigned char* loadImage(const char* filename, int* width, int* height, int* nrC
         } \
     } while(0)
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #endif // End of the UTILS_H definition
 
 

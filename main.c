@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 
+#include "globals.h"
 #include "opengl.h"
 #include "utils.h"
 #include <time.h>
@@ -38,12 +39,13 @@
 // Prototypes
 void createTriangle(int ui,Color diffuse);
 void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId);
+//void translateObject();
 TextureData loadTexture();
 
 //------------------------------------------------------
 // Global variables
 //------------------------------------------------------
- struct Globals {
+ /* struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Event event;
@@ -54,7 +56,7 @@ TextureData loadTexture();
     float delta_time;
     GLenum overideDrawMode;
     int overrideDrawModeBool;
-}; 
+}; */ 
 struct Globals globals = {
     .window=NULL,
     .renderer=NULL,
@@ -446,7 +448,7 @@ void initScene(){
     createRectangle(VIEWPORT_UI,red,diffuseTextureId);
     //createTriangle(0, red);
    
-   
+   //translateObject();
 
     
 }
@@ -650,6 +652,52 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId){
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
 
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES);
+}
+
+void translateObject(){
+    // ref: https://learnopengl.com/Getting-started/Transformations
+
+    // movement we want to apply to the object
+   // vec4 vec = {1.0f, 0.0f, 0.0f, 1.0f};
+   // vec4 result;
+
+    // Matrix initialized, but with garbage values still.
+  //  mat4x4 translation;
+
+    // Set Matrix values to be the identity matrix.
+    // If we do not initialize it to the identity matrix 
+    // the matrix would be a null matrix (all elements 0) and all 
+    // subsequent matrix operations would end up a null matrix as well. 
+    //mat4x4_identity(translation);
+
+    // Set the translation matrix
+  //  mat4x4_translate_in_place(translation, 1.0f, 1.0f, 0.0f);
+
+   // mat4x4_mul_vec4(result, translation, vec);
+
+    // Rotate 90 degrees around the Z axis
+                    // output    // input     // rotation change
+ //  mat4x4_rotate_Z(translation, translation, M_PI / 2);
+
+    // Scale by 0.5 in all axes
+   // mat4x4_scale_aniso(translation, translation, 0.5f, 0.5f, 0.5f);
+
+
+    // print the vector
+    //printf("%f %f %f %f\n", result[0], result[1], result[2], result[3]);
+
+    // print the matrix
+ /*    printf("Translation matrix:\n");
+    for(int i = 0; i < 4; i++) {
+        for(int j = 0; j < 4; j++) {
+            printf("%f ", translation[i][j]);
+        }
+        printf("\n");
+    } */
+
+
+
+    return;
 }
 
 // -----------------------------------------------------
