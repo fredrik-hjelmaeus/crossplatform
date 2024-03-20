@@ -11,6 +11,12 @@ typedef struct View {
     int height;
 } View;
 
+typedef struct Views {
+    View main;
+    View ui;
+    View full;
+} Views;
+
 enum Viewport {
     VIEWPORT_MAIN = 0,
     VIEWPORT_UI = 1

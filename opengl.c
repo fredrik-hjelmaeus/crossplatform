@@ -135,15 +135,34 @@ void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,
     glUniform4f(colorLocation, diffuse->r, diffuse->g, diffuse->b, diffuse->a);
 
     // create transformations
-    mat4x4 transform;
-    mat4x4_identity(transform);
-    mat4x4_translate_in_place(transform, 0.5f, -0.5f, 0.0f);
-    mat4x4_rotate_Z(transform, transform, globals.delta_time);
+    mat4x4 model;
+    mat4x4_identity(model);
+    mat4x4 view;
+    mat4x4_identity(view);
+    mat4x4 projection;
+    mat4x4_identity(projection);
+    // rotate model
+    float degrees = -55.0f;
+    float radians = degrees * M_PI / 180.0f;
+    mat4x4_rotate(model, model, 1.0f,0.0f,0.0f, radians);
+    // translate view
+    mat4x4_translate(view, 0.0f, 0.0f, -3.0f);
+    // perspective projection
+    mat4x4_perspective(projection, 45.0f, globals.views.main.width / globals.views.main.height, 0.1f, 100.0f);
+    
+    // retrieve the matrix uniform locations
+    unsigned int modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
+    unsigned int viewLoc  = glGetUniformLocation(buffer->shaderProgram, "view");
 
-    // get matrix's uniform location and set matrix
-    unsigned int transformLoc = glGetUniformLocation(buffer->shaderProgram, "transform");
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (const GLfloat*)transform);
+    // pass them to the shaders 
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &model[0][0]);
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
 
+    // note: currently we set the projection matrix each frame,
+    // but since the projection matrix rarely changes it's often best practice
+    // to set it outside the main loop only once.
+    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);
+        
     glBindVertexArray(buffer->VAO);
     glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);
     glBindVertexArray(0);

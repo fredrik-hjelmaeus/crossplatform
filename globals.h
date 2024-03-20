@@ -4,9 +4,6 @@
 #include <SDL2/SDL.h>
 #include "opengl.h"
 #include "types.h"
-
-//struct Entity; // Forward declaration, replace with actual definition if needed
-
 struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -18,6 +15,7 @@ struct Globals {
     float delta_time;
     GLenum overideDrawMode;
     int overrideDrawModeBool;
+    Views views;
 };
 
 extern struct Globals globals;
