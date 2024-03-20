@@ -54,6 +54,7 @@ typedef struct GpuData {
     GLuint EBO;
     GLuint shaderProgram;
     GLuint numIndicies;
+    GLuint vertexCount;
     GLenum drawMode;
 } GpuData;
 

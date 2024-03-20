@@ -5,7 +5,7 @@
 
 
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
-    
+
     buffer->drawMode = GL_TRIANGLES;
     buffer->numIndicies = indexCount;
     glGenVertexArrays(1, &(buffer->VAO));
@@ -142,7 +142,7 @@ void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,
     mat4x4 projection;
     mat4x4_identity(projection);
     // rotate model
-    float degrees = -55.0f;
+    float degrees = -25.0f;
     float radians = degrees * M_PI / 180.0f;
     mat4x4_rotate(model, model, 1.0f,0.0f,0.0f, radians);
     // translate view
@@ -164,7 +164,11 @@ void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,
     glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);
         
     glBindVertexArray(buffer->VAO);
-    glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);
+    if(buffer->numIndicies != 0) {
+        glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);
+    }else {
+        glDrawArrays(buffer->drawMode, 0, buffer->vertexCount);
+    }
     glBindVertexArray(0);
 }
 

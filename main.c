@@ -39,6 +39,7 @@
 // Prototypes
 void createTriangle(int ui,Color diffuse);
 void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId);
+void createCube(int ui,Color diffuse,GLuint diffuseTextureId);
 TextureData loadTexture();
 
 //------------------------------------------------------
@@ -333,7 +334,7 @@ void update(){
 void render(){
 
     // Clear the entire window
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Render without ui on wasm
     #ifdef __EMSCRIPTEN__
@@ -400,7 +401,7 @@ void initOpenGLWindow(){
       printf("Failed to create OpenGL context: %s\n", SDL_GetError());
       exit(1);
    }
-   
+   glEnable(GL_DEPTH_TEST);
    printf("OpenGL context created!\n");
 }
 
@@ -429,8 +430,9 @@ void initScene(){
     GLuint diffuseTextureId = setupTexture(textureData);
     
     // 3d scene objects creation
-    createRectangle(VIEWPORT_MAIN,blue,diffuseTextureId);
-    createRectangle(VIEWPORT_UI,red,diffuseTextureId);
+   // createRectangle(VIEWPORT_MAIN,blue,diffuseTextureId);
+    //createRectangle(VIEWPORT_UI,red,diffuseTextureId);
+    createCube(VIEWPORT_MAIN,green,diffuseTextureId);
       
 }
 
@@ -510,18 +512,38 @@ void createMesh(
     
     int stride = 8;
     int vertexIndex = 0;
-    for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+
+    // We have two types of vertex data, one with color and one without.
+    // If it the type without, we are also drawing without indices.
+    if(numIndicies == 0) {
+        stride = 5;
+         for(int i = 0; i < num_of_vertex * stride; i+=stride) {
         entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
         entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
         entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
-        entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3]; 
-        entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
-        entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
-        entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
-        entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+
+        entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 3];
+        entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 4];
         vertexIndex++;
+        } 
+    }else {
+
+        // indexed data with color
+        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
+            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
+            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3]; 
+            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
+            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
+            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+            vertexIndex++;
+        }
     }
+    
     entity->meshComponent->vertexCount = num_of_vertex;
+    entity->meshComponent->gpuData->vertexCount = num_of_vertex;
 
     // index data
     entity->meshComponent->indices = (GLuint*)malloc(numIndicies * sizeof(GLuint));
@@ -615,7 +637,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId){
     -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left  
     };
-    // index data
+    // index data (counterclockwise)
     GLuint indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3  // second triangle
@@ -633,6 +655,89 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId){
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
 
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES);
+}
+/**
+ * @brief Create a Cube
+ * Create a Cube mesh
+ * @param ui - 1 for ui, 0 for 3d scene
+ * @param diffuse - color of the cube
+*/
+void createCube(int ui,Color diffuse,GLuint diffuseTextureId){
+    // vertex data
+    GLfloat vertices[] = {
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+};
+    // index data
+    GLuint indices[] = {
+        // front and back
+        0, 3, 2,
+        2, 1, 0,
+        4, 5, 6,
+        6, 7 ,4,
+        // left and right
+        11, 8, 9,
+        9, 10, 11,
+        12, 13, 14,
+        14, 15, 12,
+        // bottom and top
+        16, 17, 18,
+        18, 19, 16,
+        20, 21, 22,
+        22, 23, 20
+    };
+    // transform
+    vec3 position = {0.0f, 0.0f, 0.0f};
+    vec3 scale = {1.0f, 1.0f, 1.0f};
+    vec3 rotation = {0.0f, 0.0f, 0.0f};
+
+    //material
+    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
+   // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
+    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
+    GLfloat shininess = 32.0f;
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
+
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES);
 }
 
 // -----------------------------------------------------
