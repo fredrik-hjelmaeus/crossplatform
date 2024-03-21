@@ -128,6 +128,15 @@ typedef struct Entity {
     UIComponent* uiComponent;
 } Entity;
 
+typedef struct Camera {
+    vec3 position;
+    vec3 front;
+    vec3 up;
+    vec3 target;
+    mat4x4 view;
+    mat4x4 projection;
+    float speed;
+} Camera;
 
 
 

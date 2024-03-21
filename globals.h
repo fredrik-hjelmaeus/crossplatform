@@ -16,6 +16,7 @@ struct Globals {
     GLenum overideDrawMode;
     int overrideDrawModeBool;
     Views views;
+    Camera camera;
 };
 
 extern struct Globals globals;

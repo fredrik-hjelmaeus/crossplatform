@@ -134,19 +134,57 @@ void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,
     GLint colorLocation = glGetUniformLocation(buffer->shaderProgram, "color");
     glUniform4f(colorLocation, diffuse->r, diffuse->g, diffuse->b, diffuse->a);
 
+    // create view/camera transformation
+    mat4x4 view;
+    mat4x4_identity(view);
+ /*    float radius = 3.0f; // camera rotation radius
+    float camX = (float)sin(globals.delta_time) * radius; // camera rotation x
+    float camY = 0.0f;
+    float camZ = (float)cos(globals.delta_time) * radius; */
+   // globals.camera.position = (vec3){0.0f, 0.0f, 3.0f};
+  //const float cameraSpeed = 0.05f; // adjust accordingly
+    //if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+
+    // multiply camera speed float by camera front vector
+    
+/* globals.camera.position[0] += globals.camera.speed * globals.camera.front[0];
+globals.camera.position[1] += globals.camera.speed * globals.camera.front[1];
+globals.camera.position[2] += globals.camera.speed * globals.camera.front[2]; */
+
+
+
+        
+    // eye / position
+    //vec3 cameraPosition = {0.0f, 0.0f, 3.0f};
+    // target / center
+    //vec3 cameraFront = {0.0f, 0.0f, -1.0f};
+    globals.camera.target[0] = globals.camera.position[0] + globals.camera.front[0];
+    globals.camera.target[1] = globals.camera.position[1] + globals.camera.front[1];
+    globals.camera.target[2] = globals.camera.position[2] + globals.camera.front[2];
+ /*    target[0] = cameraPosition[0] + cameraFront[0];
+    target[1] = cameraPosition[1] + cameraFront[1];
+    target[2] = cameraPosition[2] + cameraFront[2]; */
+    // camera up
+    //vec3 cameraUp = {0.0f, 1.0f, 0.0f};
+    mat4x4_look_at(view, globals.camera.position, globals.camera.target, globals.camera.up);
+    
+    // assign to globals
+   /*  globals.camera.position[0] = cameraPosition[0];
+    globals.camera.position[1] = cameraPosition[1];
+    globals.camera.position[2] = cameraPosition[2]; */
+    
+      
     // create transformations
     mat4x4 model;
     mat4x4_identity(model);
-    mat4x4 view;
-    mat4x4_identity(view);
     mat4x4 projection;
     mat4x4_identity(projection);
     // rotate model
-    float degrees = -25.0f;
+    float degrees = 0.0f * globals.delta_time;
     float radians = degrees * M_PI / 180.0f;
     mat4x4_rotate(model, model, 1.0f,0.0f,0.0f, radians);
     // translate view
-    mat4x4_translate(view, 0.0f, 0.0f, -3.0f);
+   // mat4x4_translate(view, 0.0f, 0.0f, -300.0f);
     // perspective projection
     mat4x4_perspective(projection, 45.0f, globals.views.main.width / globals.views.main.height, 0.1f, 100.0f);
     

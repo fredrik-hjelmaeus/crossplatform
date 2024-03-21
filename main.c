@@ -60,9 +60,16 @@ struct Globals globals = {
         .main={0, 200, 800, 400},
         .ui={0, 0, 800, 200},
         .full={0, 0, 800, 600}
+    },
+    .camera = {
+        .position = {0.0f, 0.0f, 3.0f},
+        .front = {0.0f, 0.0f, -1.0f},
+        .up = {0.0f, 1.0f, 0.0f},
+        .target = {0.0f, 0.0f, 0.0f},
+        .speed = 0.1f,
     }
 };
-
+  
 // Colors
 Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
 Color red = {1.0f, 0.0f, 0.0f, 1.0f};
@@ -304,6 +311,16 @@ void input() {
                     SDL_SetWindowFullscreen(globals.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
                 }
             }
+            if(strcmp(key, "W") == 0){
+                globals.camera.position[0] += globals.camera.speed * globals.camera.front[0];
+                globals.camera.position[1] += globals.camera.speed * globals.camera.front[1];
+                globals.camera.position[2] += globals.camera.speed * globals.camera.front[2];
+            }
+            if(strcmp(key, "S") == 0){
+                globals.camera.position[0] -= globals.camera.speed * globals.camera.front[0];
+                globals.camera.position[1] -= globals.camera.speed * globals.camera.front[1];
+                globals.camera.position[2] -= globals.camera.speed * globals.camera.front[2];
+            }
         }
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
@@ -433,6 +450,7 @@ void initScene(){
    // createRectangle(VIEWPORT_MAIN,blue,diffuseTextureId);
     //createRectangle(VIEWPORT_UI,red,diffuseTextureId);
     createCube(VIEWPORT_MAIN,green,diffuseTextureId);
+    createCube(VIEWPORT_UI,red,diffuseTextureId);
       
 }
 
