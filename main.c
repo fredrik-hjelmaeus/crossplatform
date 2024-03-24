@@ -321,6 +321,51 @@ void input() {
                 globals.camera.position[1] -= globals.camera.speed * globals.camera.front[1];
                 globals.camera.position[2] -= globals.camera.speed * globals.camera.front[2];
             }
+            if(strcmp(key, "A") == 0){
+
+                // Do a cross product to get the right vector for strafing
+
+                // allocate memory for calculation.
+                float newPos[3];
+                float crossProduct[3];
+
+                // copy position into newPos
+                memcpy(newPos, globals.camera.position, sizeof(newPos));
+
+                // cross product
+                vec3_mul_cross(crossProduct, globals.camera.front, globals.camera.up);
+
+                // normalize
+                vec3_norm(newPos, crossProduct);
+
+                // move & assign new position
+                globals.camera.position[0] -= globals.camera.speed * newPos[0];
+                globals.camera.position[1] -= globals.camera.speed * newPos[1];
+                globals.camera.position[2] -= globals.camera.speed * newPos[2];
+        
+            }
+            if(strcmp(key, "D") == 0){
+
+                // Do a cross product to get the right vector for strafing
+
+                // allocate memory for calculation.
+                float newPos[3];
+                float crossProduct[3];
+
+                // copy position into newPos
+                memcpy(newPos, globals.camera.position, sizeof(newPos));
+
+                // cross product
+                vec3_mul_cross(crossProduct, globals.camera.front, globals.camera.up);
+
+                // normalize
+                vec3_norm(newPos, crossProduct);
+
+                // move & assign new position
+                globals.camera.position[0] += globals.camera.speed * newPos[0];
+                globals.camera.position[1] += globals.camera.speed * newPos[1];
+                globals.camera.position[2] += globals.camera.speed * newPos[2];
+            }
         }
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
