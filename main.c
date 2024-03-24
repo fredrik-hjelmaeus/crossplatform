@@ -312,14 +312,14 @@ void input() {
                 }
             }
             if(strcmp(key, "W") == 0){
-                globals.camera.position[0] += globals.camera.speed * globals.camera.front[0];
-                globals.camera.position[1] += globals.camera.speed * globals.camera.front[1];
-                globals.camera.position[2] += globals.camera.speed * globals.camera.front[2];
+                globals.camera.position[0] += globals.camera.speed * globals.delta_time * globals.camera.front[0];
+                globals.camera.position[1] += globals.camera.speed * globals.delta_time * globals.camera.front[1];
+                globals.camera.position[2] += globals.camera.speed * globals.delta_time * globals.camera.front[2];
             }
             if(strcmp(key, "S") == 0){
-                globals.camera.position[0] -= globals.camera.speed * globals.camera.front[0];
-                globals.camera.position[1] -= globals.camera.speed * globals.camera.front[1];
-                globals.camera.position[2] -= globals.camera.speed * globals.camera.front[2];
+                globals.camera.position[0] -= globals.camera.speed * globals.delta_time * globals.camera.front[0];
+                globals.camera.position[1] -= globals.camera.speed * globals.delta_time * globals.camera.front[1];
+                globals.camera.position[2] -= globals.camera.speed * globals.delta_time * globals.camera.front[2];
             }
             if(strcmp(key, "A") == 0){
 
@@ -339,9 +339,9 @@ void input() {
                 vec3_norm(newPos, crossProduct);
 
                 // move & assign new position
-                globals.camera.position[0] -= globals.camera.speed * newPos[0];
-                globals.camera.position[1] -= globals.camera.speed * newPos[1];
-                globals.camera.position[2] -= globals.camera.speed * newPos[2];
+                globals.camera.position[0] -= globals.camera.speed * globals.delta_time * newPos[0];
+                globals.camera.position[1] -= globals.camera.speed * globals.delta_time * newPos[1];
+                globals.camera.position[2] -= globals.camera.speed * globals.delta_time * newPos[2];
         
             }
             if(strcmp(key, "D") == 0){
@@ -362,9 +362,9 @@ void input() {
                 vec3_norm(newPos, crossProduct);
 
                 // move & assign new position
-                globals.camera.position[0] += globals.camera.speed * newPos[0];
-                globals.camera.position[1] += globals.camera.speed * newPos[1];
-                globals.camera.position[2] += globals.camera.speed * newPos[2];
+                globals.camera.position[0] += globals.camera.speed * globals.delta_time * newPos[0];
+                globals.camera.position[1] += globals.camera.speed * globals.delta_time * newPos[1];
+                globals.camera.position[2] += globals.camera.speed * globals.delta_time * newPos[2];
             }
         }
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
