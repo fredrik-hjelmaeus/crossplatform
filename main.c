@@ -67,7 +67,8 @@ struct Globals globals = {
         .up = {0.0f, 1.0f, 0.0f},
         .target = {0.0f, 0.0f, 0.0f},
         .speed = 0.1f,
-    }
+    },
+    .firstMouse=1,
 };
   
 // Colors
@@ -288,6 +289,35 @@ void initProgram(){
     initECS();
 }
 
+/*
+* @brief Calculate the front vector of the camera & assign it to the global camera struct
+*/
+void calcCameraFront(float xpos, float ypos){
+            float yaw = -90.0f;
+            float pitch = 0.0f;
+            float lastX = 400, lastY = 300;
+            float xoffset = xpos - lastX;
+            float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
+
+            const float sensitivity = 0.1f;
+            xoffset *= sensitivity;
+            yoffset *= sensitivity;
+
+            yaw   += xoffset;
+            pitch += yoffset; 
+
+            if(pitch > 89.0f)
+                pitch =  89.0f;
+            if(pitch < -89.0f)
+                pitch = -89.0f;
+
+            vec3 direction;
+            direction[0] = cos(deg2rad(yaw)) * cos(deg2rad(pitch));
+            direction[1] = sin(deg2rad(pitch));
+            direction[2] = sin(deg2rad(yaw)) * cos(deg2rad(pitch));
+            vec3_norm(globals.camera.front, direction);
+}
+
 void input() {
     // Process events
     while(pollEvent()) {
@@ -373,6 +403,32 @@ void input() {
             printf("New Window size: %d x %d\n", w, h);
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
             glViewport(0, 0, w / 2, h);
+        }
+        if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
+            printf("Mouse button pressed\n");
+            // A button was pressed
+            if (globals.event.button.button == SDL_BUTTON_LEFT) {
+                // Left Button Pressed
+                printf("Left button pressed\n");
+            } else if (globals.event.button.button == SDL_BUTTON_RIGHT) {
+                // Left Button Released
+                printf("Right button pressed\n");
+            }
+        }  
+        if (globals.event.type == SDL_MOUSEBUTTONUP) {
+            // A button was released
+            printf("Mouse button released\n");
+        }
+        if (globals.event.type == SDL_MOUSEMOTION) {
+            int xpos =  globals.event.motion.x;
+            int ypos = globals.event.motion.y;
+            printf("Mouse moved to %d, %d\n", xpos, ypos);
+            // mouse move in ndc coordinates
+            float x_ndc = (2.0f * xpos) / width - 1.0f;
+            float y_ndc = 1.0f - (2.0f * ypos) / height;
+            printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
+
+            calcCameraFront(xpos, ypos);
         }
     }
 }

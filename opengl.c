@@ -182,7 +182,10 @@ globals.camera.position[2] += globals.camera.speed * globals.camera.front[2]; */
     // rotate model
     float degrees = 0.0f * globals.delta_time;
     float radians = degrees * M_PI / 180.0f;
-    mat4x4_rotate(model, model, 1.0f,0.0f,0.0f, radians);
+    mat4x4 rotatedModel;
+    // The cast on model tells the compiler that you're aware of the 
+    // const requirement and that you're promising not to modify the model matrix.
+    mat4x4_rotate(rotatedModel, (const float (*)[4])model, 1.0f,0.0f,0.0f, radians);
     // translate view
    // mat4x4_translate(view, 0.0f, 0.0f, -300.0f);
     // perspective projection
@@ -193,7 +196,7 @@ globals.camera.position[2] += globals.camera.speed * globals.camera.front[2]; */
     unsigned int viewLoc  = glGetUniformLocation(buffer->shaderProgram, "view");
 
     // pass them to the shaders 
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &model[0][0]);
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &rotatedModel[0][0]);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
 
     // note: currently we set the projection matrix each frame,

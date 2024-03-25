@@ -60,3 +60,6 @@ unsigned char* loadImage(const char* filename, int* width, int* height, int* nrC
     return result;
 }
 
+float deg2rad(float degrees) {
+    return degrees * M_PI / 180.0;
+}

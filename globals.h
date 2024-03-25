@@ -17,6 +17,7 @@ struct Globals {
     int overrideDrawModeBool;
     Views views;
     Camera camera;
+    int firstMouse;
 };
 
 extern struct Globals globals;

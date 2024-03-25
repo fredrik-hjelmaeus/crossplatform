@@ -29,6 +29,10 @@ unsigned char* loadImage(const char* filename, int* width, int* height, int* nrC
 #define M_PI 3.14159265358979323846
 #endif
 
+
+
+float deg2rad(float degrees);
+
 #endif // End of the UTILS_H definition
 
 
