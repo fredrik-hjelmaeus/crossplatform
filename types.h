@@ -142,4 +142,7 @@ typedef struct Camera {
 
 
 
+
+
+
 #endif // TYPES_H

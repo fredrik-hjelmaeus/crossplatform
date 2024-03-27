@@ -1,6 +1,6 @@
 #include "utils.h"
 
-char* loadShaderSource(const char *filename) {
+char* readFile(const char *filename) {
 
     FILE *fp;
 
@@ -62,4 +62,54 @@ unsigned char* loadImage(const char* filename, int* width, int* height, int* nrC
 
 float deg2rad(float degrees) {
     return degrees * M_PI / 180.0;
+}
+
+void loadObjFile(const char *filepath)
+{
+//    vec3 vertex;
+    char* objFile = readFile(filepath);
+    int skip = 0;
+    int vertexRead = 0;
+    int i;
+    for(i = 0; i < strlen(objFile); i++) {
+
+        // Skip looks for the end of the line \n (10)
+        if(skip == 1){
+            if((int)objFile[i] == 10){
+                skip = 0;
+            }
+            continue;
+        }
+
+        // Comment starts with # (35), activates skip.
+        if((int)objFile[i] == 35){
+            skip = 1;
+            continue;
+        }
+
+        // VERTEX
+        // A vertex is specified via a line starting with the letter v. 
+        // That is followed by (x,y,z[,w]) coordinates. W is optional and defaults to 1.0. 
+        // A right-hand coordinate system is used to specify the coordinate locations. 
+        // Some applications support vertex colors, by putting red, green and 
+        // blue values after x y and z (this precludes specifying w). 
+        // The color values range from 0 to 1.
+        if((int)objFile[i] == 118){
+            vertexRead = 1;
+            continue;
+        }
+        if(vertexRead > 0){
+            if((int)objFile[i] == 10){
+                vertexRead = 0;
+                continue;
+            }
+            if(vertexRead == 1){
+                
+             //   vertex.position.x = atof(&objFile[i]);
+            }
+        }
+
+        printf("%c ", objFile[i]);
+    }
+    printf("\n");
 }

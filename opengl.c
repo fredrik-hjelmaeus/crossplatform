@@ -48,18 +48,18 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
 void setupMaterial(GpuData* buffer){
      #ifdef __EMSCRIPTEN__
-        char* vertexShaderSource = loadShaderSource("shaders/wasm/vertex_wasm.glsl");
-        char* fragmentShaderSource = loadShaderSource("shaders/wasm/fragment_wasm.glsl");
+        char* vertexShaderSource = readFile("shaders/wasm/vertex_wasm.glsl");
+        char* fragmentShaderSource = readFile("shaders/wasm/fragment_wasm.glsl");
     #else
-        char* vertexShaderSource = loadShaderSource("shaders/vertex.glsl");
-        char* fragmentShaderSource = loadShaderSource("shaders/fragment.glsl");
+        char* vertexShaderSource = readFile("shaders/vertex.glsl");
+        char* fragmentShaderSource = readFile("shaders/fragment.glsl");
     #endif
 
     if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
         printf("Error loading shader source\n");
         return;
     }
-
+    loadObjFile("test.obj");
     printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
 
     // Compile shaders

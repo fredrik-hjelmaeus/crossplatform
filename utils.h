@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "stb_image.h"
+#include <string.h>
+
 
 
 // Text output colors
@@ -11,7 +13,7 @@
 #define TEXT_COLOR_WARNING   "\x1b[33m"
 #define TEXT_COLOR_RESET     "\x1b[0m"
 
-char* loadShaderSource(const char *filename);
+char* readFile(const char *filename);
 int randInt(int rmin, int rmax);
 float randFloat(float rmin, float rmax);
 unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
@@ -30,8 +32,14 @@ unsigned char* loadImage(const char* filename, int* width, int* height, int* nrC
 #endif
 
 
-
 float deg2rad(float degrees);
+/* typedef struct ObjFile {
+    Vertex* vertices;
+    size_t vertexCount;
+    unsigned int* indices;
+    size_t indexCount;
+} ObjFile; */
+void loadObjFile(const char* filepath);
 
 #endif // End of the UTILS_H definition
 
