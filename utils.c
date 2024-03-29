@@ -66,26 +66,52 @@ float deg2rad(float degrees) {
 
 void loadObjFile(const char *filepath)
 {
-//    vec3 vertex;
-    char* objFile = readFile(filepath);
-    int skip = 0;
+    //Vertex* vertices = NULL;
     int vertexRead = 0;
-    int i;
-    for(i = 0; i < strlen(objFile); i++) {
+    char material[100];
 
-        // Skip looks for the end of the line \n (10)
-        if(skip == 1){
-            if((int)objFile[i] == 10){
-                skip = 0;
+    FILE* fp;
+    char line[1024];
+
+    fp = fopen(filepath, "r");
+    if(fp == NULL) {
+        printf(TEXT_COLOR_ERROR "Error opening file %s" TEXT_COLOR_RESET "\n", filepath);
+        return;
+    }
+    
+    while (fgets(line, sizeof line, fp) != NULL){
+
+        // comment
+        if((int)line[0] == 35){
+           // printf("found comment \n");
+            continue;
+        }
+        // newline
+        if((int)line[0] == 10){
+           // printf("found new line \n");
+            continue;
+        }
+        // m, check for mtllib
+        if((int)line[0] == 109){
+            if(strncmp(line, "mtllib", 6) == 0){
+               // printf("found material \n");
+                for(int i = 7; i < strlen(line); i++){
+                   // printf("%c", line[i] , "\n");
+                    material[i-7] = line[i];
+                }
             }
             continue;
         }
+      
+        printf("%d %c \n", (int)line[0], line[0]);
+      //  printf(TEXT_COLOR_WARNING "unparsed lines: %s",TEXT_COLOR_RESET , line);
+    }
 
-        // Comment starts with # (35), activates skip.
-        if((int)objFile[i] == 35){
-            skip = 1;
-            continue;
-        }
+   
+
+        
+
+       
 
         // VERTEX
         // A vertex is specified via a line starting with the letter v. 
@@ -94,7 +120,7 @@ void loadObjFile(const char *filepath)
         // Some applications support vertex colors, by putting red, green and 
         // blue values after x y and z (this precludes specifying w). 
         // The color values range from 0 to 1.
-        if((int)objFile[i] == 118){
+        /* if((int)objFile[i] == 118){
             vertexRead = 1;
             continue;
         }
@@ -104,12 +130,13 @@ void loadObjFile(const char *filepath)
                 continue;
             }
             if(vertexRead == 1){
-                
-             //   vertex.position.x = atof(&objFile[i]);
+                Vertex vertex {
+                    .position = {0.0f, 0.0f, 0.0f},
+                    .color = {0.0f, 0.0f, 0.0f},
+                    .texcoord = {0.0f, 0.0f}
+                }
             }
-        }
-
-        printf("%c ", objFile[i]);
-    }
+        } */
+printf("material: %s \n",material);
     printf("\n");
 }

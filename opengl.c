@@ -59,7 +59,7 @@ void setupMaterial(GpuData* buffer){
         printf("Error loading shader source\n");
         return;
     }
-    loadObjFile("test.obj");
+    
     printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
 
     // Compile shaders

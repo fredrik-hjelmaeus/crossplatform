@@ -556,6 +556,8 @@ void initScene(){
 }
 
 int main(int argc, char **argv) {
+    loadObjFile("test.obj");
+    return 0;
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
     

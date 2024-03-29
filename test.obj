@@ -1,5 +1,24 @@
-hello from obj file
-# test two 10 asdasdad 
-line 3 here 
-line 4 here
-v 1 2 3
+# Alias OBJ Model File
+# Exported from SketchUp, (c) 2000-2012 Trimble Navigation Limited
+# File units = meters
+
+mtllib chassie.mtl
+
+g Mesh1 Group1 Model
+
+usemtl Color_F06
+v -3.47836 0 -2.22045e-15
+vt 0 82.4724
+vn 0 -1 -0
+v -3.47836 0 -1.0848
+vt 0 39.7638
+v 3.47836 0 -2.22045e-15
+vt -273.886 82.4724
+f 1/1/1 2/2/1 3/3/1
+
+vt -82.4724 0
+vn -1 0 -0
+v -3.47836 0.61 -1.77636e-15
+vt -82.4724 24.0157
+vt -39.7638 0
+f 1/4/2 4/5/2 2/6/2

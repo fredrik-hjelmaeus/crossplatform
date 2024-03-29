@@ -5,8 +5,7 @@
 #include <stdlib.h>
 #include "stb_image.h"
 #include <string.h>
-
-
+//#include "types.h"
 
 // Text output colors
 #define TEXT_COLOR_ERROR     "\x1b[31m"
