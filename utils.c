@@ -64,6 +64,11 @@ float deg2rad(float degrees) {
     return degrees * M_PI / 180.0;
 }
 
+// Support for up to 300 vertices only!. No indicies created.
+// Collects vertices position(vArr),uv/texcoords(tArr) , vertex indices(vf) ,texture indices(tf).
+// Then uses these and creates a new vertex data 
+// line looking like this: x, y ,z, u ,v
+// Number of lines is based on the number f-lines in obj. And every f line has 3 vertex. So 3 * f-lines is the new vertex data.
 // obj specification: https://paulbourke.net/dataformats/obj/
 ObjData loadObjFile(const char *filepath)
 {
@@ -93,16 +98,13 @@ ObjData loadObjFile(const char *filepath)
     }
     
     while (fgets(line, sizeof line, fp) != NULL){
-   // printf("%c ",line[0]);
    
         // comment
         if((int)line[0] == 35){
-         //   printf("comment\n");
             continue;
         }
         // newline
         if((int)line[0] == 10){
-         //   printf("newline\n");
             continue;
         }
         // m, check for mtllib
@@ -112,7 +114,6 @@ ObjData loadObjFile(const char *filepath)
                     material[i-7] = line[i];
                 }
             }
-          //  printf("mtllib\n");
             continue;
         }
         // g, grouping, read in the groups
@@ -120,7 +121,6 @@ ObjData loadObjFile(const char *filepath)
             for(int i = 2; i < strlen(line); i++){
                 group[i-2] = line[i];
             }
-         //   printf("group\n");
             continue;
         }
         // u, check for usemtl
@@ -131,7 +131,6 @@ ObjData loadObjFile(const char *filepath)
                 }
                 usemtl[strlen(line)-7] = '\0'; // Null terminate usemtl
             }
-         //   printf("material\n");
             continue;
         }
         // v: v & space(32), read vertices
@@ -148,57 +147,44 @@ ObjData loadObjFile(const char *filepath)
             token = strtok(NULL, " ");
             tArr[uvCount+1] = strtof(token, NULL);
             uvCount+=2;
-         //   printf("texcoords\n");
             continue;
         }
         // vn: v & n, read normals
         if((int)line[0] == 118 && (int)line[1] == 110){
             normalCount++;
-          //  printf("normal\n");
-          //  sscanf(line, "vn %f %f %f", &vertex.normal[0],&vertex.normal[1],&vertex.normal[2]);
             continue;
         }
-        // f: face indicies
+        // f: face indicies, ex: f 1/1/1 2/2/2 3/3/3 
         if((int)line[0] == 102){
            faceLineCount++;
-        //   printf("%s ",line);
            char *facetoken = strtok(line, " /"); // f
            facetoken = strtok(NULL, " /"); // v1
            int facetokenInt = atoi(facetoken);
-        //   printf("vInd1: %d ",facetokenInt);
            vf[vfCount] = facetokenInt;
            vfCount++;
            facetoken = strtok(NULL, " /");
            int facetokentInt = atoi(facetoken);
            tf[tfCount] = facetokentInt;
            tfCount++;
-         //  printf("tInd1 %s ",facetoken);
            facetoken = strtok(NULL, " /");
-         //  printf("nInd1 %s ",facetoken);
            facetoken = strtok(NULL, " /"); // v2
            int facetokenInt2 = atoi(facetoken);
-         //  printf("vInd2: %d ",facetokenInt2);
            vf[vfCount] = facetokenInt2;
            vfCount++;
-         //  printf("indicesCount %d ",vIndicesCount);
            facetoken = strtok(NULL, " /");
            int facetokentInt2 = atoi(facetoken);
            tf[tfCount] = facetokentInt2;
            tfCount++;
-        //   printf("tInd2 %s ",facetoken);
            facetoken = strtok(NULL, " /");
-        //   printf("nInd2 %s ",facetoken);
            facetoken = strtok(NULL, " /");
            int facetokenInt3 = atoi(facetoken);
-       //    printf("vInd3: %d ",facetokenInt3);
            vf[vfCount] = facetokenInt3;
            vfCount++;
            facetoken = strtok(NULL, " /");
            int facetokentInt3 = atoi(facetoken);
            tf[tfCount] = facetokentInt3;
            tfCount++;
-     
-            continue;
+           continue;
         }
   
     }

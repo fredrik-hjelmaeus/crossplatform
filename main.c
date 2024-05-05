@@ -609,15 +609,15 @@ int main(int argc, char **argv) {
 void createMesh(
     GLfloat* verts,
     GLuint num_of_vertex, 
-    GLuint* indices,
-    GLuint numIndicies,
+    GLuint* indices, // atm plug in some dummy-data if not used.
+    GLuint numIndicies, // atm just set to 0 if not used.
     vec3 position,
     vec3 scale,
     vec3 rotation,
     Material* material,
     int ui,
     GLenum drawMode,
-    VertexData vertexData
+    VertexDataType vertexDataType 
     ){
     Entity* entity = addEntity(MODEL);
     
@@ -640,7 +640,7 @@ void createMesh(
     // - one with color & indices VERT_COLOR_INDICIES
     // - one with color & no indicies VERT_COLOR
     // - one with no color & no indicies VERT
-    if(numIndicies == 0 && vertexData == VERTS_ONEUV) {
+    if(numIndicies == 0 && vertexDataType == VERTS_ONEUV) {
 
         // vertices + texcoords but no indices and no color
         stride = 5;
@@ -654,7 +654,7 @@ void createMesh(
             vertexIndex++;
         } 
 
-    }else if(vertexData == VERTS_COLOR_ONEUV_INDICIES){
+    }else if(vertexDataType == VERTS_COLOR_ONEUV_INDICIES){
 
         // indexed data with color
         for(int i = 0; i < num_of_vertex * stride; i+=stride) {
@@ -668,7 +668,7 @@ void createMesh(
             entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
             vertexIndex++;
         }
-    }else if(vertexData == VERTS_COLOR_ONEUV){
+    }else if(vertexDataType == VERTS_COLOR_ONEUV){
          // not indexed data with color
         for(int i = 0; i < num_of_vertex * stride; i+=stride) {
             entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
@@ -731,8 +731,8 @@ void createMesh(
 
 
 /**
- * @brief Create a rectangle
- * Create a rectangle mesh
+ * @brief Create a object. Used together with obj-load/parse. Expects data from obj-parser to be of type ObjData.
+ * Create a object mesh
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */

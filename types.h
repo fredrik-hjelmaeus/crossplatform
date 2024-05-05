@@ -68,17 +68,18 @@ typedef struct Material {
     Texture* normalMap; */
 } Material;
 
+// Data we get from obj-loader/parser.
 typedef struct ObjData {
     Vertex* vertexData;
     int num_of_vertices;
-    //int* vIndices;
 } ObjData;
 
+// Used to instruct createMesh what type of data struct to setup.
 typedef enum {
     VERTS_ONEUV = 0,
     VERTS_COLOR_ONEUV = 1,
     VERTS_COLOR_ONEUV_INDICIES = 2
-} VertexData;
+} VertexDataType;
 
 // ECS
 
