@@ -2,7 +2,7 @@
 #define TYPES_H
 
 #include <stdio.h>
-#include "opengl.h"
+#include "opengl_types.h"
 
 typedef struct View {
     int x;
@@ -33,7 +33,7 @@ typedef struct Vertex {
     vec3 position;
     vec3 color;
     vec2 texcoord;
-   // Vector3 normal;
+    //vec3 normal;
 } Vertex;
 
 typedef struct TextureData {
@@ -68,8 +68,17 @@ typedef struct Material {
     Texture* normalMap; */
 } Material;
 
+typedef struct ObjData {
+    Vertex* vertexData;
+    int num_of_vertices;
+    //int* vIndices;
+} ObjData;
 
-
+typedef enum {
+    VERTS_ONEUV = 0,
+    VERTS_COLOR_ONEUV = 1,
+    VERTS_COLOR_ONEUV_INDICIES = 2
+} VertexData;
 
 // ECS
 

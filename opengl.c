@@ -1,7 +1,8 @@
-#include "opengl.h"
 #include "types.h"
 #include "linmath.h"
 #include "globals.h"
+#include "opengl.h"
+
 
 
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
@@ -61,6 +62,7 @@ void setupMaterial(GpuData* buffer){
     }
     
     printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
+ printf("maybe");
 
     // Compile shaders
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -88,7 +90,7 @@ void setupMaterial(GpuData* buffer){
     }
     glShaderSource(fragmentShader, 1, (const GLchar* const*)&fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
-
+ 
     // Check for shader compile errors
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -99,7 +101,6 @@ void setupMaterial(GpuData* buffer){
     // free memory of shader sources
     free(vertexShaderSource);
     free(fragmentShaderSource);
-
     // Link shaders
     buffer->shaderProgram = glCreateProgram();
     glAttachShader(buffer->shaderProgram, vertexShader);
@@ -117,6 +118,7 @@ void setupMaterial(GpuData* buffer){
 
     glUseProgram(buffer->shaderProgram);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "texture1"), 0);
+  
 }
 
 void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap) {
@@ -247,6 +249,5 @@ GLuint setupTexture(TextureData textureData){
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(textureData.data);
-
     return texture;
 }

@@ -64,79 +64,195 @@ float deg2rad(float degrees) {
     return degrees * M_PI / 180.0;
 }
 
-void loadObjFile(const char *filepath)
+// obj specification: https://paulbourke.net/dataformats/obj/
+ObjData loadObjFile(const char *filepath)
 {
-    //Vertex* vertices = NULL;
-    int vertexRead = 0;
-    char material[100];
+    ObjData objData;
+    int vf[300] = {0}; 
+    int tf[300] = {0}; 
+    float vArr[300];
+    float tArr[300];
 
+    int vIndex = 0;
+    int uvCount = 0;
+    int normalCount = 0;
+    int vfCount = 0;
+    int tfCount = 0;
+    int faceLineCount = 0;
+    char material[100];
+    char group[100];
+    char usemtl[100];
+  
     FILE* fp;
     char line[1024];
 
     fp = fopen(filepath, "r");
     if(fp == NULL) {
         printf(TEXT_COLOR_ERROR "Error opening file %s" TEXT_COLOR_RESET "\n", filepath);
-        return;
+        exit(1);
     }
     
     while (fgets(line, sizeof line, fp) != NULL){
-
+   // printf("%c ",line[0]);
+   
         // comment
         if((int)line[0] == 35){
-           // printf("found comment \n");
+         //   printf("comment\n");
             continue;
         }
         // newline
         if((int)line[0] == 10){
-           // printf("found new line \n");
+         //   printf("newline\n");
             continue;
         }
         // m, check for mtllib
         if((int)line[0] == 109){
             if(strncmp(line, "mtllib", 6) == 0){
-               // printf("found material \n");
                 for(int i = 7; i < strlen(line); i++){
-                   // printf("%c", line[i] , "\n");
                     material[i-7] = line[i];
                 }
             }
+          //  printf("mtllib\n");
             continue;
         }
-      
-        printf("%d %c \n", (int)line[0], line[0]);
-      //  printf(TEXT_COLOR_WARNING "unparsed lines: %s",TEXT_COLOR_RESET , line);
+        // g, grouping, read in the groups
+        if((int)line[0] == 103){
+            for(int i = 2; i < strlen(line); i++){
+                group[i-2] = line[i];
+            }
+         //   printf("group\n");
+            continue;
+        }
+        // u, check for usemtl
+        if((int)line[0] == 117){
+            if(strncmp(line, "usemtl", 6) == 0){
+                for(int j = 7; j < strlen(line); j++){
+                    usemtl[j-7] = line[j];
+                }
+                usemtl[strlen(line)-7] = '\0'; // Null terminate usemtl
+            }
+         //   printf("material\n");
+            continue;
+        }
+        // v: v & space(32), read vertices
+        if((int)line[0] == 118 && (int)line[1] == 32){
+          sscanf(line, "v %f %f %f", &vArr[vIndex], &vArr[vIndex+1], &vArr[vIndex+2]);
+          vIndex+=3;
+          continue;
+        }
+        // vt: v & t, read texcoords(uv)
+        if((int)line[0] == 118 && (int)line[1] == 116){
+            char *token = strtok(line, " ");
+            token = strtok(NULL, " ");
+            tArr[uvCount] = strtof(token, NULL);
+            token = strtok(NULL, " ");
+            tArr[uvCount+1] = strtof(token, NULL);
+            uvCount+=2;
+         //   printf("texcoords\n");
+            continue;
+        }
+        // vn: v & n, read normals
+        if((int)line[0] == 118 && (int)line[1] == 110){
+            normalCount++;
+          //  printf("normal\n");
+          //  sscanf(line, "vn %f %f %f", &vertex.normal[0],&vertex.normal[1],&vertex.normal[2]);
+            continue;
+        }
+        // f: face indicies
+        if((int)line[0] == 102){
+           faceLineCount++;
+        //   printf("%s ",line);
+           char *facetoken = strtok(line, " /"); // f
+           facetoken = strtok(NULL, " /"); // v1
+           int facetokenInt = atoi(facetoken);
+        //   printf("vInd1: %d ",facetokenInt);
+           vf[vfCount] = facetokenInt;
+           vfCount++;
+           facetoken = strtok(NULL, " /");
+           int facetokentInt = atoi(facetoken);
+           tf[tfCount] = facetokentInt;
+           tfCount++;
+         //  printf("tInd1 %s ",facetoken);
+           facetoken = strtok(NULL, " /");
+         //  printf("nInd1 %s ",facetoken);
+           facetoken = strtok(NULL, " /"); // v2
+           int facetokenInt2 = atoi(facetoken);
+         //  printf("vInd2: %d ",facetokenInt2);
+           vf[vfCount] = facetokenInt2;
+           vfCount++;
+         //  printf("indicesCount %d ",vIndicesCount);
+           facetoken = strtok(NULL, " /");
+           int facetokentInt2 = atoi(facetoken);
+           tf[tfCount] = facetokentInt2;
+           tfCount++;
+        //   printf("tInd2 %s ",facetoken);
+           facetoken = strtok(NULL, " /");
+        //   printf("nInd2 %s ",facetoken);
+           facetoken = strtok(NULL, " /");
+           int facetokenInt3 = atoi(facetoken);
+       //    printf("vInd3: %d ",facetokenInt3);
+           vf[vfCount] = facetokenInt3;
+           vfCount++;
+           facetoken = strtok(NULL, " /");
+           int facetokentInt3 = atoi(facetoken);
+           tf[tfCount] = facetokentInt3;
+           tfCount++;
+     
+            continue;
+        }
+  
     }
 
    
-
+       fclose(fp);
         
 
        
 
-        // VERTEX
-        // A vertex is specified via a line starting with the letter v. 
-        // That is followed by (x,y,z[,w]) coordinates. W is optional and defaults to 1.0. 
-        // A right-hand coordinate system is used to specify the coordinate locations. 
-        // Some applications support vertex colors, by putting red, green and 
-        // blue values after x y and z (this precludes specifying w). 
-        // The color values range from 0 to 1.
-        /* if((int)objFile[i] == 118){
-            vertexRead = 1;
-            continue;
-        }
-        if(vertexRead > 0){
-            if((int)objFile[i] == 10){
-                vertexRead = 0;
-                continue;
-            }
-            if(vertexRead == 1){
-                Vertex vertex {
-                    .position = {0.0f, 0.0f, 0.0f},
-                    .color = {0.0f, 0.0f, 0.0f},
-                    .texcoord = {0.0f, 0.0f}
-                }
-            }
-        } */
-printf("material: %s \n",material);
-    printf("\n");
+     
+  //  printf("material: %s \n",material);
+  //  printf("faceline count: %d \n",faceLineCount);
+  //  printf("group: %s",group);
+  //  printf("usemtl: %s",usemtl);
+  //  printf("vIndex %d \n", vIndex);
+    printf("vfCount %d \n", vfCount); 
+  //  printf("uvCount %d \n", uvCount);
+  //  printf("normalCount %d \n", normalCount); 
+  
+ objData.vertexData = malloc(vfCount * sizeof(Vertex));
+   if(objData.vertexData == NULL){
+    exit(1);
+   }
+ 
+
+    for(int i = 0; i < vfCount; i+=1){
+    //  printf("vertex %i \n",vf[i]);
+    //  printf("vertex %i \n",i);
+
+      // x y z
+    //  printf("v %f %f %f ",vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
+      objData.vertexData[i].position[0] = vArr[(vf[i]-1)*3];
+      objData.vertexData[i].position[1] = vArr[(vf[i]-1)*3+1];
+      objData.vertexData[i].position[2] = vArr[(vf[i]-1)*3+2];
+
+      // color
+    //  objData.vertexData[i].color[0] = 1.0;
+     // objData.vertexData[i].color[1] = 1.0;
+     // objData.vertexData[i].color[2] = 1.0;
+
+      // uv
+     // printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
+    //  printf("\n");
+
+      objData.vertexData[i].texcoord[0] = tArr[(tf[i]-1)*2];
+      objData.vertexData[i].texcoord[1] = tArr[(tf[i]-1)*2+1];
+    }
+
+    objData.num_of_vertices = vfCount;
+
+    return objData;
+  
+   
 }
+
+

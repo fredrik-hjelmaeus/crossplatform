@@ -23,11 +23,11 @@
 
 #include <stdio.h>
 
+#include "types.h"
 #include "globals.h"
-#include "opengl.h"
 #include "utils.h"
 #include <time.h>
-#include "types.h"
+#include "opengl.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -40,6 +40,7 @@
 void createTriangle(int ui,Color diffuse);
 void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId);
 void createCube(int ui,Color diffuse,GLuint diffuseTextureId);
+void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj);
 TextureData loadTexture();
 
 //------------------------------------------------------
@@ -422,11 +423,11 @@ void input() {
         if (globals.event.type == SDL_MOUSEMOTION) {
             int xpos =  globals.event.motion.x;
             int ypos = globals.event.motion.y;
-            printf("Mouse moved to %d, %d\n", xpos, ypos);
+           // printf("Mouse moved to %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
-            float x_ndc = (2.0f * xpos) / width - 1.0f;
-            float y_ndc = 1.0f - (2.0f * ypos) / height;
-            printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
+          //  float x_ndc = (2.0f * xpos) / width - 1.0f;
+         //   float y_ndc = 1.0f - (2.0f * ypos) / height;
+          //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
 
             calcCameraFront(xpos, ypos);
         }
@@ -546,18 +547,18 @@ void initScene(){
     // Assets
     TextureData textureData = loadTexture();
     GLuint diffuseTextureId = setupTexture(textureData);
-    
+   ObjData objData = loadObjFile("test.obj");
+   // createCube(VIEWPORT_UI,red,diffuseTextureId);
+   // createCube(VIEWPORT_MAIN,green,diffuseTextureId);
+  createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
+    //exit(1);
     // 3d scene objects creation
    // createRectangle(VIEWPORT_MAIN,blue,diffuseTextureId);
     //createRectangle(VIEWPORT_UI,red,diffuseTextureId);
-    createCube(VIEWPORT_MAIN,green,diffuseTextureId);
-    createCube(VIEWPORT_UI,red,diffuseTextureId);
-      
 }
 
 int main(int argc, char **argv) {
-    loadObjFile("test.obj");
-    return 0;
+    
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
     
@@ -566,6 +567,7 @@ int main(int argc, char **argv) {
     initOpenGLWindow();
     
     // Starting state for program
+  
     initScene();
 
     //------------------------------------------------------
@@ -614,9 +616,9 @@ void createMesh(
     vec3 rotation,
     Material* material,
     int ui,
-    GLenum drawMode
+    GLenum drawMode,
+    VertexData vertexData
     ){
-
     Entity* entity = addEntity(MODEL);
     
     entity->meshComponent->active = 1;
@@ -634,20 +636,25 @@ void createMesh(
     int stride = 8;
     int vertexIndex = 0;
 
-    // We have two types of vertex data, one with color and one without.
-    // If it the type without, we are also drawing without indices.
-    if(numIndicies == 0) {
-        stride = 5;
-         for(int i = 0; i < num_of_vertex * stride; i+=stride) {
-        entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
-        entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
-        entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+    // We have three types of vertex data:
+    // - one with color & indices VERT_COLOR_INDICIES
+    // - one with color & no indicies VERT_COLOR
+    // - one with no color & no indicies VERT
+    if(numIndicies == 0 && vertexData == VERTS_ONEUV) {
 
-        entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 3];
-        entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 4];
-        vertexIndex++;
+        // vertices + texcoords but no indices and no color
+        stride = 5;
+        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
+            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
+            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+
+            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 3];
+            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 4];
+            vertexIndex++;
         } 
-    }else {
+
+    }else if(vertexData == VERTS_COLOR_ONEUV_INDICIES){
 
         // indexed data with color
         for(int i = 0; i < num_of_vertex * stride; i+=stride) {
@@ -661,6 +668,22 @@ void createMesh(
             entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
             vertexIndex++;
         }
+    }else if(vertexData == VERTS_COLOR_ONEUV){
+         // not indexed data with color
+        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
+            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
+            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3]; 
+            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
+            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
+            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+            vertexIndex++;
+        }
+    }else {
+        printf("UNSUPPORTED vertexData");
+        exit(1);
     }
     
     entity->meshComponent->vertexCount = num_of_vertex;
@@ -697,18 +720,53 @@ void createMesh(
     entity->materialComponent->specular = material->specular;
     entity->materialComponent->shininess = material->shininess;
     entity->materialComponent->diffuseMap = material->diffuseMap;
-   
     
     setupMesh(  entity->meshComponent->vertices, 
                 entity->meshComponent->vertexCount, 
                 entity->meshComponent->indices, 
                 entity->meshComponent->indexCount,
                 entity->meshComponent->gpuData );
-
     setupMaterial( entity->meshComponent->gpuData ); 
 }
 
 
+/**
+ * @brief Create a rectangle
+ * Create a rectangle mesh
+ * @param ui - 1 for ui, 0 for 3d scene
+ * @param diffuse - color of the rectangle
+*/
+void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
+   // vertex data
+    int stride = 5;
+    GLfloat vertices[(obj->num_of_vertices)*stride];
+    for(int i = 0; i < obj->num_of_vertices-1; i++){
+            vertices[i * stride + 0] = obj->vertexData[i].position[0];
+            vertices[i * stride + 1] = obj->vertexData[i].position[1];
+            vertices[i * stride + 2] = obj->vertexData[i].position[2];
+            vertices[i * stride + 6] = obj->vertexData[i].texcoord[0];
+            vertices[i * stride + 7] = obj->vertexData[i].texcoord[1];
+    }  
+   
+    // NOT USED
+    GLuint indices[] = {
+        0, 1, 2,  // first triangle
+        1, 2, 3   // second triangle
+    }; 
+
+    // transform
+    vec3 position = {0.0f, 0.0f, 0.0f};
+    vec3 scale = {1.0f, 1.0f, 1.0f};
+    vec3 rotation = {0.0f, 0.0f, 0.0f};
+
+    //material
+    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
+    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
+    GLfloat shininess = 32.0f;
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId}; 
+
+    createMesh(vertices,obj->num_of_vertices-1,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
+}
 
 /**
  * @brief Create a triangle
@@ -741,7 +799,7 @@ void createTriangle(int ui,Color diffuse){
     GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess};
 
-    createMesh(verts,3,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES);
+    createMesh(verts,3,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
 }
 /**
  * @brief Create a rectangle
@@ -775,7 +833,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId){
     GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
 
-    createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES);
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES);
 }
 /**
  * @brief Create a Cube
@@ -858,7 +916,7 @@ void createCube(int ui,Color diffuse,GLuint diffuseTextureId){
     GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
 
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES);
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
 }
 
 // -----------------------------------------------------

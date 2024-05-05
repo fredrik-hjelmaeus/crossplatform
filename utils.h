@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "stb_image.h"
 #include <string.h>
-//#include "types.h"
+#include "types.h"
 
 // Text output colors
 #define TEXT_COLOR_ERROR     "\x1b[31m"
@@ -38,7 +38,7 @@ float deg2rad(float degrees);
     unsigned int* indices;
     size_t indexCount;
 } ObjFile; */
-void loadObjFile(const char* filepath);
+ObjData loadObjFile(const char* filepath);
 
 #endif // End of the UTILS_H definition
 

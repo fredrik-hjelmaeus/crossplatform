@@ -2,8 +2,8 @@
 #define GLOBALS_H
 
 #include <SDL2/SDL.h>
-#include "opengl.h"
-#include "types.h"
+//#include "opengl.h"
+//#include "types.h"
 struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
