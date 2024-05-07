@@ -5,7 +5,7 @@
 
 
 
-void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
+void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer,int stride) {
 
     buffer->drawMode = GL_TRIANGLES;
     buffer->numIndicies = indexCount;
@@ -28,15 +28,15 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
     // This line tells OpenGL how to interpret the vertex data
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
 
     // Color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
 
     // Texture attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
 
     // Unbind VBO/buffer
@@ -62,7 +62,7 @@ void setupMaterial(GpuData* buffer){
     }
     
     printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
- printf("maybe");
+
 
     // Compile shaders
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);

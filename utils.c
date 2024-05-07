@@ -213,22 +213,22 @@ ObjData loadObjFile(const char *filepath)
 
     for(int i = 0; i < vfCount; i+=1){
     //  printf("vertex %i \n",vf[i]);
-    //  printf("vertex %i \n",i);
+     printf("vertex %i \n",i);
 
       // x y z
-    //  printf("v %f %f %f ",vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
+    printf("v %f %f %f ",vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
       objData.vertexData[i].position[0] = vArr[(vf[i]-1)*3];
       objData.vertexData[i].position[1] = vArr[(vf[i]-1)*3+1];
       objData.vertexData[i].position[2] = vArr[(vf[i]-1)*3+2];
 
-      // color
-    //  objData.vertexData[i].color[0] = 1.0;
-     // objData.vertexData[i].color[1] = 1.0;
-     // objData.vertexData[i].color[2] = 1.0;
+      // color, default to black atm
+     objData.vertexData[i].color[0] = 0.0; 
+     objData.vertexData[i].color[1] = 0.0;
+     objData.vertexData[i].color[2] = 0.0;
 
       // uv
-     // printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
-    //  printf("\n");
+      printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
+    printf("\n");
 
       objData.vertexData[i].texcoord[0] = tArr[(tf[i]-1)*2];
       objData.vertexData[i].texcoord[1] = tArr[(tf[i]-1)*2+1];

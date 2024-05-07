@@ -547,10 +547,10 @@ void initScene(){
     // Assets
     TextureData textureData = loadTexture();
     GLuint diffuseTextureId = setupTexture(textureData);
-   ObjData objData = loadObjFile("test.obj");
+   ObjData objData = loadObjFile("plane2.obj");
    // createCube(VIEWPORT_UI,red,diffuseTextureId);
-   // createCube(VIEWPORT_MAIN,green,diffuseTextureId);
-  createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
+  // createCube(VIEWPORT_MAIN,green,diffuseTextureId);
+ createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
     //exit(1);
     // 3d scene objects creation
    // createRectangle(VIEWPORT_MAIN,blue,diffuseTextureId);
@@ -636,21 +636,25 @@ void createMesh(
     int stride = 8;
     int vertexIndex = 0;
 
-    // We have three types of vertex data:
+    // We have three types of vertex data input:
     // - one with color & indices VERT_COLOR_INDICIES
     // - one with color & no indicies VERT_COLOR
     // - one with no color & no indicies VERT
     if(numIndicies == 0 && vertexDataType == VERTS_ONEUV) {
 
         // vertices + texcoords but no indices and no color
-        stride = 5;
+        stride = 8;
         for(int i = 0; i < num_of_vertex * stride; i+=stride) {
             entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
             entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
             entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
 
-            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 3];
-            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 4];
+            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
+            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
+            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+
+            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
+            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
             vertexIndex++;
         } 
 
@@ -700,6 +704,10 @@ void createMesh(
     }
     entity->meshComponent->indexCount = numIndicies;
 
+    if(numIndicies == 0){
+        printf("not using indicies\n");
+    }
+
     // transform data
     entity->transformComponent->active = 1;
     entity->transformComponent->position[0] = position[0];
@@ -725,7 +733,9 @@ void createMesh(
                 entity->meshComponent->vertexCount, 
                 entity->meshComponent->indices, 
                 entity->meshComponent->indexCount,
-                entity->meshComponent->gpuData );
+                entity->meshComponent->gpuData,
+                8 // temp
+                );
     setupMaterial( entity->meshComponent->gpuData ); 
 }
 
@@ -738,12 +748,15 @@ void createMesh(
 */
 void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
    // vertex data
-    int stride = 5;
+    int stride = 8;
     GLfloat vertices[(obj->num_of_vertices)*stride];
-    for(int i = 0; i < obj->num_of_vertices-1; i++){
+    for(int i = 0; i < obj->num_of_vertices; i++){
             vertices[i * stride + 0] = obj->vertexData[i].position[0];
             vertices[i * stride + 1] = obj->vertexData[i].position[1];
             vertices[i * stride + 2] = obj->vertexData[i].position[2];
+            vertices[i * stride + 3] = obj->vertexData[i].color[0];
+            vertices[i * stride + 4] = obj->vertexData[i].color[1];
+            vertices[i * stride + 5] = obj->vertexData[i].color[2];
             vertices[i * stride + 6] = obj->vertexData[i].texcoord[0];
             vertices[i * stride + 7] = obj->vertexData[i].texcoord[1];
     }  
@@ -765,7 +778,7 @@ void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
     GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId}; 
 
-    createMesh(vertices,obj->num_of_vertices-1,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
+    createMesh(vertices,obj->num_of_vertices,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
 }
 
 /**
@@ -886,7 +899,7 @@ void createCube(int ui,Color diffuse,GLuint diffuseTextureId){
     -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
-    // index data
+    // index data NOT USED ATM
     GLuint indices[] = {
         // front and back
         0, 3, 2,
