@@ -5,7 +5,7 @@
 
 
 
-void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer,int stride) {
+void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
 
     buffer->drawMode = GL_TRIANGLES;
     buffer->numIndicies = indexCount;
@@ -28,15 +28,16 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
     // This line tells OpenGL how to interpret the vertex data
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
 
     // Color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
+    
 
     // Texture attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
 
     // Unbind VBO/buffer
@@ -182,12 +183,12 @@ globals.camera.position[2] += globals.camera.speed * globals.camera.front[2]; */
     mat4x4 projection;
     mat4x4_identity(projection);
     // rotate model
-    float degrees = 0.0f * globals.delta_time;
+    float degrees = 25.0f * globals.delta_time;
     float radians = degrees * M_PI / 180.0f;
     mat4x4 rotatedModel;
     // The cast on model tells the compiler that you're aware of the 
     // const requirement and that you're promising not to modify the model matrix.
-    mat4x4_rotate(rotatedModel, (const float (*)[4])model, 1.0f,0.0f,0.0f, radians);
+    mat4x4_rotate(rotatedModel, (const float (*)[4])model, 0.0f,1.0f,0.0f, radians);
     // translate view
    // mat4x4_translate(view, 0.0f, 0.0f, -300.0f);
     // perspective projection
@@ -207,11 +208,11 @@ globals.camera.position[2] += globals.camera.speed * globals.camera.front[2]; */
     glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);
         
     glBindVertexArray(buffer->VAO);
-    if(buffer->numIndicies != 0) {
+   if(buffer->numIndicies != 0) {
         glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);
     }else {
         glDrawArrays(buffer->drawMode, 0, buffer->vertexCount);
-    }
+   }
     glBindVertexArray(0);
 }
 

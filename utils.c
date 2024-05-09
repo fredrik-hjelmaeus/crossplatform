@@ -64,7 +64,7 @@ float deg2rad(float degrees) {
     return degrees * M_PI / 180.0;
 }
 
-// Support for up to 300 vertices only!. No indicies created.
+// Support for up to 30000 vertices only!. No indicies created.
 // Collects vertices position(vArr),uv/texcoords(tArr) , vertex indices(vf) ,texture indices(tf).
 // Then uses these and creates a new vertex data 
 // line looking like this: x, y ,z, u ,v
@@ -73,10 +73,11 @@ float deg2rad(float degrees) {
 ObjData loadObjFile(const char *filepath)
 {
     ObjData objData;
-    int vf[300] = {0}; 
-    int tf[300] = {0}; 
-    float vArr[300];
-    float tArr[300];
+    int MAX = 30000;
+    int vf[30000] = {0}; 
+    int tf[30000] = {0}; 
+    float vArr[MAX];
+    float tArr[MAX];
 
     int vIndex = 0;
     int uvCount = 0;
@@ -157,6 +158,10 @@ ObjData loadObjFile(const char *filepath)
         // f: face indicies, ex: f 1/1/1 2/2/2 3/3/3 
         if((int)line[0] == 102){
            faceLineCount++;
+           if(faceLineCount >= MAX || vfCount >= MAX || tfCount >= MAX){
+                printf("Error: Too many vertices in obj file. Max is 30000. Exiting..");
+                exit(1);
+           }
            char *facetoken = strtok(line, " /"); // f
            facetoken = strtok(NULL, " /"); // v1
            int facetokenInt = atoi(facetoken);
@@ -201,7 +206,7 @@ ObjData loadObjFile(const char *filepath)
   //  printf("group: %s",group);
   //  printf("usemtl: %s",usemtl);
   //  printf("vIndex %d \n", vIndex);
-    printf("vfCount %d \n", vfCount); 
+    //printf("vfCount %d \n", vfCount); 
   //  printf("uvCount %d \n", uvCount);
   //  printf("normalCount %d \n", normalCount); 
   
@@ -213,10 +218,10 @@ ObjData loadObjFile(const char *filepath)
 
     for(int i = 0; i < vfCount; i+=1){
     //  printf("vertex %i \n",vf[i]);
-     printf("vertex %i \n",i);
+     //printf("vertex %i \n",i);
 
       // x y z
-    printf("v %f %f %f ",vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
+    //printf("v %f %f %f ",vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
       objData.vertexData[i].position[0] = vArr[(vf[i]-1)*3];
       objData.vertexData[i].position[1] = vArr[(vf[i]-1)*3+1];
       objData.vertexData[i].position[2] = vArr[(vf[i]-1)*3+2];
@@ -227,8 +232,8 @@ ObjData loadObjFile(const char *filepath)
      objData.vertexData[i].color[2] = 0.0;
 
       // uv
-      printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
-    printf("\n");
+      //printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
+   // printf("\n");
 
       objData.vertexData[i].texcoord[0] = tArr[(tf[i]-1)*2];
       objData.vertexData[i].texcoord[1] = tArr[(tf[i]-1)*2+1];

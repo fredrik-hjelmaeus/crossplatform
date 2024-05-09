@@ -11,7 +11,7 @@
 
 void renderMesh(GpuData* buffer,Color* ambient,Color* diffuse, Color* specular,float shininess,GLuint diffuseMap);
 void setupMaterial(GpuData* buffer);
-void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer,int stride);
+void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
 GLuint setupTexture(TextureData textureData);
 
 #endif // End of the OPENGL_H definition

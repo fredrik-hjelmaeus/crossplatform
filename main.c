@@ -41,6 +41,7 @@ void createTriangle(int ui,Color diffuse);
 void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId);
 void createCube(int ui,Color diffuse,GLuint diffuseTextureId);
 void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj);
+void createLight(int ui,Color diffuse,GLuint diffuseTextureId);
 TextureData loadTexture();
 
 //------------------------------------------------------
@@ -547,10 +548,12 @@ void initScene(){
     // Assets
     TextureData textureData = loadTexture();
     GLuint diffuseTextureId = setupTexture(textureData);
-   ObjData objData = loadObjFile("plane2.obj");
+   ObjData objData = loadObjFile("truck.obj");
+ createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
+   //createCube(VIEWPORT_MAIN,red,diffuseTextureId);
+   createLight(VIEWPORT_MAIN,green,diffuseTextureId);
    // createCube(VIEWPORT_UI,red,diffuseTextureId);
   // createCube(VIEWPORT_MAIN,green,diffuseTextureId);
- createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
     //exit(1);
     // 3d scene objects creation
    // createRectangle(VIEWPORT_MAIN,blue,diffuseTextureId);
@@ -649,9 +652,9 @@ void createMesh(
             entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
             entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
 
-            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
+             entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
             entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
-            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5]; 
 
             entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
             entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
@@ -729,17 +732,97 @@ void createMesh(
     entity->materialComponent->shininess = material->shininess;
     entity->materialComponent->diffuseMap = material->diffuseMap;
     
+
+
     setupMesh(  entity->meshComponent->vertices, 
                 entity->meshComponent->vertexCount, 
                 entity->meshComponent->indices, 
                 entity->meshComponent->indexCount,
-                entity->meshComponent->gpuData,
-                8 // temp
+                entity->meshComponent->gpuData
                 );
+    
+    
     setupMaterial( entity->meshComponent->gpuData ); 
 }
 
 
+void createLight(int ui,Color diffuse,GLuint diffuseTextureId){
+    // vertex data
+    GLfloat vertices[] = {
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f
+    };
+    // index data NOT USED ATM
+    GLuint indices[] = {
+        // front and back
+        0, 3, 2,
+        2, 1, 0,
+        4, 5, 6,
+        6, 7 ,4,
+        // left and right
+        11, 8, 9,
+        9, 10, 11,
+        12, 13, 14,
+        14, 15, 12,
+        // bottom and top
+        16, 17, 18,
+        18, 19, 16,
+        20, 21, 22,
+        22, 23, 20
+    };
+    // transform
+    vec3 position = {0.0f, 0.0f, 0.0f};
+    vec3 scale = {1.0f, 1.0f, 1.0f};
+    vec3 rotation = {0.0f, 0.0f, 0.0f};
+
+    //material
+    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
+    //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
+    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
+    GLfloat shininess = 32.0f;
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
+
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
+}
 /**
  * @brief Create a object. Used together with obj-load/parse. Expects data from obj-parser to be of type ObjData.
  * Create a object mesh
@@ -773,12 +856,12 @@ void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
     vec3 rotation = {0.0f, 0.0f, 0.0f};
 
     //material
-    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
+    Color ambient = {1.0f, 0.1f, 0.1f, 1.0f};
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId}; 
 
-    createMesh(vertices,obj->num_of_vertices,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
+    createMesh(vertices,obj->num_of_vertices,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV);
 }
 
 /**
@@ -857,47 +940,47 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId){
 void createCube(int ui,Color diffuse,GLuint diffuseTextureId){
     // vertex data
     GLfloat vertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
 
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
 
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
 
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
 
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
 
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f
 };
     // index data NOT USED ATM
     GLuint indices[] = {
