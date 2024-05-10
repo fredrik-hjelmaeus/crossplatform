@@ -7,8 +7,7 @@ out vec4 FragColor;
 in vec3 objectColor;
 in vec2 texCoord;
 
-// lights
-uniform vec3 lightColor;
+uniform vec4 ambient;
 
 // texture samplers
 uniform sampler2D texture1;
@@ -17,8 +16,8 @@ uniform sampler2D texture1;
 void main()
 {
 	
-	
-	FragColor = mix(texture(texture1, texCoord), vec4(objectColor,1.0f), 0.5);
+	vec4 diffuse = vec4(objectColor, 1.0f) * ambient;
+	FragColor = mix(texture(texture1, texCoord), diffuse, 0.5);
 	
 	
 	

@@ -467,7 +467,7 @@ void render(){
                 Color* spec = &globals.entities[i].materialComponent->specular;
                 GLfloat shin = globals.entities[i].materialComponent->shininess;
                 GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin,diffMap);
+                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap);
             }
         }
     }
@@ -486,7 +486,7 @@ void render(){
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin,diffMap);
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap);
                 }else {
                     setViewport(globals.views.main);
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
@@ -494,7 +494,7 @@ void render(){
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,diff,amb,spec,shin,diffMap);
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap);
                 }
             }
         }
@@ -733,7 +733,6 @@ void createMesh(
     entity->materialComponent->diffuseMap = material->diffuseMap;
     
 
-
     setupMesh(  entity->meshComponent->vertices, 
                 entity->meshComponent->vertexCount, 
                 entity->meshComponent->indices, 
@@ -811,12 +810,12 @@ void createLight(int ui,Color diffuse,GLuint diffuseTextureId){
     };
     // transform
     vec3 position = {0.0f, 0.0f, 0.0f};
-    vec3 scale = {1.0f, 1.0f, 1.0f};
+    vec3 scale =    {1.0f, 1.0f, 1.0f};
     vec3 rotation = {0.0f, 0.0f, 0.0f};
 
     //material
-    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
-    //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
+    Color ambient = {1.0f, 1.0f, 0.0f, 1.0f};
+    //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f}; not used, comes from attribute data
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};

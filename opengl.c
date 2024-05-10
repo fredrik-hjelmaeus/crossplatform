@@ -64,7 +64,6 @@ void setupMaterial(GpuData* buffer){
     
     printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
 
-
     // Compile shaders
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     if(vertexShader == 0) {
@@ -102,6 +101,7 @@ void setupMaterial(GpuData* buffer){
     // free memory of shader sources
     free(vertexShaderSource);
     free(fragmentShaderSource);
+
     // Link shaders
     buffer->shaderProgram = glCreateProgram();
     glAttachShader(buffer->shaderProgram, vertexShader);
@@ -117,25 +117,25 @@ void setupMaterial(GpuData* buffer){
         printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
     }
 
-    glUseProgram(buffer->shaderProgram);
-    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "texture1"), 0);
-  
 }
 
-void renderMesh(GpuData* buffer, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap) {
-    
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, diffuseMap);
+void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap) {
     
     // Set shader
     glUseProgram(buffer->shaderProgram);
 
-    // Set texture 1 diffuseMap
+    // Assign diffuseMap to texture1 slot
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, diffuseMap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "texture1"), 0);
 
     // Set the color uniform
     GLint colorLocation = glGetUniformLocation(buffer->shaderProgram, "color");
     glUniform4f(colorLocation, diffuse->r, diffuse->g, diffuse->b, diffuse->a);
+
+    // Set the ambient light uniform
+    GLint ambientLocation = glGetUniformLocation(buffer->shaderProgram, "ambient");
+    glUniform4f(ambientLocation, ambient->r, ambient->g, ambient->b, ambient->a);
 
     // create view/camera transformation
     mat4x4 view;
@@ -182,8 +182,13 @@ globals.camera.position[2] += globals.camera.speed * globals.camera.front[2]; */
     mat4x4_identity(model);
     mat4x4 projection;
     mat4x4_identity(projection);
+
+    // set model position
+    float x = 0.0f, y = 0.0f, z = 0.0f; // replace with your desired position
+    mat4x4_translate(model, transformComponent->position[0],transformComponent->position[1],transformComponent->position[2]);
+
     // rotate model
-    float degrees = 25.0f * globals.delta_time;
+    float degrees = 0.0f * globals.delta_time;
     float radians = degrees * M_PI / 180.0f;
     mat4x4 rotatedModel;
     // The cast on model tells the compiler that you're aware of the 
