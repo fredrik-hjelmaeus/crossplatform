@@ -4,11 +4,27 @@
 #include <stdio.h>
 #include "opengl_types.h"
 
+typedef struct Color {
+    GLfloat  r;
+    GLfloat  g;
+    GLfloat  b;
+    GLfloat  a;
+} Color;
+
+typedef enum {
+    SPLIT_DEFAULT = 0,
+    SPLIT_HORIZONTAL = 1,
+    SPLIT_VERTICAL = 2
+} SplitDirection;
+
 typedef struct View {
     int x;
     int y;
     int width;
     int height;
+    Color clearColor;
+    SplitDirection splitDirection;
+    struct View* childView; // Pointer to a child view, can be NULL if no child
 } View;
 
 typedef struct Views {
@@ -21,13 +37,6 @@ enum Viewport {
     VIEWPORT_MAIN = 0,
     VIEWPORT_UI = 1
 };
-
-typedef struct Color {
-    GLfloat  r;
-    GLfloat  g;
-    GLfloat  b;
-    GLfloat  a;
-} Color;
 
 typedef struct Vertex {
     vec3 position;

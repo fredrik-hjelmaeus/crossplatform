@@ -59,9 +59,9 @@ struct Globals globals = {
     .overideDrawMode=GL_TRIANGLES,
     .overrideDrawModeBool=0,
     .views = {
-        .main={0, 200, 800, 400},
-        .ui={0, 0, 800, 200},
-        .full={0, 0, 800, 600}
+        .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL},
+        .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui},
+        .full={0, 0, 800, 600, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL},
     },
     .camera = {
         .position = {0.0f, 0.0f, 3.0f},
@@ -286,6 +286,25 @@ void setViewport(struct View view) {
     glViewport(view.x, view.y, view.width, view.height);
 }
 
+void setViewportWithScissor(View view) {
+    // Set the viewport
+    glViewport(view.x, view.y, view.width, view.height);
+
+    // Set the scissor box
+    glScissor(view.x, view.y, view.width, view.height);
+    glEnable(GL_SCISSOR_TEST);
+
+    // Set the clear color
+    glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
+
+    // Clear the viewport
+    //glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Disable the scissor test
+    glDisable(GL_SCISSOR_TEST);
+}
+
 void initProgram(){
     initWindow();
     initECS();
@@ -320,6 +339,50 @@ void calcCameraFront(float xpos, float ypos){
             vec3_norm(globals.camera.front, direction);
 }
 
+void recalculateViewports(int w, int h){
+    // Recalculate viewports
+  if(globals.views.main.childView != NULL){
+        if(globals.views.main.childView->splitDirection == SPLIT_HORIZONTAL){
+
+            // Calc new percentage height, using old main height.
+            float percentageChildHeight = (float)globals.views.main.childView->height / ((float)globals.views.main.height + (float)globals.views.main.childView->height);
+            printf("percentageChildHeight: %f\n", percentageChildHeight);
+
+            // Update childView height & the new width.
+            globals.views.main.childView->height = h * percentageChildHeight;
+            printf("new childView height: %d\n", globals.views.main.childView->height);
+            globals.views.main.childView->width = w;
+
+            // Update main height
+            globals.views.main.height = h - globals.views.main.childView->height;
+            globals.views.main.width = w;
+
+            // Update main y position
+            globals.views.main.y = globals.views.main.childView->height;
+            
+            // TODO: here we need to update the childView y position,x pos & main x pos aswell. Atm they are not handled.
+            
+
+
+            // .ui=  {0, 0,   800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL},
+            // .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui},
+
+        }
+        if(globals.views.main.childView->splitDirection == SPLIT_VERTICAL){
+            // Calc new percentage width, using old main width.
+            float percentageChildWidth = globals.views.main.childView->width / globals.views.main.width;
+
+            // Update childView height & the new width.
+            globals.views.main.childView->width = w * percentageChildWidth;
+            globals.views.main.childView->height = h;
+
+            // Update main height
+            globals.views.main.height = h;
+            globals.views.main.width = w - globals.views.main.childView->width;
+        }
+    }
+}
+
 void input() {
     // Process events
     while(pollEvent()) {
@@ -330,7 +393,11 @@ void input() {
         if(globals.event.type == SDL_KEYDOWN) {
             const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
             if(strcmp(key, "C") == 0) {
-                glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
+                globals.views.main.clearColor.r = randFloat(0.0,1.0);
+                globals.views.main.clearColor.g = randFloat(0.0,1.0);
+                globals.views.main.clearColor.b = randFloat(0.0,1.0);
+        
+                //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
             }
             if(strcmp(key, "Escape") == 0) {
                 globals.running = 0;
@@ -403,8 +470,10 @@ void input() {
             int w, h; 
             SDL_GetWindowSize(globals.window, &w, &h);
             printf("New Window size: %d x %d\n", w, h);
+            recalculateViewports(w,h);
+            
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
-            glViewport(0, 0, w / 2, h);
+            //glViewport(0, 0, w / 2, h);
         }
         if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
             printf("Mouse button pressed\n");
@@ -480,7 +549,7 @@ void render(){
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active == 1){
                     // render ui, could be overhead with switching viewports?. profile.
-                    setViewport(globals.views.ui);
+                    setViewportWithScissor(globals.views.ui);
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
                     Color* amb = &globals.entities[i].materialComponent->ambient;
                     Color* spec = &globals.entities[i].materialComponent->specular;
@@ -488,7 +557,7 @@ void render(){
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
                     renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap);
                 }else {
-                    setViewport(globals.views.main);
+                    setViewportWithScissor(globals.views.main);
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
                     Color* amb = &globals.entities[i].materialComponent->ambient;
                     Color* spec = &globals.entities[i].materialComponent->specular;
@@ -550,6 +619,7 @@ void initScene(){
     GLuint diffuseTextureId = setupTexture(textureData);
    ObjData objData = loadObjFile("truck.obj");
  createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
+ createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
    //createCube(VIEWPORT_MAIN,red,diffuseTextureId);
    createLight(VIEWPORT_MAIN,green,diffuseTextureId);
    // createCube(VIEWPORT_UI,red,diffuseTextureId);

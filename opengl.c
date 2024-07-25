@@ -184,7 +184,6 @@ globals.camera.position[2] += globals.camera.speed * globals.camera.front[2]; */
     mat4x4_identity(projection);
 
     // set model position
-    float x = 0.0f, y = 0.0f, z = 0.0f; // replace with your desired position
     mat4x4_translate(model, transformComponent->position[0],transformComponent->position[1],transformComponent->position[2]);
 
     // rotate model
