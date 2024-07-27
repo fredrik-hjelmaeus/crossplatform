@@ -17,6 +17,22 @@ typedef enum {
     SPLIT_VERTICAL = 2
 } SplitDirection;
 
+typedef struct Camera {
+    vec3 position;
+    vec3 front;
+    vec3 up;
+    vec3 target;
+    mat4x4 view;
+    mat4x4 projection;
+    float speed;
+    float fov;
+    float near;
+    float far;
+    float aspectRatio;
+    int viewMatrixNeedsUpdate;
+    int projectionMatrixNeedsUpdate;
+} Camera;
+
 typedef struct View {
     int x;
     int y;
@@ -25,6 +41,7 @@ typedef struct View {
     Color clearColor;
     SplitDirection splitDirection;
     struct View* childView; // Pointer to a child view, can be NULL if no child
+    Camera* camera; // Pointer to a camera, can be NULL if no camera
 } View;
 
 typedef struct Views {
@@ -147,15 +164,7 @@ typedef struct Entity {
     UIComponent* uiComponent;
 } Entity;
 
-typedef struct Camera {
-    vec3 position;
-    vec3 front;
-    vec3 up;
-    vec3 target;
-    mat4x4 view;
-    mat4x4 projection;
-    float speed;
-} Camera;
+
 
 
 

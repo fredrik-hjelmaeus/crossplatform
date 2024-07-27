@@ -58,21 +58,27 @@ struct Globals globals = {
     .delta_time=0.0f,
     .overideDrawMode=GL_TRIANGLES,
     .overrideDrawModeBool=0,
-    .views = {
-        .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL},
-        .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui},
-        .full={0, 0, 800, 600, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL},
-    },
     .camera = {
         .position = {0.0f, 0.0f, 3.0f},
         .front = {0.0f, 0.0f, -1.0f},
         .up = {0.0f, 1.0f, 0.0f},
         .target = {0.0f, 0.0f, 0.0f},
         .speed = 0.1f,
+        .fov = 45.0f,
+        .near = 0.1f,
+        .far = 100.0f,
+        .aspectRatio = 800.0f / 600.0f,
+        .viewMatrixNeedsUpdate = 1,
+        .projectionMatrixNeedsUpdate = 1
+    },
+    .views = {
+        .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,},
+        .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui},
+        .full={0, 0, 800, 600, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL},
     },
     .firstMouse=1,
 };
-  
+
 // Colors
 Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
 Color red = {1.0f, 0.0f, 0.0f, 1.0f};
@@ -381,8 +387,14 @@ void recalculateViewports(int w, int h){
             globals.views.main.width = w - globals.views.main.childView->width;
         }
     }
+    globals.camera.projectionMatrixNeedsUpdate = 1;
 }
 
+/**
+ * Atm we handle all events right here. Eventually we wan't to store the polled events in a queue and process them in the update loop instead.
+ * This is because this fn will become too large otherwise,and we wan't to group & handle events in a more structured way. 
+ * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
+ */
 void input() {
     // Process events
     while(pollEvent()) {
@@ -414,11 +426,17 @@ void input() {
                 globals.camera.position[0] += globals.camera.speed * globals.delta_time * globals.camera.front[0];
                 globals.camera.position[1] += globals.camera.speed * globals.delta_time * globals.camera.front[1];
                 globals.camera.position[2] += globals.camera.speed * globals.delta_time * globals.camera.front[2];
+
+                // set view matrix needs update flag
+                globals.camera.viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "S") == 0){
                 globals.camera.position[0] -= globals.camera.speed * globals.delta_time * globals.camera.front[0];
                 globals.camera.position[1] -= globals.camera.speed * globals.delta_time * globals.camera.front[1];
                 globals.camera.position[2] -= globals.camera.speed * globals.delta_time * globals.camera.front[2];
+
+                // set view matrix needs update flag
+                globals.camera.viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "A") == 0){
 
@@ -441,7 +459,9 @@ void input() {
                 globals.camera.position[0] -= globals.camera.speed * globals.delta_time * newPos[0];
                 globals.camera.position[1] -= globals.camera.speed * globals.delta_time * newPos[1];
                 globals.camera.position[2] -= globals.camera.speed * globals.delta_time * newPos[2];
-        
+
+                // set view matrix needs update flag
+                globals.camera.viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "D") == 0){
 
@@ -464,6 +484,9 @@ void input() {
                 globals.camera.position[0] += globals.camera.speed * globals.delta_time * newPos[0];
                 globals.camera.position[1] += globals.camera.speed * globals.delta_time * newPos[1];
                 globals.camera.position[2] += globals.camera.speed * globals.delta_time * newPos[2];
+
+                // set view matrix needs update flag
+                globals.camera.viewMatrixNeedsUpdate = 1;
             }
         }
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
@@ -500,8 +523,65 @@ void input() {
           //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
 
             calcCameraFront(xpos, ypos);
+
+            // set view matrix needs update flag
+            globals.camera.viewMatrixNeedsUpdate = 1;
         }
     }
+}
+
+/**
+ * @brief Camera system
+ * Handles camera update.
+ * Atm we are not handling everything about the camera here, just the update of projection & view.
+ * Movement is handled in the input function, but will eventually be moved here.
+ */
+void cameraSystem(){
+    // Look for view needs update flag & update/recalc view matrix if needed.
+
+    if(globals.camera.viewMatrixNeedsUpdate == 1){
+
+        // create view/camera transformation
+        mat4x4 view;
+        mat4x4_identity(view);
+
+        // target / center 
+        globals.camera.target[0] = globals.camera.position[0] + globals.camera.front[0];
+        globals.camera.target[1] = globals.camera.position[1] + globals.camera.front[1];
+        globals.camera.target[2] = globals.camera.position[2] + globals.camera.front[2];
+
+        // camera up
+        mat4x4_look_at(view,globals.camera.position, globals.camera.target, globals.camera.up);
+
+        // Copy the view matrix to globals.camera.view
+        memcpy(globals.camera.view, view, sizeof(mat4x4));
+
+        globals.camera.viewMatrixNeedsUpdate = 0;
+    }
+
+    // Look for projection needs update flag & update/recalc projection matrix if needed.
+    if(globals.camera.projectionMatrixNeedsUpdate == 1){ 
+        mat4x4 projection;
+        mat4x4_identity(projection);
+        mat4x4_perspective(projection, globals.camera.fov, globals.views.main.width / globals.views.main.height,globals.camera.near, globals.camera.far);
+        
+        // Copy the projection matrix to globals.camera.projection
+        memcpy(globals.camera.projection, projection, sizeof(mat4x4));
+
+        globals.camera.projectionMatrixNeedsUpdate = 0;
+    }
+}
+
+/**
+ * @brief Model system
+ * Handles model update.
+ * Atm we are not handling everything about the model here, just the update of model matrix.
+ * Movement is handled in the input function, but will eventually be moved here or to a separate movement-system. 
+ * Perhaps the model matrix update will move there aswell or maybe be handled in some kind of transform hierarchy system, 
+ * since groups & hierarchy of entities should be something we would need when we try to build more complex scenes.
+ */
+void modelSystem(){
+    // Look for transform needs update flag & update/recalc model matrix if needed.
 }
 
 void update(){
@@ -517,6 +597,9 @@ void update(){
 
     // Set delta time in seconds
     globals.delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
+
+    // Systems
+    cameraSystem();
   
 }
 
@@ -536,7 +619,7 @@ void render(){
                 Color* spec = &globals.entities[i].materialComponent->specular;
                 GLfloat shin = globals.entities[i].materialComponent->shininess;
                 GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap);
+                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,&globals.camera);
             }
         }
     }
@@ -555,7 +638,7 @@ void render(){
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap);
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,&globals.camera);
                 }else {
                     setViewportWithScissor(globals.views.main);
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
@@ -563,7 +646,7 @@ void render(){
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap);
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,&globals.camera);
                 }
             }
         }

@@ -119,7 +119,12 @@ void setupMaterial(GpuData* buffer){
 
 }
 
-void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap) {
+void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap,Camera* camera) {
+    // Check if camera is NULL
+    if (camera == NULL) {
+        fprintf(stderr, "Error: camera is NULL\n");
+        return;
+    }
     
     // Set shader
     glUseProgram(buffer->shaderProgram);
@@ -137,79 +142,55 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     GLint ambientLocation = glGetUniformLocation(buffer->shaderProgram, "ambient");
     glUniform4f(ambientLocation, ambient->r, ambient->g, ambient->b, ambient->a);
 
-    // create view/camera transformation
+    /* // create view/camera transformation
     mat4x4 view;
     mat4x4_identity(view);
- /*    float radius = 3.0f; // camera rotation radius
-    float camX = (float)sin(globals.delta_time) * radius; // camera rotation x
-    float camY = 0.0f;
-    float camZ = (float)cos(globals.delta_time) * radius; */
-   // globals.camera.position = (vec3){0.0f, 0.0f, 3.0f};
-  //const float cameraSpeed = 0.05f; // adjust accordingly
-    //if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 
-    // multiply camera speed float by camera front vector
-    
-/* globals.camera.position[0] += globals.camera.speed * globals.camera.front[0];
-globals.camera.position[1] += globals.camera.speed * globals.camera.front[1];
-globals.camera.position[2] += globals.camera.speed * globals.camera.front[2]; */
+    // target / center 
+    camera->target[0] = camera->position[0] + camera->front[0];
+    camera->target[1] = camera->position[1] + camera->front[1];
+    camera->target[2] = camera->position[2] + camera->front[2];
 
-
-
-        
-    // eye / position
-    //vec3 cameraPosition = {0.0f, 0.0f, 3.0f};
-    // target / center
-    //vec3 cameraFront = {0.0f, 0.0f, -1.0f};
-    globals.camera.target[0] = globals.camera.position[0] + globals.camera.front[0];
-    globals.camera.target[1] = globals.camera.position[1] + globals.camera.front[1];
-    globals.camera.target[2] = globals.camera.position[2] + globals.camera.front[2];
- /*    target[0] = cameraPosition[0] + cameraFront[0];
-    target[1] = cameraPosition[1] + cameraFront[1];
-    target[2] = cameraPosition[2] + cameraFront[2]; */
     // camera up
-    //vec3 cameraUp = {0.0f, 1.0f, 0.0f};
-    mat4x4_look_at(view, globals.camera.position, globals.camera.target, globals.camera.up);
+    mat4x4_look_at(view,camera->position, camera->target, camera->up); */
     
-    // assign to globals
-   /*  globals.camera.position[0] = cameraPosition[0];
-    globals.camera.position[1] = cameraPosition[1];
-    globals.camera.position[2] = cameraPosition[2]; */
-    
-      
+    // projection
+  /*   mat4x4 projection;
+    mat4x4_identity(projection);
+    mat4x4_perspective(projection, camera->fov, globals.views.main.width / globals.views.main.height, camera->near, camera->far); */
+
     // create transformations
     mat4x4 model;
     mat4x4_identity(model);
-    mat4x4 projection;
-    mat4x4_identity(projection);
 
     // set model position
     mat4x4_translate(model, transformComponent->position[0],transformComponent->position[1],transformComponent->position[2]);
 
     // rotate model
-    float degrees = 0.0f * globals.delta_time;
+    float degrees = 5.5f * globals.delta_time;
     float radians = degrees * M_PI / 180.0f;
     mat4x4 rotatedModel;
     // The cast on model tells the compiler that you're aware of the 
     // const requirement and that you're promising not to modify the model matrix.
     mat4x4_rotate(rotatedModel, (const float (*)[4])model, 0.0f,1.0f,0.0f, radians);
-    // translate view
-   // mat4x4_translate(view, 0.0f, 0.0f, -300.0f);
-    // perspective projection
-    mat4x4_perspective(projection, 45.0f, globals.views.main.width / globals.views.main.height, 0.1f, 100.0f);
-    
+
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
     unsigned int viewLoc  = glGetUniformLocation(buffer->shaderProgram, "view");
 
     // pass them to the shaders 
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &rotatedModel[0][0]);
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &globals.camera.view[0][0]);
 
     // note: currently we set the projection matrix each frame,
     // but since the projection matrix rarely changes it's often best practice
-    // to set it outside the main loop only once.
-    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);
+    // to set it outside the main loop only once. 
+    // Then there are 4 scenarios where you would need to recalc. the projection matrix:
+    // - Window Resize / Change in aspect ratio
+    // - Camera projection type change, perspective to orthographic or vice versa
+    // - Change in FOV
+    // - Change in near/far plane
+    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &globals.camera.projection[0][0]);
         
     glBindVertexArray(buffer->VAO);
    if(buffer->numIndicies != 0) {
