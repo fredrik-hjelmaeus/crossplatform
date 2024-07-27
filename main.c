@@ -560,6 +560,11 @@ void cameraSystem(){
     }
 
     // Look for projection needs update flag & update/recalc projection matrix if needed.
+    // There are 4 scenarios where you would need to recalc. the projection matrix:
+    // - Window Resize / Change in aspect ratio
+    // - Camera projection type change, perspective to orthographic or vice versa
+    // - Change in FOV
+    // - Change in near/far plane
     if(globals.camera.projectionMatrixNeedsUpdate == 1){ 
         mat4x4 projection;
         mat4x4_identity(projection);

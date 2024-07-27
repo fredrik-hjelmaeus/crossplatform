@@ -142,38 +142,6 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     GLint ambientLocation = glGetUniformLocation(buffer->shaderProgram, "ambient");
     glUniform4f(ambientLocation, ambient->r, ambient->g, ambient->b, ambient->a);
 
-    /* // create view/camera transformation
-    mat4x4 view;
-    mat4x4_identity(view);
-
-    // target / center 
-    camera->target[0] = camera->position[0] + camera->front[0];
-    camera->target[1] = camera->position[1] + camera->front[1];
-    camera->target[2] = camera->position[2] + camera->front[2];
-
-    // camera up
-    mat4x4_look_at(view,camera->position, camera->target, camera->up); */
-    
-    // projection
-  /*   mat4x4 projection;
-    mat4x4_identity(projection);
-    mat4x4_perspective(projection, camera->fov, globals.views.main.width / globals.views.main.height, camera->near, camera->far); */
-
-/*     // create transformations
-    mat4x4 model;
-    mat4x4_identity(model);
-
-    // set model position
-    mat4x4_translate(model, transformComponent->position[0],transformComponent->position[1],transformComponent->position[2]);
-
-    // rotate model
-    float degrees = 5.5f * globals.delta_time;
-    float radians = degrees * M_PI / 180.0f;
-    mat4x4 rotatedModel;
-    // The cast on model tells the compiler that you're aware of the 
-    // const requirement and that you're promising not to modify the model matrix.
-    mat4x4_rotate(rotatedModel, (const float (*)[4])model, 0.0f,1.0f,0.0f, radians); */
-
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
     unsigned int viewLoc  = glGetUniformLocation(buffer->shaderProgram, "view");
@@ -182,14 +150,6 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &globals.camera.view[0][0]);
 
-    // note: currently we set the projection matrix each frame,
-    // but since the projection matrix rarely changes it's often best practice
-    // to set it outside the main loop only once. 
-    // Then there are 4 scenarios where you would need to recalc. the projection matrix:
-    // - Window Resize / Change in aspect ratio
-    // - Camera projection type change, perspective to orthographic or vice versa
-    // - Change in FOV
-    // - Change in near/far plane
     glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &globals.camera.projection[0][0]);
         
     glBindVertexArray(buffer->VAO);
