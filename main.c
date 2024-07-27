@@ -69,7 +69,12 @@ struct Globals globals = {
         .far = 100.0f,
         .aspectRatio = 800.0f / 600.0f,
         .viewMatrixNeedsUpdate = 1,
-        .projectionMatrixNeedsUpdate = 1
+        .projectionMatrixNeedsUpdate = 1,
+        .isOrthographic = 0,
+        .bottom = -1.0f,
+        .top = 1.0f,
+        .left = -1.0f,
+        .right = 1.0f,
     },
     .views = {
         .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,},
@@ -488,6 +493,16 @@ void input() {
                 // set view matrix needs update flag
                 globals.camera.viewMatrixNeedsUpdate = 1;
             }
+            if(strcmp(key, "O") == 0){
+                // Change the camera to orthographic
+                globals.camera.isOrthographic = 1;
+                globals.camera.projectionMatrixNeedsUpdate = 1;
+            }
+            if(strcmp(key, "P") == 0){
+                // Change the camera to perspective
+                globals.camera.isOrthographic = 0;
+                globals.camera.projectionMatrixNeedsUpdate = 1;
+            }
         }
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
@@ -568,7 +583,15 @@ void cameraSystem(){
     if(globals.camera.projectionMatrixNeedsUpdate == 1){ 
         mat4x4 projection;
         mat4x4_identity(projection);
-        mat4x4_perspective(projection, globals.camera.fov, globals.views.main.width / globals.views.main.height,globals.camera.near, globals.camera.far);
+
+        if (globals.camera.isOrthographic) {
+            // Calculate orthographic projection matrix
+            mat4x4_ortho(projection, globals.camera.left, globals.camera.right, globals.camera.bottom, globals.camera.top, globals.camera.near, globals.camera.far);
+        } else {
+            // Calculate perspective projection matrix
+            mat4x4_perspective(projection, globals.camera.fov, globals.views.main.width / globals.views.main.height, globals.camera.near, globals.camera.far);
+        }
+        //mat4x4_perspective(projection, globals.camera.fov, globals.views.main.width / globals.views.main.height,globals.camera.near, globals.camera.far);
         
         // Copy the projection matrix to globals.camera.projection
         memcpy(globals.camera.projection, projection, sizeof(mat4x4));

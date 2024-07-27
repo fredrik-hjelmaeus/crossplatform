@@ -25,13 +25,25 @@ typedef struct Camera {
     mat4x4 view;
     mat4x4 projection;
     float speed;
+    int viewMatrixNeedsUpdate;
+    int projectionMatrixNeedsUpdate;
+
+    // Perspective
     float fov;
     float near;
     float far;
     float aspectRatio;
-    int viewMatrixNeedsUpdate;
-    int projectionMatrixNeedsUpdate;
+    // Orthographic
+    float left;   // Left boundary for orthographic projection
+    float right;  // Right boundary for orthographic projection
+    float bottom; // Bottom boundary for orthographic projection
+    float top;    // Top boundary for orthographic projection
+    int isOrthographic; // Flag to indicate if the camera is orthographic
 } Camera;
+
+
+
+
 
 typedef struct View {
     int x;
