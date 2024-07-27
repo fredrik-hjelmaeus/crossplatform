@@ -121,7 +121,7 @@ void initializeTransformComponent(TransformComponent* transformComponent){
     transformComponent->rotation[0] = 0.0f;
     transformComponent->rotation[1] = 0.0f;
     transformComponent->rotation[2] = 0.0f;
-    transformComponent->isDirty = 1;
+    transformComponent->modelNeedsUpdate = 1;
 }
 
 void initializeMatrix4(float (*matrix)[4][4]) {
@@ -537,8 +537,8 @@ void input() {
  * Movement is handled in the input function, but will eventually be moved here.
  */
 void cameraSystem(){
-    // Look for view needs update flag & update/recalc view matrix if needed.
 
+    // Look for view needs update flag & update/recalc view matrix if needed.
     if(globals.camera.viewMatrixNeedsUpdate == 1){
 
         // create view/camera transformation
@@ -573,15 +573,64 @@ void cameraSystem(){
 }
 
 /**
+ * @brief Movement system
+ * Handles movement update on position,rotation & scale. (Atm only x-axis rotation.)
+ * The model matrix that is used for rendering is NOT updated here, but in the modelSystem. ModelSystem uses 
+ * the transform values that are updated here to update the model matrix. So this system needs to run before modelsystem.
+ * Atm this system is more of a placeholder for movement logic, but will eventually be more complex. 
+ * NOTE: Most movement logic is still done in the input function,but will eventually be moved here.
+ */
+void movementSystem(){
+    // rotate model logic (temporary)
+    float degrees = 15.5f * globals.delta_time;
+    float radians = degrees * M_PI / 180.0f;
+
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+           if(globals.entities[i].transformComponent->active == 1){
+                // Do movement stuff here
+                globals.entities[i].transformComponent->rotation[1] = radians;
+                // globals.entities[i].transformComponent->rotation[1] += radians; <- This is an example of acceleration.
+                globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+           }
+        }
+    }
+}
+
+/**
  * @brief Model system
  * Handles model update.
  * Atm we are not handling everything about the model here, just the update of model matrix.
  * Movement is handled in the input function, but will eventually be moved here or to a separate movement-system. 
  * Perhaps the model matrix update will move there aswell or maybe be handled in some kind of transform hierarchy system, 
  * since groups & hierarchy of entities should be something we would need when we try to build more complex scenes.
+ * NOTE: Atm this is more of a placeholder for model matrix update logic, since we only handle rotation on x-axis and not even handling scale change. 
+ * So atm only works with rigid body transforms.
  */
 void modelSystem(){
     // Look for transform needs update flag & update/recalc model matrix if needed.
+     for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+           if(globals.entities[i].transformComponent->modelNeedsUpdate == 1) {
+                    // create transformations
+                    mat4x4 model;
+                    mat4x4_identity(model);
+
+                    // set model position
+                    mat4x4_translate(model, globals.entities[i].transformComponent->position[0],globals.entities[i].transformComponent->position[1],globals.entities[i].transformComponent->position[2]);
+
+                    // rotate model (atm only in x axis)
+                    mat4x4 rotatedModel;
+                    // The cast on model tells the compiler that you're aware of the 
+                    // const requirement and that you're promising not to modify the model matrix.
+                    mat4x4_rotate(rotatedModel, (const float (*)[4])model, 0.0f,1.0f,0.0f, globals.entities[i].transformComponent->rotation[1]);
+
+                    // Copy the rotated model matrix to the transform component
+                    memcpy(globals.entities[i].transformComponent->transform, rotatedModel, sizeof(mat4x4));
+
+                    globals.entities[i].transformComponent->modelNeedsUpdate = 0;
+           }
+          }}
 }
 
 void update(){
@@ -600,7 +649,8 @@ void update(){
 
     // Systems
     cameraSystem();
-  
+    movementSystem();
+    modelSystem();
 }
 
 void render(){
@@ -875,7 +925,7 @@ void createMesh(
     entity->transformComponent->rotation[0] = rotation[0];
     entity->transformComponent->rotation[1] = rotation[1];
     entity->transformComponent->rotation[2] = rotation[2];
-    entity->transformComponent->isDirty = 1;
+    entity->transformComponent->modelNeedsUpdate = 1;
 
     // material data
     entity->materialComponent->active = 1;

@@ -159,7 +159,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     mat4x4_identity(projection);
     mat4x4_perspective(projection, camera->fov, globals.views.main.width / globals.views.main.height, camera->near, camera->far); */
 
-    // create transformations
+/*     // create transformations
     mat4x4 model;
     mat4x4_identity(model);
 
@@ -172,14 +172,14 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     mat4x4 rotatedModel;
     // The cast on model tells the compiler that you're aware of the 
     // const requirement and that you're promising not to modify the model matrix.
-    mat4x4_rotate(rotatedModel, (const float (*)[4])model, 0.0f,1.0f,0.0f, radians);
+    mat4x4_rotate(rotatedModel, (const float (*)[4])model, 0.0f,1.0f,0.0f, radians); */
 
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
     unsigned int viewLoc  = glGetUniformLocation(buffer->shaderProgram, "view");
 
     // pass them to the shaders 
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &rotatedModel[0][0]);
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &globals.camera.view[0][0]);
 
     // note: currently we set the projection matrix each frame,
