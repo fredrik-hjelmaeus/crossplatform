@@ -42,11 +42,13 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId);
 void createCube(int ui,Color diffuse,GLuint diffuseTextureId);
 void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj);
 void createLight(int ui,Color diffuse,GLuint diffuseTextureId);
+Camera* initCamera();
 TextureData loadTexture();
 
 //------------------------------------------------------
-// Global variables
+// Global variables / Initialization
 //------------------------------------------------------
+
 struct Globals globals = {
     .window=NULL,
     .renderer=NULL,
@@ -75,11 +77,11 @@ struct Globals globals = {
         .top = 1.0f,
         .left = -1.0f,
         .right = 1.0f,
-    },
+    }, 
     .views = {
-        .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,},
-        .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui},
-        .full={0, 0, 800, 600, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL},
+        .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL},
+        .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL},
+        .full={0, 0, 800, 600, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL},
     },
     .firstMouse=1,
 };
@@ -324,7 +326,7 @@ void initProgram(){
 /*
 * @brief Calculate the front vector of the camera & assign it to the global camera struct
 */
-void calcCameraFront(float xpos, float ypos){
+void calcCameraFront(Camera* camera, float xpos, float ypos){
             float yaw = -90.0f;
             float pitch = 0.0f;
             float lastX = 400, lastY = 300;
@@ -347,7 +349,7 @@ void calcCameraFront(float xpos, float ypos){
             direction[0] = cos(deg2rad(yaw)) * cos(deg2rad(pitch));
             direction[1] = sin(deg2rad(pitch));
             direction[2] = sin(deg2rad(yaw)) * cos(deg2rad(pitch));
-            vec3_norm(globals.camera.front, direction);
+            vec3_norm(camera->front, direction);
 }
 
 void recalculateViewports(int w, int h){
@@ -392,7 +394,7 @@ void recalculateViewports(int w, int h){
             globals.views.main.width = w - globals.views.main.childView->width;
         }
     }
-    globals.camera.projectionMatrixNeedsUpdate = 1;
+    globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
 }
 
 /**
@@ -428,20 +430,20 @@ void input() {
                 }
             }
             if(strcmp(key, "W") == 0){
-                globals.camera.position[0] += globals.camera.speed * globals.delta_time * globals.camera.front[0];
-                globals.camera.position[1] += globals.camera.speed * globals.delta_time * globals.camera.front[1];
-                globals.camera.position[2] += globals.camera.speed * globals.delta_time * globals.camera.front[2];
+                globals.views.main.camera->position[0] += globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[0];
+                globals.views.main.camera->position[1] += globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[1];
+                globals.views.main.camera->position[2] += globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[2];
 
                 // set view matrix needs update flag
-                globals.camera.viewMatrixNeedsUpdate = 1;
+                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "S") == 0){
-                globals.camera.position[0] -= globals.camera.speed * globals.delta_time * globals.camera.front[0];
-                globals.camera.position[1] -= globals.camera.speed * globals.delta_time * globals.camera.front[1];
-                globals.camera.position[2] -= globals.camera.speed * globals.delta_time * globals.camera.front[2];
+                globals.views.main.camera->position[0] -= globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[0];
+                globals.views.main.camera->position[1] -= globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[1];
+                globals.views.main.camera->position[2] -= globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[2];
 
                 // set view matrix needs update flag
-                globals.camera.viewMatrixNeedsUpdate = 1;
+                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "A") == 0){
 
@@ -452,21 +454,21 @@ void input() {
                 float crossProduct[3];
 
                 // copy position into newPos
-                memcpy(newPos, globals.camera.position, sizeof(newPos));
+                memcpy(newPos, globals.views.main.camera->position, sizeof(newPos));
 
                 // cross product
-                vec3_mul_cross(crossProduct, globals.camera.front, globals.camera.up);
+                vec3_mul_cross(crossProduct, globals.views.main.camera->front, globals.views.main.camera->up);
 
                 // normalize
                 vec3_norm(newPos, crossProduct);
 
                 // move & assign new position
-                globals.camera.position[0] -= globals.camera.speed * globals.delta_time * newPos[0];
-                globals.camera.position[1] -= globals.camera.speed * globals.delta_time * newPos[1];
-                globals.camera.position[2] -= globals.camera.speed * globals.delta_time * newPos[2];
+                globals.views.main.camera->position[0] -= globals.views.main.camera->speed * globals.delta_time * newPos[0];
+                globals.views.main.camera->position[1] -= globals.views.main.camera->speed * globals.delta_time * newPos[1];
+                globals.views.main.camera->position[2] -= globals.views.main.camera->speed * globals.delta_time * newPos[2];
 
                 // set view matrix needs update flag
-                globals.camera.viewMatrixNeedsUpdate = 1;
+                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "D") == 0){
 
@@ -477,31 +479,31 @@ void input() {
                 float crossProduct[3];
 
                 // copy position into newPos
-                memcpy(newPos, globals.camera.position, sizeof(newPos));
+                memcpy(newPos, globals.views.main.camera->position, sizeof(newPos));
 
                 // cross product
-                vec3_mul_cross(crossProduct, globals.camera.front, globals.camera.up);
+                vec3_mul_cross(crossProduct, globals.views.main.camera->front, globals.views.main.camera->up);
 
                 // normalize
                 vec3_norm(newPos, crossProduct);
 
                 // move & assign new position
-                globals.camera.position[0] += globals.camera.speed * globals.delta_time * newPos[0];
-                globals.camera.position[1] += globals.camera.speed * globals.delta_time * newPos[1];
-                globals.camera.position[2] += globals.camera.speed * globals.delta_time * newPos[2];
+                globals.views.main.camera->position[0] += globals.views.main.camera->speed * globals.delta_time * newPos[0];
+                globals.views.main.camera->position[1] += globals.views.main.camera->speed * globals.delta_time * newPos[1];
+                globals.views.main.camera->position[2] += globals.views.main.camera->speed * globals.delta_time * newPos[2];
 
                 // set view matrix needs update flag
-                globals.camera.viewMatrixNeedsUpdate = 1;
+                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "O") == 0){
                 // Change the camera to orthographic
-                globals.camera.isOrthographic = 1;
-                globals.camera.projectionMatrixNeedsUpdate = 1;
+                globals.views.main.camera->isOrthographic = 1;
+                globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "P") == 0){
                 // Change the camera to perspective
-                globals.camera.isOrthographic = 0;
-                globals.camera.projectionMatrixNeedsUpdate = 1;
+                globals.views.main.camera->isOrthographic = 0;
+                globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
             }
         }
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
@@ -537,11 +539,61 @@ void input() {
          //   float y_ndc = 1.0f - (2.0f * ypos) / height;
           //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
 
-            calcCameraFront(xpos, ypos);
+            //calcCameraFront(globals.views.full.camera,xpos, ypos);
+            calcCameraFront(globals.views.ui.camera,xpos, ypos);
+            calcCameraFront(globals.views.main.camera,xpos, ypos);
 
             // set view matrix needs update flag
-            globals.camera.viewMatrixNeedsUpdate = 1;
+            globals.views.main.camera->viewMatrixNeedsUpdate = 1;
+            //globals.views.full.camera->viewMatrixNeedsUpdate = 1;
+            globals.views.ui.camera->viewMatrixNeedsUpdate = 1;
         }
+    }
+}
+
+void updateCamera(Camera* camera){
+    // Look for view needs update flag & update/recalc view matrix if needed.
+    if(camera->viewMatrixNeedsUpdate == 1){
+        // create view/camera transformation
+        mat4x4 view;
+        mat4x4_identity(view);
+
+        // target / center 
+        camera->target[0] = camera->position[0] + camera->front[0];
+        camera->target[1] = camera->position[1] + camera->front[1];
+        camera->target[2] = camera->position[2] + camera->front[2];
+
+        // camera up
+        mat4x4_look_at(view,camera->position, camera->target, camera->up);
+
+        // Copy the view matrix to globals.camera.view
+        memcpy(camera->view, view, sizeof(mat4x4));
+
+        camera->viewMatrixNeedsUpdate = 0;
+    }
+
+    // Look for projection needs update flag & update/recalc projection matrix if needed.
+    // There are 4 scenarios where you would need to recalc. the projection matrix:
+    // - Window Resize / Change in aspect ratio
+    // - Camera projection type change, perspective to orthographic or vice versa
+    // - Change in FOV
+    // - Change in near/far plane
+    if(camera->projectionMatrixNeedsUpdate == 1){ 
+        mat4x4 projection;
+        mat4x4_identity(projection);
+
+        if (camera->isOrthographic) {
+            // Calculate orthographic projection matrix
+            mat4x4_ortho(projection, camera->left, camera->right, camera->bottom, camera->top, camera->near, camera->far);
+        } else {
+            // Calculate perspective projection matrix
+            mat4x4_perspective(projection, camera->fov, camera->aspectRatio, camera->near, camera->far);
+        }
+        
+        // Copy the projection matrix to globals.camera.projection
+        memcpy(camera->projection, projection, sizeof(mat4x4));
+
+        camera->projectionMatrixNeedsUpdate = 0;
     }
 }
 
@@ -552,52 +604,11 @@ void input() {
  * Movement is handled in the input function, but will eventually be moved here.
  */
 void cameraSystem(){
-
-    // Look for view needs update flag & update/recalc view matrix if needed.
-    if(globals.camera.viewMatrixNeedsUpdate == 1){
-
-        // create view/camera transformation
-        mat4x4 view;
-        mat4x4_identity(view);
-
-        // target / center 
-        globals.camera.target[0] = globals.camera.position[0] + globals.camera.front[0];
-        globals.camera.target[1] = globals.camera.position[1] + globals.camera.front[1];
-        globals.camera.target[2] = globals.camera.position[2] + globals.camera.front[2];
-
-        // camera up
-        mat4x4_look_at(view,globals.camera.position, globals.camera.target, globals.camera.up);
-
-        // Copy the view matrix to globals.camera.view
-        memcpy(globals.camera.view, view, sizeof(mat4x4));
-
-        globals.camera.viewMatrixNeedsUpdate = 0;
-    }
-
-    // Look for projection needs update flag & update/recalc projection matrix if needed.
-    // There are 4 scenarios where you would need to recalc. the projection matrix:
-    // - Window Resize / Change in aspect ratio
-    // - Camera projection type change, perspective to orthographic or vice versa
-    // - Change in FOV
-    // - Change in near/far plane
-    if(globals.camera.projectionMatrixNeedsUpdate == 1){ 
-        mat4x4 projection;
-        mat4x4_identity(projection);
-
-        if (globals.camera.isOrthographic) {
-            // Calculate orthographic projection matrix
-            mat4x4_ortho(projection, globals.camera.left, globals.camera.right, globals.camera.bottom, globals.camera.top, globals.camera.near, globals.camera.far);
-        } else {
-            // Calculate perspective projection matrix
-            mat4x4_perspective(projection, globals.camera.fov, globals.views.main.width / globals.views.main.height, globals.camera.near, globals.camera.far);
-        }
-        //mat4x4_perspective(projection, globals.camera.fov, globals.views.main.width / globals.views.main.height,globals.camera.near, globals.camera.far);
-        
-        // Copy the projection matrix to globals.camera.projection
-        memcpy(globals.camera.projection, projection, sizeof(mat4x4));
-
-        globals.camera.projectionMatrixNeedsUpdate = 0;
-    }
+    
+    updateCamera(globals.views.main.camera);
+    updateCamera(globals.views.ui.camera);
+    //updateCamera(&globals.views.full.camera);
+    
 }
 
 /**
@@ -716,7 +727,7 @@ void render(){
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,&globals.camera);
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera);
                 }else {
                     setViewportWithScissor(globals.views.main);
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
@@ -724,7 +735,7 @@ void render(){
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,&globals.camera);
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera);
                 }
             }
         }
@@ -775,6 +786,9 @@ void emscriptenLoop() {
 */
 void initScene(){
 
+  
+    
+
     // Assets
     TextureData textureData = loadTexture();
     GLuint diffuseTextureId = setupTexture(textureData);
@@ -800,8 +814,14 @@ int main(int argc, char **argv) {
    
     initOpenGLWindow();
     
-    // Starting state for program
-  
+    
+    
+    Camera* uiCamera = initCamera();
+    uiCamera->isOrthographic = 1;
+    Camera* mainCamera = initCamera();
+    globals.views.ui.camera = uiCamera;
+    globals.views.main.camera = mainCamera;
+
     initScene();
 
     //------------------------------------------------------
@@ -1243,6 +1263,44 @@ void createCube(int ui,Color diffuse,GLuint diffuseTextureId){
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
 
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
+}
+
+/**
+ * @brief Create a camera
+ */
+Camera* initCamera() {
+    Camera* camera = (Camera*)malloc(sizeof(Camera));
+    if (camera == NULL) {
+        // Handle memory allocation failure
+        return NULL;
+    }
+    vec3 position = {0.0f, 0.0f, 3.0f};
+    vec3 front = {0.0f, 0.0f, -1.0f};
+    vec3 up = {0.0f, 1.0f, 0.0f};
+    vec3 target = {0.0f, 0.0f, 0.0f};
+
+    // Initialize the Camera fields
+    memcpy(camera->position, position, sizeof(vec3));
+    memcpy(camera->front, front, sizeof(vec3));
+    memcpy(camera->up, up, sizeof(vec3));
+    memcpy(camera->target, target, sizeof(vec3));
+    // Initialize other fields as needed
+    camera->speed = 0.1f;
+    camera->viewMatrixNeedsUpdate = 1;
+    camera->projectionMatrixNeedsUpdate = 1;
+    camera->fov = 45.0f;
+    camera->near = 0.1f;
+    camera->far = 100.0f;
+    camera->aspectRatio = 800.0f / 600.0f;
+    camera->left = -1.0f;
+    camera->right = 1.0f;
+    camera->bottom = -1.0f;
+    camera->top = 1.0f;
+    camera->isOrthographic = 0;
+
+    return camera;
+
+ 
 }
 
 // -----------------------------------------------------

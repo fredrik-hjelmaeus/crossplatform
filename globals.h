@@ -21,5 +21,7 @@ struct Globals {
 };
 
 extern struct Globals globals;
+extern Camera uiCamera;
+extern Camera mainCamera;
 
 #endif // GLOBALS_H

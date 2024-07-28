@@ -125,6 +125,16 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
         fprintf(stderr, "Error: camera is NULL\n");
         return;
     }
+
+    // Print all values of the camera
+    printf("Camera values:\n");
+    printf("Position: %f %f %f\n", camera->position[0], camera->position[1], camera->position[2]);
+    printf("Front: %f %f %f\n", camera->front[0], camera->front[1], camera->front[2]);
+    printf("Up: %f %f %f\n", camera->up[0], camera->up[1], camera->up[2]);
+    printf("Right: %f \n", camera->right);
+    printf("target: %f %f %f\n", camera->target[0], camera->target[1], camera->target[2]);
+    printf("aspectRatio: %f \n", camera->aspectRatio);
+
     
     // Set shader
     glUseProgram(buffer->shaderProgram);
@@ -148,9 +158,9 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
 
     // pass them to the shaders 
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &globals.camera.view[0][0]);
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &camera->view[0][0]);
 
-    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &globals.camera.projection[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &camera->projection[0][0]);
         
     glBindVertexArray(buffer->VAO);
    if(buffer->numIndicies != 0) {

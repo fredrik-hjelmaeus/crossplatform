@@ -41,10 +41,6 @@ typedef struct Camera {
     int isOrthographic; // Flag to indicate if the camera is orthographic
 } Camera;
 
-
-
-
-
 typedef struct View {
     int x;
     int y;
