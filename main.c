@@ -60,24 +60,6 @@ struct Globals globals = {
     .delta_time=0.0f,
     .overideDrawMode=GL_TRIANGLES,
     .overrideDrawModeBool=0,
-    .camera = {
-        .position = {0.0f, 0.0f, 3.0f},
-        .front = {0.0f, 0.0f, -1.0f},
-        .up = {0.0f, 1.0f, 0.0f},
-        .target = {0.0f, 0.0f, 0.0f},
-        .speed = 0.1f,
-        .fov = 45.0f,
-        .near = 0.1f,
-        .far = 100.0f,
-        .aspectRatio = 800.0f / 600.0f,
-        .viewMatrixNeedsUpdate = 1,
-        .projectionMatrixNeedsUpdate = 1,
-        .isOrthographic = 0,
-        .bottom = -1.0f,
-        .top = 1.0f,
-        .left = -1.0f,
-        .right = 1.0f,
-    }, 
     .views = {
         .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL},
         .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL},
@@ -374,11 +356,6 @@ void recalculateViewports(int w, int h){
             globals.views.main.y = globals.views.main.childView->height;
             
             // TODO: here we need to update the childView y position,x pos & main x pos aswell. Atm they are not handled.
-            
-
-
-            // .ui=  {0, 0,   800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL},
-            // .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui},
 
         }
         if(globals.views.main.childView->splitDirection == SPLIT_VERTICAL){
@@ -533,20 +510,39 @@ void input() {
         if (globals.event.type == SDL_MOUSEMOTION) {
             int xpos =  globals.event.motion.x;
             int ypos = globals.event.motion.y;
-           // printf("Mouse moved to %d, %d\n", xpos, ypos);
+
+            // -----------TEMP CODE------------
+            printf("Mouse moved to %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
-          //  float x_ndc = (2.0f * xpos) / width - 1.0f;
-         //   float y_ndc = 1.0f - (2.0f * ypos) / height;
-          //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
+            //  float x_ndc = (2.0f * xpos) / width - 1.0f;
+            //   float y_ndc = 1.0f - (2.0f * ypos) / height;
+            //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
+            /*  
+            .views = {
+                .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL},
+                .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL},
+                .full={0, 0, 800, 600, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL},
+            }, */
+            // END TEMP CODE------------------
 
-            //calcCameraFront(globals.views.full.camera,xpos, ypos);
-            calcCameraFront(globals.views.ui.camera,xpos, ypos);
-            calcCameraFront(globals.views.main.camera,xpos, ypos);
+            // If mouse pos is within the main view
+            // NOTE: globals.views.main.x & globals.views.main.y represent lower left corner pos of main view
+            int mainYpos = height - globals.views.main.y;
+            if
+            ( 
+                xpos >= globals.views.main.x && xpos <= globals.views.main.x + globals.views.main.width &&
+                ypos > globals.views.main.height - mainYpos && ypos <= mainYpos 
+            ){
+                printf("Mouse is within main view\n ");
+                // Update the camera front vector
+                calcCameraFront(globals.views.main.camera,xpos, ypos);
+                // set view matrix needs update flag (so that we recalculate the view matrix with the new front vector)
+                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
+            }
 
-            // set view matrix needs update flag
-            globals.views.main.camera->viewMatrixNeedsUpdate = 1;
-            //globals.views.full.camera->viewMatrixNeedsUpdate = 1;
-            globals.views.ui.camera->viewMatrixNeedsUpdate = 1;
+            // Do boundary check for the ui view here..
+
+           
         }
     }
 }
@@ -566,7 +562,7 @@ void updateCamera(Camera* camera){
         // camera up
         mat4x4_look_at(view,camera->position, camera->target, camera->up);
 
-        // Copy the view matrix to globals.camera.view
+        // Copy the view matrix to camera.view
         memcpy(camera->view, view, sizeof(mat4x4));
 
         camera->viewMatrixNeedsUpdate = 0;
@@ -590,7 +586,7 @@ void updateCamera(Camera* camera){
             mat4x4_perspective(projection, camera->fov, camera->aspectRatio, camera->near, camera->far);
         }
         
-        // Copy the projection matrix to globals.camera.projection
+        // Copy the projection matrix to camera.projection
         memcpy(camera->projection, projection, sizeof(mat4x4));
 
         camera->projectionMatrixNeedsUpdate = 0;
@@ -607,7 +603,7 @@ void cameraSystem(){
     
     updateCamera(globals.views.main.camera);
     updateCamera(globals.views.ui.camera);
-    //updateCamera(&globals.views.full.camera);
+    
     
 }
 
@@ -708,7 +704,7 @@ void render(){
                 Color* spec = &globals.entities[i].materialComponent->specular;
                 GLfloat shin = globals.entities[i].materialComponent->shininess;
                 GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,&globals.camera);
+                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera);
             }
         }
     }
@@ -818,8 +814,10 @@ int main(int argc, char **argv) {
     
     Camera* uiCamera = initCamera();
     uiCamera->isOrthographic = 1;
-    Camera* mainCamera = initCamera();
+    uiCamera->aspectRatio = globals.views.ui.width / globals.views.ui.height;
     globals.views.ui.camera = uiCamera;
+    Camera* mainCamera = initCamera();
+    mainCamera->aspectRatio = globals.views.main.width / globals.views.main.height;
     globals.views.main.camera = mainCamera;
 
     initScene();

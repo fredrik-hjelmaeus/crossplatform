@@ -15,7 +15,6 @@ struct Globals {
     float delta_time;
     GLenum overideDrawMode;
     int overrideDrawModeBool;
-    Camera camera;
     Views views;
     int firstMouse;
 };

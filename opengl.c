@@ -120,22 +120,13 @@ void setupMaterial(GpuData* buffer){
 }
 
 void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap,Camera* camera) {
+
     // Check if camera is NULL
     if (camera == NULL) {
         fprintf(stderr, "Error: camera is NULL\n");
         return;
     }
-
-    // Print all values of the camera
-    printf("Camera values:\n");
-    printf("Position: %f %f %f\n", camera->position[0], camera->position[1], camera->position[2]);
-    printf("Front: %f %f %f\n", camera->front[0], camera->front[1], camera->front[2]);
-    printf("Up: %f %f %f\n", camera->up[0], camera->up[1], camera->up[2]);
-    printf("Right: %f \n", camera->right);
-    printf("target: %f %f %f\n", camera->target[0], camera->target[1], camera->target[2]);
-    printf("aspectRatio: %f \n", camera->aspectRatio);
-
-    
+     
     // Set shader
     glUseProgram(buffer->shaderProgram);
 
