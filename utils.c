@@ -247,3 +247,27 @@ ObjData loadObjFile(const char *filepath)
 }
 
 
+
+
+//----------------------------------------
+//---COLLISION DETECTION------------------
+//----------------------------------------
+
+/**
+ *  Function to check if a point is inside the rectangle.
+ * NOTE: x,y,width,height is expected to be in SDL coordinates, 
+ * use convertViewRectangleToSDLCoordinates to convert view coordinates to SDL coordinates if needed.
+ * @param rect Rectangle to check against, x,y,width,height is expected to be in SDL coordinates
+ */ 
+int isPointInsideRect(Rectangle rect, vec2 point) {
+    return (point[0] >= rect.x && point[0] <= rect.x + rect.width &&
+            point[1] >= rect.y && point[1] <= rect.y + rect.height);
+}
+
+/**
+ * Function to convert a view rectangle to SDL coordinates from view coordinates(opengl viewport coords).
+ */
+Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight) {
+    view.rect.y = windowHeight - view.rect.y - view.rect.height;
+    return view.rect;
+}

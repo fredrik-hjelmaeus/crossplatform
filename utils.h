@@ -40,6 +40,9 @@ float deg2rad(float degrees);
 } ObjFile; */
 ObjData loadObjFile(const char* filepath);
 
+int isPointInsideRect(Rectangle rect, vec2 point);
+Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
+
 #endif // End of the UTILS_H definition
 
 

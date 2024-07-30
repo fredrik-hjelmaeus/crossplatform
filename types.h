@@ -41,11 +41,21 @@ typedef struct Camera {
     int isOrthographic; // Flag to indicate if the camera is orthographic
 } Camera;
 
+typedef struct Rectangle{
+    int x;      // Rectangle left position (top-left or bottom-left corner)
+    int y;      // Rectangle top position (top-left or bottom-left corner)
+    int width;  // Rectangle width
+    int height; // Rectangle height
+} Rectangle;
+
+
+
 typedef struct View {
-    int x;
-    int y;
+   /*  int x; // rectangle left position
+    int y; // rectangle top position
     int width;
-    int height;
+    int height; */
+    Rectangle rect;
     Color clearColor;
     SplitDirection splitDirection;
     struct View* childView; // Pointer to a child view, can be NULL if no child

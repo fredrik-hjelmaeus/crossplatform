@@ -61,9 +61,9 @@ struct Globals globals = {
     .overideDrawMode=GL_TRIANGLES,
     .overrideDrawModeBool=0,
     .views = {
-        .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL},
-        .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL},
-        .full={0, 0, 800, 600, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL},
+        .ui={{0, 0, 800, 200}, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL},
+        .main={{0, 200, 800, 400}, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL},
+        .full={{0, 0, 800, 600}, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL},
     },
     .firstMouse=1,
 };
@@ -278,15 +278,15 @@ void initWindow() {
 }
 
 void setViewport(struct View view) {
-    glViewport(view.x, view.y, view.width, view.height);
+    glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
 }
 
 void setViewportWithScissor(View view) {
     // Set the viewport
-    glViewport(view.x, view.y, view.width, view.height);
+    glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
 
     // Set the scissor box
-    glScissor(view.x, view.y, view.width, view.height);
+    glScissor(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
     glEnable(GL_SCISSOR_TEST);
 
     // Set the clear color
@@ -340,35 +340,35 @@ void recalculateViewports(int w, int h){
         if(globals.views.main.childView->splitDirection == SPLIT_HORIZONTAL){
 
             // Calc new percentage height, using old main height.
-            float percentageChildHeight = (float)globals.views.main.childView->height / ((float)globals.views.main.height + (float)globals.views.main.childView->height);
+            float percentageChildHeight = (float)globals.views.main.childView->rect.height / ((float)globals.views.main.rect.height + (float)globals.views.main.childView->rect.height);
             printf("percentageChildHeight: %f\n", percentageChildHeight);
 
             // Update childView height & the new width.
-            globals.views.main.childView->height = h * percentageChildHeight;
-            printf("new childView height: %d\n", globals.views.main.childView->height);
-            globals.views.main.childView->width = w;
+            globals.views.main.childView->rect.height = h * percentageChildHeight;
+            printf("new childView height: %d\n", globals.views.main.childView->rect.height);
+            globals.views.main.childView->rect.width = w;
 
             // Update main height
-            globals.views.main.height = h - globals.views.main.childView->height;
-            globals.views.main.width = w;
+            globals.views.main.rect.height = h - globals.views.main.childView->rect.height;
+            globals.views.main.rect.width = w;
 
             // Update main y position
-            globals.views.main.y = globals.views.main.childView->height;
+            globals.views.main.rect.y = globals.views.main.childView->rect.height;
             
             // TODO: here we need to update the childView y position,x pos & main x pos aswell. Atm they are not handled.
 
         }
         if(globals.views.main.childView->splitDirection == SPLIT_VERTICAL){
             // Calc new percentage width, using old main width.
-            float percentageChildWidth = globals.views.main.childView->width / globals.views.main.width;
+            float percentageChildWidth = globals.views.main.childView->rect.width / globals.views.main.rect.width;
 
             // Update childView height & the new width.
-            globals.views.main.childView->width = w * percentageChildWidth;
-            globals.views.main.childView->height = h;
+            globals.views.main.childView->rect.width = w * percentageChildWidth;
+            globals.views.main.childView->rect.height = h;
 
             // Update main height
-            globals.views.main.height = h;
-            globals.views.main.width = w - globals.views.main.childView->width;
+            globals.views.main.rect.height = h;
+            globals.views.main.rect.width = w - globals.views.main.childView->rect.width;
         }
     }
     globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
@@ -525,14 +525,14 @@ void input() {
             }, */
             // END TEMP CODE------------------
 
+            
+           
             // If mouse pos is within the main view
-            // NOTE: globals.views.main.x & globals.views.main.y represent lower left corner pos of main view
-            int mainYpos = height - globals.views.main.y;
-            if
-            ( 
-                xpos >= globals.views.main.x && xpos <= globals.views.main.x + globals.views.main.width &&
-                ypos > globals.views.main.height - mainYpos && ypos <= mainYpos 
-            ){
+            // view is not a rectangle with SDL-coords, we need to flip the y-value.
+            Rectangle convertedViewRectangle = convertViewRectangleToSDLCoordinates(globals.views.main,height);
+     
+            if(isPointInsideRect(convertedViewRectangle, (vec2){xpos, ypos})){ 
+                
                 printf("Mouse is within main view\n ");
                 // Update the camera front vector
                 calcCameraFront(globals.views.main.camera,xpos, ypos);
@@ -814,10 +814,10 @@ int main(int argc, char **argv) {
     
     Camera* uiCamera = initCamera();
     uiCamera->isOrthographic = 1;
-    uiCamera->aspectRatio = globals.views.ui.width / globals.views.ui.height;
+    uiCamera->aspectRatio = globals.views.ui.rect.width / globals.views.ui.rect.height;
     globals.views.ui.camera = uiCamera;
     Camera* mainCamera = initCamera();
-    mainCamera->aspectRatio = globals.views.main.width / globals.views.main.height;
+    mainCamera->aspectRatio = globals.views.main.rect.width / globals.views.main.rect.height;
     globals.views.main.camera = mainCamera;
 
     initScene();
