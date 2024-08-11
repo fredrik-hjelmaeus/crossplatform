@@ -38,7 +38,7 @@
 
 // Prototypes
 void createTriangle(int ui,Color diffuse);
-void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId);
+void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
 void createCube(int ui,Color diffuse,GLuint diffuseTextureId);
 void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj);
 void createLight(int ui,Color diffuse,GLuint diffuseTextureId);
@@ -61,11 +61,13 @@ struct Globals globals = {
     .overideDrawMode=GL_TRIANGLES,
     .overrideDrawModeBool=0,
     .views = {
-        .ui={{0, 0, 800, 200}, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL},
-        .main={{0, 200, 800, 400}, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL},
-        .full={{0, 0, 800, 600}, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL},
+        .ui={{0, 0, 800, 200}, {0.0f, 0.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL,false},
+        .main={{0, 200, 800, 400}, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL,false},
+        .full={{0, 0, 800, 600}, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL,false},
     },
     .firstMouse=1,
+    .mouseXpos=0.0f,
+    .mouseYpos=0.0f,
 };
 
 // Colors
@@ -150,10 +152,17 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->specular.b = 0.0f;
     materialComponent->specular.a = 1.0f;
     materialComponent->shininess = 0.0f;
+    materialComponent->useDiffuseMap = true;
 }
 
 void initializeUIComponent(UIComponent* uiComponent){
     uiComponent->active = 0;
+    uiComponent->hovered = 0;
+    uiComponent->clicked = 0;
+    uiComponent->boundingBox.x = 0;
+    uiComponent->boundingBox.y = 0;
+    uiComponent->boundingBox.width = 0;
+    uiComponent->boundingBox.height = 0;
 }
 
 
@@ -511,6 +520,9 @@ void input() {
             int xpos =  globals.event.motion.x;
             int ypos = globals.event.motion.y;
 
+            globals.mouseXpos = (float)xpos;
+            globals.mouseYpos = (float)ypos;
+
             // -----------TEMP CODE------------
             printf("Mouse moved to %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
@@ -529,18 +541,31 @@ void input() {
            
             // If mouse pos is within the main view
             // view is not a rectangle with SDL-coords, we need to flip the y-value.
-            Rectangle convertedViewRectangle = convertViewRectangleToSDLCoordinates(globals.views.main,height);
+            Rectangle convertedMainViewRectangle = convertViewRectangleToSDLCoordinates(globals.views.main,height);
      
-            if(isPointInsideRect(convertedViewRectangle, (vec2){xpos, ypos})){ 
+            if(isPointInsideRect(convertedMainViewRectangle, (vec2){xpos, ypos})){ 
                 
-                printf("Mouse is within main view\n ");
+               // printf("Mouse is within main view\n ");
                 // Update the camera front vector
                 calcCameraFront(globals.views.main.camera,xpos, ypos);
                 // set view matrix needs update flag (so that we recalculate the view matrix with the new front vector)
                 globals.views.main.camera->viewMatrixNeedsUpdate = 1;
             }
 
-            // Do boundary check for the ui view here..
+            // If mouse pos is within the ui view
+            // view is not a rectangle with SDL-coords, we need to flip the y-value.
+            Rectangle convertedUIViewRectangle = convertViewRectangleToSDLCoordinates(globals.views.ui,height);
+     
+            if(isPointInsideRect(convertedUIViewRectangle, (vec2){xpos, ypos})){
+                globals.views.ui.isMousePointerWithin = true; 
+                /* float degrees = 15.5f * globals.delta_time;
+                float radians = degrees * M_PI / 180.0f;  */ 
+               // printf("Mouse is within ui view\n ");
+                
+               
+            }else{
+                globals.views.ui.isMousePointerWithin = false;
+            }
 
            
         }
@@ -607,6 +632,43 @@ void cameraSystem(){
     
 }
 
+void uiSystem(){
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active) {
+            // Do ui logic here
+            if(globals.entities[i].transformComponent->modelNeedsUpdate == 1){
+                
+                
+                // Position element in "UI" space, where 0,0 is the center of the ui-viewport screen. We will position the element to top left corner of the screen.
+                float ui_viewport_half_width = (float)globals.views.main.rect.width / 2;
+                float ui_viewport_half_height = (float)globals.views.main.rect.height / 2;
+                float entity_half_scale_x = globals.entities[i].transformComponent->scale[0] / 2;
+                float entity_half_scale_y = globals.entities[i].transformComponent->scale[1] / 2;
+                globals.entities[i].transformComponent->position[0] = globals.entities[i].transformComponent->position[0] + (float)globals.views.main.rect.x - ui_viewport_half_width + entity_half_scale_x;
+                globals.entities[i].transformComponent->position[1] = globals.entities[i].transformComponent->position[1] + (float)globals.views.main.rect.y - ui_viewport_half_height + entity_half_scale_y;
+                
+                globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0] + ui_viewport_half_width - entity_half_scale_x;
+                globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1] + ui_viewport_half_height - entity_half_scale_y;
+                globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0] + globals.entities[i].transformComponent->position[0] + ui_viewport_half_width - entity_half_scale_x;
+                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1] + globals.entities[i].transformComponent->position[1] + ui_viewport_half_height - entity_half_scale_y;
+
+               // printf("ui viewport x & y pos: %f, %f\n", (float)globals.views.main.rect.x, (float)globals.views.main.rect.y);
+                //printf("pos x & y: %f, %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
+                printf("bb x %d \n", globals.entities[i].uiComponent->boundingBox.x);
+                printf("bb y %d \n", globals.entities[i].uiComponent->boundingBox.y);
+                printf("bb width %d \n", globals.entities[i].uiComponent->boundingBox.width);
+                printf("bb height %d \n", globals.entities[i].uiComponent->boundingBox.height);
+                printf("----------------------------------------\n");
+              
+
+
+                
+            }
+
+        }
+    }
+}
+
 /**
  * @brief Movement system
  * Handles movement update on position,rotation & scale. (Atm only x-axis rotation.)
@@ -623,13 +685,82 @@ void movementSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
            if(globals.entities[i].transformComponent->active == 1){
-                // Do movement stuff here
-                globals.entities[i].transformComponent->rotation[1] = radians;
+                // Do movement logic here:
+
+                // Example of movement logic: Rotate on y-axis on all entities that are not ui (temporary)
+                if(globals.entities[i].uiComponent->active == 1){
+                   /*  if(isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.event.motion.x, globals.event.motion.y})){
+                    globals.entities[i].transformComponent->scale[0] += 1.5f;
+                    globals.entities[i].transformComponent->modelNeedsUpdate = 1; */
+                     /*    printf("bb x %d ", globals.entities[i].uiComponent->boundingBox.x);
+                        printf("bb y %d ", globals.entities[i].uiComponent->boundingBox.y);
+                        printf("bb width %d ", globals.entities[i].uiComponent->boundingBox.width);
+                        printf("bb height %d ", globals.entities[i].uiComponent->boundingBox.height); */
+                        //globals.entities[i].transformComponent->rotation[1] = radians;
+                        //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                   // }
+                }
                 // globals.entities[i].transformComponent->rotation[1] += radians; <- This is an example of acceleration.
-                globals.entities[i].transformComponent->modelNeedsUpdate = 1;
            }
         }
     }
+}
+
+void hoverSystem(){
+    // Check if mouse is inside ui view
+    // if so, check if mouse is inside any ui elements
+    // if so, set hover effect on that element
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+                    if(globals.entities[i].alive == 1) {
+                        if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
+                            // Do movement logic here:
+
+                            // Example of movement logic: Rotate on y-axis on all entities that are not ui (temporary)
+                           
+                                /*   printf("bb x %d \n", globals.entities[i].uiComponent->boundingBox.x);
+                                    printf("bb y %d \n", globals.entities[i].uiComponent->boundingBox.y);
+                                    printf("bb width %d \n", globals.entities[i].uiComponent->boundingBox.width);
+                                    printf("bb height %d \n", globals.entities[i].uiComponent->boundingBox.height); */
+                                    float ndcX = (float)globals.entities[i].uiComponent->boundingBox.x; /// (float)width;
+                                    float ndcY = (float)globals.entities[i].uiComponent->boundingBox.y; /// (float)height;
+                                    float ndcWidth = (float)globals.entities[i].uiComponent->boundingBox.width; /// (float)width;
+                                    float ndcHeight = (float)globals.entities[i].uiComponent->boundingBox.height;/// (float)height;
+
+                                    float ui_viewport_half_width = (float)globals.views.main.rect.width / 2;
+                                    float ui_viewport_half_height = (float)globals.views.main.rect.height / 2;
+                                
+                                    printf("ndcX %f \n", ndcX-ui_viewport_half_width);
+                                    printf("ndcY %f \n", ndcY+ui_viewport_half_height);
+                                    printf("ndcWidth %f \n", ndcWidth);
+                                    printf("ndcHeight %f \n", ndcHeight);
+                                    printf("----------------------------------------\n");
+                                    Rectangle ndcRect = {ndcX, ndcY, ndcWidth, ndcHeight};
+                                if(globals.views.ui.isMousePointerWithin && isPointInsideRect(ndcRect, (vec2){ globals.mouseXpos, globals.mouseYpos})){
+                                //globals.entities[i].transformComponent->scale[0] += 0.05f;
+                                    //globals.entities[i].transformComponent->rotation[1] = radians;
+                                    globals.entities[i].materialComponent->useDiffuseMap = false;
+                                    globals.entities[i].materialComponent->ambient.g = 0.5f;
+                                    globals.entities[i].materialComponent->diffuse.g = 0.5f;
+                                    globals.entities[i].materialComponent->diffuse.a = 0.5f;
+                                //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                                    
+                                    //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                                } else {
+                                    globals.entities[i].materialComponent->useDiffuseMap = true;
+                                    globals.entities[i].materialComponent->ambient.g = 0.0f;
+                                    globals.entities[i].materialComponent->diffuse.g = 0.0f;
+                                    globals.entities[i].materialComponent->diffuse.a = 1.0f;
+                                }
+                            
+                            // globals.entities[i].transformComponent->rotation[1] += radians; <- This is an example of acceleration.
+                        }
+                    }
+                }
+                // TODO: 
+                // 1. set a flag somewhere so that check that flag later in update loop to see if we are inside ui view.
+                // 2. make a system, like uiSystem where we iterate over all enties with uiComponent and do stuff with them, 
+                // maybe if type is button we check if mouse is inside using isPointInsideRect and do hover effect?.
+                // 3. text rendering on button?
 }
 
 /**
@@ -653,6 +784,9 @@ void modelSystem(){
 
                     // set model position
                     mat4x4_translate(model, globals.entities[i].transformComponent->position[0],globals.entities[i].transformComponent->position[1],globals.entities[i].transformComponent->position[2]);
+
+                    // set model scale
+                    mat4x4_scale_aniso(model, model, globals.entities[i].transformComponent->scale[0],globals.entities[i].transformComponent->scale[1],globals.entities[i].transformComponent->scale[2]);
 
                     // rotate model (atm only in x axis)
                     mat4x4 rotatedModel;
@@ -684,6 +818,8 @@ void update(){
 
     // Systems
     cameraSystem();
+    uiSystem();
+    hoverSystem();
     movementSystem();
     modelSystem();
 }
@@ -723,7 +859,8 @@ void render(){
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera);
+                    bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
                 }else {
                     setViewportWithScissor(globals.views.main);
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
@@ -731,7 +868,8 @@ void render(){
                     Color* spec = &globals.entities[i].materialComponent->specular;
                     GLfloat shin = globals.entities[i].materialComponent->shininess;
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera);
+                    bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera,useDiffMap);
                 }
             }
         }
@@ -779,26 +917,31 @@ void emscriptenLoop() {
 /**
  * @brief Initialize the scene
  * Create the 3d and ui scene objects
+ * 3d objects put into main viewport will be in an 3d-enviroment and treated normally.
+ * objects created in the ui viewport will be in a 2d-environment and act more like a web ui element.
 */
 void initScene(){
 
-  
-    
-
-    // Assets
-    TextureData textureData = loadTexture();
-    GLuint diffuseTextureId = setupTexture(textureData);
+   // Assets
+   TextureData textureData = loadTexture();
+   GLuint diffuseTextureId = setupTexture(textureData);
    ObjData objData = loadObjFile("truck.obj");
- createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
- createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
+
+   // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
+ //createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
+// createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
    //createCube(VIEWPORT_MAIN,red,diffuseTextureId);
    createLight(VIEWPORT_MAIN,green,diffuseTextureId);
    // createCube(VIEWPORT_UI,red,diffuseTextureId);
   // createCube(VIEWPORT_MAIN,green,diffuseTextureId);
     //exit(1);
-    // 3d scene objects creation
+    
    // createRectangle(VIEWPORT_MAIN,blue,diffuseTextureId);
-    //createRectangle(VIEWPORT_UI,red,diffuseTextureId);
+
+   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel coords.
+   // TODO: implement point attributes (which is in ndc coords), to pixel coords. z position will be z-depth, much like in DOM in web.
+   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+
 }
 
 int main(int argc, char **argv) {
@@ -815,6 +958,10 @@ int main(int argc, char **argv) {
     Camera* uiCamera = initCamera();
     uiCamera->isOrthographic = 1;
     uiCamera->aspectRatio = globals.views.ui.rect.width / globals.views.ui.rect.height;
+    uiCamera->left = -800.0f/2.0f;
+    uiCamera->right = 800.0f/2.0f;
+    uiCamera->bottom = -200.0f/2.0f;
+    uiCamera->top = 200.0f/2.0f;
     globals.views.ui.camera = uiCamera;
     Camera* mainCamera = initCamera();
     mainCamera->aspectRatio = globals.views.main.rect.width / globals.views.main.rect.height;
@@ -869,14 +1016,11 @@ void createMesh(
     Material* material,
     int ui,
     GLenum drawMode,
-    VertexDataType vertexDataType 
+    VertexDataType vertexDataType,
+    Entity* entity
     ){
-    Entity* entity = addEntity(MODEL);
     
     entity->meshComponent->active = 1;
-    if(ui == 1){
-        entity->uiComponent->active = 1;
-    }
 
     // vertex data
     entity->meshComponent->vertices = (Vertex*)malloc(num_of_vertex * sizeof(Vertex));
@@ -1067,9 +1211,15 @@ void createLight(int ui,Color diffuse,GLuint diffuseTextureId){
     //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f}; not used, comes from attribute data
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, true};
 
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
+    Entity* entity = addEntity(MODEL);
+    if(ui == 1){
+        entity->uiComponent->active = 1;
+        entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
+    }
+
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
 /**
  * @brief Create a object. Used together with obj-load/parse. Expects data from obj-parser to be of type ObjData.
@@ -1107,9 +1257,14 @@ void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
     Color ambient = {1.0f, 0.1f, 0.1f, 1.0f};
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId}; 
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, true};
 
-    createMesh(vertices,obj->num_of_vertices,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV);
+    Entity* entity = addEntity(MODEL);
+    if(ui == 1){
+        entity->uiComponent->active = 1;
+    }
+
+    createMesh(vertices,obj->num_of_vertices,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV,entity);
 }
 
 /**
@@ -1143,7 +1298,12 @@ void createTriangle(int ui,Color diffuse){
     GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess};
 
-    createMesh(verts,3,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
+    Entity* entity = addEntity(MODEL);
+    if(ui == 1){
+        entity->uiComponent->active = 1;
+    }
+
+    createMesh(verts,3,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
 /**
  * @brief Create a rectangle
@@ -1151,33 +1311,36 @@ void createTriangle(int ui,Color diffuse){
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
-void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId){
+void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
     // positions          // colors           // texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left  
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // top right
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f  // top left  
     };
     // index data (counterclockwise)
     GLuint indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3  // second triangle
     };
-    // transform
-    vec3 position = {0.0f, 0.0f, 0.0f};
-    vec3 scale = {1.0f, 1.0f, 1.0f};
-    vec3 rotation = {0.0f, 0.0f, 0.0f};
 
     //material
     Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
    // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId,true};
 
-    createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES);
+    Entity* entity = addEntity(MODEL);
+    if(ui == 1){
+        entity->uiComponent->active = 1;
+        entity->uiComponent->boundingBox = (Rectangle){0,400,50,50};
+        // Create a button component with an initial position in ndc space coords. 1.0f is one pixel.
+    }
+
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
 }
 /**
  * @brief Create a Cube
@@ -1258,9 +1421,14 @@ void createCube(int ui,Color diffuse,GLuint diffuseTextureId){
    // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId};
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId,true };
 
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV);
+    Entity* entity = addEntity(MODEL);
+    if(ui == 1){
+        entity->uiComponent->active = 1;
+    }
+
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
 
 /**

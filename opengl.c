@@ -119,7 +119,40 @@ void setupMaterial(GpuData* buffer){
 
 }
 
-void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap,Camera* camera) {
+/**
+ * @brief Render a mesh
+ * Further optimizations:
+ * Cache Uniform Locations: Cache the uniform locations during shader initialization to avoid querying them every frame.
+ * Update Uniforms Only When Necessary: Track changes to uniform values and update them only when they change.
+ * Use Uniform Buffer Objects (UBOs): For frequently changing uniforms, consider using UBOs to batch updates and reduce the number of API calls.
+ * Minimize State Changes: Reduce the number of state changes (e.g., binding textures, shaders) by grouping draw calls that use the same state.
+ * Ex of caching uniform locations:
+ * typedef struct {
+    GLuint shaderProgram;
+    GLint modelLoc;
+    GLint viewLoc;
+    GLint projectionLoc;
+    GLint colorLoc;
+    GLint ambientLoc;
+    GLint useDiffuseMapLoc;
+    GLint texture1Loc;
+} ShaderProgram;
+
+void initializeShaderProgram(ShaderProgram* shaderProgram, const char* vertexPath, const char* fragmentPath) {
+    // Compile and link shaders (not shown)
+    shaderProgram->shaderProgram = compileAndLinkShaders(vertexPath, fragmentPath);
+
+    // Cache uniform locations
+    shaderProgram->modelLoc = glGetUniformLocation(shaderProgram->shaderProgram, "model");
+    shaderProgram->viewLoc = glGetUniformLocation(shaderProgram->shaderProgram, "view");
+    shaderProgram->projectionLoc = glGetUniformLocation(shaderProgram->shaderProgram, "projection");
+    shaderProgram->colorLoc = glGetUniformLocation(shaderProgram->shaderProgram, "color");
+    shaderProgram->ambientLoc = glGetUniformLocation(shaderProgram->shaderProgram, "ambient");
+    shaderProgram->useDiffuseMapLoc = glGetUniformLocation(shaderProgram->shaderProgram, "useDiffuseMap");
+    shaderProgram->texture1Loc = glGetUniformLocation(shaderProgram->shaderProgram, "texture1");
+}
+ */
+void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap,Camera* camera,bool useDiffuseMap) {
 
     // Check if camera is NULL
     if (camera == NULL) {
@@ -134,6 +167,10 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, diffuseMap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "texture1"), 0);
+
+    // Enable or disable the diffuse map
+    //bool useDiffuseMap = true; // or false to disable
+    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "useDiffuseMap"), useDiffuseMap);
 
     // Set the color uniform
     GLint colorLocation = glGetUniformLocation(buffer->shaderProgram, "color");

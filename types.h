@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include <stdio.h>
+#include <stdbool.h>
 #include "opengl_types.h"
 
 typedef struct Color {
@@ -25,8 +26,8 @@ typedef struct Camera {
     mat4x4 view;
     mat4x4 projection;
     float speed;
-    int viewMatrixNeedsUpdate;
-    int projectionMatrixNeedsUpdate;
+    bool viewMatrixNeedsUpdate;
+    bool projectionMatrixNeedsUpdate;
 
     // Perspective
     float fov;
@@ -38,7 +39,7 @@ typedef struct Camera {
     float right;  // Right boundary for orthographic projection
     float bottom; // Bottom boundary for orthographic projection
     float top;    // Top boundary for orthographic projection
-    int isOrthographic; // Flag to indicate if the camera is orthographic
+    bool isOrthographic; // Flag to indicate if the camera is orthographic
 } Camera;
 
 typedef struct Rectangle{
@@ -48,18 +49,14 @@ typedef struct Rectangle{
     int height; // Rectangle height
 } Rectangle;
 
-
-
+// TODO: introduce concept of Layouts?
 typedef struct View {
-   /*  int x; // rectangle left position
-    int y; // rectangle top position
-    int width;
-    int height; */
     Rectangle rect;
     Color clearColor;
     SplitDirection splitDirection;
     struct View* childView; // Pointer to a child view, can be NULL if no child
     Camera* camera; // Pointer to a camera, can be NULL if no camera
+    bool isMousePointerWithin; // Flag to indicate if the mouse pointer is within the view
 } View;
 
 typedef struct Views {
@@ -108,6 +105,7 @@ typedef struct Material {
     Color specular;
     GLfloat shininess;
     GLuint diffuseMap;
+    bool useDiffuseMap;
    /* Texture* specularMap;
     Texture* normalMap; */
 } Material;
@@ -133,8 +131,8 @@ enum Tag {
 };
 
 typedef struct TransformComponent {
-    int active;
-    int modelNeedsUpdate;
+    bool active;
+    bool modelNeedsUpdate;
     vec3 position;
     vec3 rotation;
     vec3 scale;
@@ -142,13 +140,13 @@ typedef struct TransformComponent {
 } TransformComponent;
 
 typedef struct GroupComponent {
-    int active;
+    bool active;
     mat4x4 transform;
 } GroupComponent;
 
 typedef struct MeshComponent {
-    int active;
-    int drawIndexed;
+    bool active;
+    bool drawIndexed;
     Vertex* vertices;
     size_t vertexCount;
     unsigned int* indices;
@@ -157,23 +155,38 @@ typedef struct MeshComponent {
 } MeshComponent;
 
 typedef struct UIComponent {
-    int active;
+    bool active;
+    bool hovered;
+    bool clicked;
+    Rectangle boundingBox;
+    // padding?
+    // margin?
+    // offset?
+    // border?
+    // text?
+    // font?
+    // fontSize?
+    // textAlign
+    // textOverflow?
+    // opacity?
+    // visibility?
 } UIComponent;
 
 typedef struct MaterialComponent {
-    int active;
+    bool active;
     Color ambient;
     Color diffuse;
     Color specular;
     float shininess;
     GLuint diffuseMap;
+    bool useDiffuseMap;
   //  Texture* specularMap;
   //  Texture* normalMap;
 } MaterialComponent;
 
 typedef struct Entity {
     int id;
-    int alive;
+    bool alive;
     int tag;
     TransformComponent* transformComponent;
     GroupComponent* groupComponent;

@@ -12,12 +12,17 @@ uniform vec4 ambient;
 // texture samplers
 uniform sampler2D texture1;
 
+uniform bool useDiffuseMap;
 
 void main()
 {
 	
 	vec4 diffuse = vec4(objectColor, 1.0f) * ambient;
-	FragColor = mix(texture(texture1, texCoord), diffuse, 0.5);
+	if (useDiffuseMap) {
+		FragColor = mix(texture(texture1, texCoord), diffuse, 0.5);
+    } else {
+		FragColor = diffuse;
+    }
 	
 	
 	
