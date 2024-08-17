@@ -68,6 +68,7 @@ struct Globals globals = {
     .firstMouse=1,
     .mouseXpos=0.0f,
     .mouseYpos=0.0f,
+    .drawBoundingBoxes=false
 };
 
 // Colors
@@ -135,6 +136,12 @@ void initializeMeshComponent(MeshComponent* meshComponent){
         printf("Failed to allocate memory for gpuData\n");
         exit(1);
     }
+    // Initialize GpuData
+    meshComponent->gpuData->VAO = 0;
+    meshComponent->gpuData->VBO = 0;
+    meshComponent->gpuData->EBO = 0;
+    meshComponent->gpuData->drawMode = GL_TRIANGLES; // Default draw mode
+    meshComponent->gpuData->numIndicies = 0;
 }
 
 void initializeMaterialComponent(MaterialComponent* materialComponent){
@@ -290,7 +297,7 @@ void setViewport(struct View view) {
     glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
 }
 
-void setViewportWithScissor(View view) {
+void setViewportWithScissorAndClear(View view) {
     // Set the viewport
     glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
 
@@ -403,6 +410,9 @@ void input() {
                 globals.views.main.clearColor.b = randFloat(0.0,1.0);
         
                 //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
+            }
+            if(strcmp(key, "B") == 0) {
+                globals.drawBoundingBoxes = !globals.drawBoundingBoxes;
             }
             if(strcmp(key, "Escape") == 0) {
                 globals.running = 0;
@@ -684,11 +694,14 @@ void movementSystem(){
 
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
+            
            if(globals.entities[i].transformComponent->active == 1){
                 // Do movement logic here:
 
                 // Example of movement logic: Rotate on y-axis on all entities that are not ui (temporary)
                 if(globals.entities[i].uiComponent->active == 1){
+                  //  printf("entity %d \n", i);
+                    //printf("confirmed active ui\n");
                    /*  if(isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.event.motion.x, globals.event.motion.y})){
                     globals.entities[i].transformComponent->scale[0] += 1.5f;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1; */
@@ -707,60 +720,30 @@ void movementSystem(){
 }
 
 void hoverSystem(){
-    // Check if mouse is inside ui view
-    // if so, check if mouse is inside any ui elements
-    // if so, set hover effect on that element
     for(int i = 0; i < MAX_ENTITIES; i++) {
-                    if(globals.entities[i].alive == 1) {
-                        if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
-                            // Do movement logic here:
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
 
-                            // Example of movement logic: Rotate on y-axis on all entities that are not ui (temporary)
-                           
-                                /*   printf("bb x %d \n", globals.entities[i].uiComponent->boundingBox.x);
-                                    printf("bb y %d \n", globals.entities[i].uiComponent->boundingBox.y);
-                                    printf("bb width %d \n", globals.entities[i].uiComponent->boundingBox.width);
-                                    printf("bb height %d \n", globals.entities[i].uiComponent->boundingBox.height); */
-                                    float ndcX = (float)globals.entities[i].uiComponent->boundingBox.x; /// (float)width;
-                                    float ndcY = (float)globals.entities[i].uiComponent->boundingBox.y; /// (float)height;
-                                    float ndcWidth = (float)globals.entities[i].uiComponent->boundingBox.width; /// (float)width;
-                                    float ndcHeight = (float)globals.entities[i].uiComponent->boundingBox.height;/// (float)height;
-
-                                    float ui_viewport_half_width = (float)globals.views.main.rect.width / 2;
-                                    float ui_viewport_half_height = (float)globals.views.main.rect.height / 2;
-                                
-                                    printf("ndcX %f \n", ndcX-ui_viewport_half_width);
-                                    printf("ndcY %f \n", ndcY+ui_viewport_half_height);
-                                    printf("ndcWidth %f \n", ndcWidth);
-                                    printf("ndcHeight %f \n", ndcHeight);
-                                    printf("----------------------------------------\n");
-                                    Rectangle ndcRect = {ndcX, ndcY, ndcWidth, ndcHeight};
-                                if(globals.views.ui.isMousePointerWithin && isPointInsideRect(ndcRect, (vec2){ globals.mouseXpos, globals.mouseYpos})){
-                                //globals.entities[i].transformComponent->scale[0] += 0.05f;
-                                    //globals.entities[i].transformComponent->rotation[1] = radians;
-                                    globals.entities[i].materialComponent->useDiffuseMap = false;
-                                    globals.entities[i].materialComponent->ambient.g = 0.5f;
-                                    globals.entities[i].materialComponent->diffuse.g = 0.5f;
-                                    globals.entities[i].materialComponent->diffuse.a = 0.5f;
-                                //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                                    
-                                    //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                                } else {
-                                    globals.entities[i].materialComponent->useDiffuseMap = true;
-                                    globals.entities[i].materialComponent->ambient.g = 0.0f;
-                                    globals.entities[i].materialComponent->diffuse.g = 0.0f;
-                                    globals.entities[i].materialComponent->diffuse.a = 1.0f;
-                                }
-                            
-                            // globals.entities[i].transformComponent->rotation[1] += radians; <- This is an example of acceleration.
-                        }
+                    if(
+                        globals.views.ui.isMousePointerWithin && 
+                        isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos})
+                    ){
+                        
+                        // Hover effect
+                        globals.entities[i].materialComponent->useDiffuseMap = false;
+                        globals.entities[i].materialComponent->ambient.g = 0.5f;
+                        globals.entities[i].materialComponent->diffuse.g = 0.5f;
+                        globals.entities[i].materialComponent->diffuse.a = 0.5f;
+                    
+                    } else {
+                        globals.entities[i].materialComponent->useDiffuseMap = true;
+                        globals.entities[i].materialComponent->ambient.g = 0.0f;
+                        globals.entities[i].materialComponent->diffuse.g = 0.0f;
+                        globals.entities[i].materialComponent->diffuse.a = 1.0f;
                     }
-                }
-                // TODO: 
-                // 1. set a flag somewhere so that check that flag later in update loop to see if we are inside ui view.
-                // 2. make a system, like uiSystem where we iterate over all enties with uiComponent and do stuff with them, 
-                // maybe if type is button we check if mouse is inside using isPointInsideRect and do hover effect?.
-                // 3. text rendering on button?
+            }
+        }
+    } 
 }
 
 /**
@@ -847,22 +830,17 @@ void render(){
     #else
 
     // Native
-    // Render 3d scene 
+
+    // TODO: find a way to avoid having to iterate over all entities twice, once for ui and once for 3d objects.
+
+    // Render main view & 3d objects
+    // render ui, could be overhead with switching viewports?. profile.
+    setViewportWithScissorAndClear(globals.views.main);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active == 1){
-                    // render ui, could be overhead with switching viewports?. profile.
-                    setViewportWithScissor(globals.views.ui);
-                    Color* diff = &globals.entities[i].materialComponent->diffuse;
-                    Color* amb = &globals.entities[i].materialComponent->ambient;
-                    Color* spec = &globals.entities[i].materialComponent->specular;
-                    GLfloat shin = globals.entities[i].materialComponent->shininess;
-                    GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
-                }else {
-                    setViewportWithScissor(globals.views.main);
+                if(globals.entities[i].uiComponent->active != 1){
+                
                     Color* diff = &globals.entities[i].materialComponent->diffuse;
                     Color* amb = &globals.entities[i].materialComponent->ambient;
                     Color* spec = &globals.entities[i].materialComponent->specular;
@@ -870,6 +848,33 @@ void render(){
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
                     bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
                     renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera,useDiffMap);
+                 
+                }
+            }
+        }
+    }
+    // Render ui scene & ui objects
+    setViewportWithScissorAndClear(globals.views.ui);
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                if(globals.entities[i].uiComponent->active == 1){
+                    // render ui, could be overhead with switching viewports?. profile.
+                    Color* diff = &globals.entities[i].materialComponent->diffuse;
+                    Color* amb = &globals.entities[i].materialComponent->ambient;
+                    Color* spec = &globals.entities[i].materialComponent->specular;
+                    GLfloat shin = globals.entities[i].materialComponent->shininess;
+                    GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
+                    bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
+                    if(globals.drawBoundingBoxes){
+                        if(globals.entities[i].tag == BOUNDING_BOX){
+                            renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
+                        }
+                    }else {
+                        if(globals.entities[i].tag != BOUNDING_BOX){
+                            renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
+                        }
+                    }
                 }
             }
         }
@@ -940,7 +945,10 @@ void initScene(){
 
    // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel coords.
    // TODO: implement point attributes (which is in ndc coords), to pixel coords. z position will be z-depth, much like in DOM in web.
-   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){100.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  
+   
+   
 
 }
 
@@ -1045,7 +1053,7 @@ void createMesh(
             entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
             entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
 
-             entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
+            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
             entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
             entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5]; 
 
@@ -1124,7 +1132,7 @@ void createMesh(
     entity->materialComponent->specular = material->specular;
     entity->materialComponent->shininess = material->shininess;
     entity->materialComponent->diffuseMap = material->diffuseMap;
-    
+    entity->meshComponent->gpuData->drawMode = drawMode;
 
     setupMesh(  entity->meshComponent->vertices, 
                 entity->meshComponent->vertexCount, 
@@ -1133,8 +1141,14 @@ void createMesh(
                 entity->meshComponent->gpuData
                 );
     
-    
-    setupMaterial( entity->meshComponent->gpuData ); 
+    // Print mesh setup data for debugging
+    // gpuData vao:
+    printf("vao: %d\n", entity->meshComponent->gpuData->VAO);
+    printf("vbo: %d\n", entity->meshComponent->gpuData->VBO);
+    printf("ebo: %d\n", entity->meshComponent->gpuData->EBO);
+
+
+    setupMaterial( entity->meshComponent->gpuData );
 }
 
 
@@ -1341,7 +1355,25 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     }
 
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
+
+    // Bounding box, reuses the vertices from the rectangle
+    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, specular, shininess, diffuseTextureId, false};
+    GLuint bbIndices[] = {
+        0, 1, 1,2, 2,3 ,3,0, 
+    };
+    Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
+    if(ui == 1){
+        boundingBoxEntity->uiComponent->active = 1;
+       // boundingBoxEntity->uiComponent->boundingBox = (Rectangle){0,400,50,50};
+        // Create a button component with an initial position in ndc space coords. 1.0f is one pixel.
+    } 
+   createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
+    
 }
+
+
+
+
 /**
  * @brief Create a Cube
  * Create a Cube mesh

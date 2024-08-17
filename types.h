@@ -127,7 +127,8 @@ typedef enum {
 
 enum Tag {
     UNINITIALIZED = 0,
-    MODEL = 1
+    MODEL = 1,
+    BOUNDING_BOX = 2,
 };
 
 typedef struct TransformComponent {

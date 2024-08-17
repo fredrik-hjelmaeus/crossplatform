@@ -7,7 +7,9 @@
 
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
 
-    buffer->drawMode = GL_TRIANGLES;
+    if(buffer->drawMode == NULL){
+        buffer->drawMode = GL_TRIANGLES;
+    }
     buffer->numIndicies = indexCount;
     glGenVertexArrays(1, &(buffer->VAO));
     glGenBuffers(1, &(buffer->VBO));
@@ -189,7 +191,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &camera->view[0][0]);
 
     glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &camera->projection[0][0]);
-        
+       
     glBindVertexArray(buffer->VAO);
    if(buffer->numIndicies != 0) {
         glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);

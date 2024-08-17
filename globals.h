@@ -19,6 +19,7 @@ struct Globals {
     int firstMouse;
     float mouseXpos;
     float mouseYpos;
+    bool drawBoundingBoxes;
 };
 
 extern struct Globals globals;
