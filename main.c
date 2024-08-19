@@ -647,28 +647,48 @@ void uiSystem(){
         if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active) {
             // Do ui logic here
             if(globals.entities[i].transformComponent->modelNeedsUpdate == 1){
-                
-                
-                // Position element in "UI" space, where 0,0 is the center of the ui-viewport screen. We will position the element to top left corner of the screen.
-                float ui_viewport_half_width = (float)globals.views.main.rect.width / 2;
-                float ui_viewport_half_height = (float)globals.views.main.rect.height / 2;
-                float entity_half_scale_x = globals.entities[i].transformComponent->scale[0] / 2;
-                float entity_half_scale_y = globals.entities[i].transformComponent->scale[1] / 2;
-                globals.entities[i].transformComponent->position[0] = globals.entities[i].transformComponent->position[0] + (float)globals.views.main.rect.x - ui_viewport_half_width + entity_half_scale_x;
-                globals.entities[i].transformComponent->position[1] = globals.entities[i].transformComponent->position[1] + (float)globals.views.main.rect.y - ui_viewport_half_height + entity_half_scale_y;
-                
-                globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0] + ui_viewport_half_width - entity_half_scale_x;
-                globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1] + ui_viewport_half_height - entity_half_scale_y;
-                globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0] + globals.entities[i].transformComponent->position[0] + ui_viewport_half_width - entity_half_scale_x;
-                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1] + globals.entities[i].transformComponent->position[1] + ui_viewport_half_height - entity_half_scale_y;
 
-               // printf("ui viewport x & y pos: %f, %f\n", (float)globals.views.main.rect.x, (float)globals.views.main.rect.y);
-                //printf("pos x & y: %f, %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
-                printf("bb x %d \n", globals.entities[i].uiComponent->boundingBox.x);
+                // Goal here: Position element in "UI" space, where start 0,0 is the center of the ui-viewport screen. 
+                // We will position the element to top left corner of the screen and treat this as 0,0 instead.
+                
+                // Position of element on spawn:
+                float ui_viewport_half_width = (float)globals.views.ui.rect.width / 2; // 400
+                float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2; // 100
+                
+                // Half scale of element
+                float scaleFactorX = globals.entities[i].transformComponent->scale[0] / 100.0;  // 1.0
+                float scaleFactorY = globals.entities[i].transformComponent->scale[1] / 100.0; // 0.5
+
+                // TODO: rotation
+
+                // position of element
+                float requested_x = globals.entities[i].transformComponent->position[0];
+                float requested_y = globals.entities[i].transformComponent->position[1];
+
+                // move element to upper left corner and then add requested position.
+               globals.entities[i].transformComponent->position[0] = -1.0 * ui_viewport_half_width + 100.0 / 2.0 * scaleFactorX + requested_x;
+               globals.entities[i].transformComponent->position[1] = 100.0 - (ui_viewport_half_height / 2.0 * scaleFactorY) - requested_y;
+
+
+
+                printf(" x %f \n",  globals.entities[i].transformComponent->position[0]);
+                printf(" y %f \n", globals.entities[i].transformComponent->position[1]);
+
+                
+                
+                
+                // Bounding box
+                globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0];
+                globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1];
+                globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
+                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
+
+  
+               /*  printf("bb x %d \n", globals.entities[i].uiComponent->boundingBox.x);
                 printf("bb y %d \n", globals.entities[i].uiComponent->boundingBox.y);
                 printf("bb width %d \n", globals.entities[i].uiComponent->boundingBox.width);
                 printf("bb height %d \n", globals.entities[i].uiComponent->boundingBox.height);
-                printf("----------------------------------------\n");
+                printf("----------------------------------------\n"); */
               
 
 
@@ -728,6 +748,12 @@ void hoverSystem(){
                         globals.views.ui.isMousePointerWithin && 
                         isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos})
                     ){
+                         // debug print
+                        printf("point x: %f y: %f \n",globals.mouseXpos,globals.mouseYpos);
+                        printf(
+                            "rect x: %d y: %d width: %d height: %d \n",
+                            globals.entities[i].uiComponent->boundingBox.x,globals.entities[i].uiComponent->boundingBox.y,
+                            globals.entities[i].uiComponent->boundingBox.width,globals.entities[i].uiComponent->boundingBox.height);
                         
                         // Hover effect
                         globals.entities[i].materialComponent->useDiffuseMap = false;
@@ -939,13 +965,14 @@ void initScene(){
    createLight(VIEWPORT_MAIN,green,diffuseTextureId);
    // createCube(VIEWPORT_UI,red,diffuseTextureId);
   // createCube(VIEWPORT_MAIN,green,diffuseTextureId);
-    //exit(1);
-    
-   // createRectangle(VIEWPORT_MAIN,blue,diffuseTextureId);
 
-   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel coords.
-   // TODO: implement point attributes (which is in ndc coords), to pixel coords. z position will be z-depth, much like in DOM in web.
-   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){100.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+
+   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. 
+   // Scale is in pixels, 100.0f is 100 pixels etc.
+   // z position will be z-depth, much like in DOM in web.
+   // TODO: implement rotation, it is atm not affecting. 
+   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 0.0f, 0.0f}, (vec3){50.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
    
    
@@ -1111,6 +1138,8 @@ void createMesh(
     if(numIndicies == 0){
         printf("not using indicies\n");
     }
+
+    printf("position %f %f %f\n", position[0], position[1], position[2]);
 
     // transform data
     entity->transformComponent->active = 1;
@@ -1350,7 +1379,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     Entity* entity = addEntity(MODEL);
     if(ui == 1){
         entity->uiComponent->active = 1;
-        entity->uiComponent->boundingBox = (Rectangle){0,400,50,50};
+        entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
         // Create a button component with an initial position in ndc space coords. 1.0f is one pixel.
     }
 
