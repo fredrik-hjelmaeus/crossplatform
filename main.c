@@ -650,6 +650,7 @@ void uiSystem(){
 
                 // Goal here: Position element in "UI" space, where start 0,0 is the center of the ui-viewport screen. 
                 // We will position the element to top left corner of the screen and treat this as 0,0 instead.
+                // If position or scale changes, this needs to be recalculated. This is not done automatically, modelNeedsUpdate flag needs to be set.
                 
                 // Position of element on spawn:
                 float ui_viewport_half_width = (float)globals.views.ui.rect.width / 2; // 400
@@ -660,6 +661,8 @@ void uiSystem(){
                 float scaleFactorY = globals.entities[i].transformComponent->scale[1] / 100.0; // 0.5
 
                 // TODO: rotation
+                printf("requested x %f \n", globals.entities[i].transformComponent->position[0]);
+                printf("requested y %f \n", globals.entities[i].transformComponent->position[1]);
 
                 // position of element
                 float requested_x = globals.entities[i].transformComponent->position[0];
@@ -673,6 +676,8 @@ void uiSystem(){
 
                 printf(" x %f \n",  globals.entities[i].transformComponent->position[0]);
                 printf(" y %f \n", globals.entities[i].transformComponent->position[1]);
+                printf(" width %f \n", globals.entities[i].transformComponent->scale[0]);
+                printf(" height %f \n", globals.entities[i].transformComponent->scale[1]);
 
                 
                 
@@ -744,16 +749,46 @@ void hoverSystem(){
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
 
+                    // Ui element pos is in ui-space-coords. We need to convert this to same as mouse coords, which is SDL-coords. Where x,y is TOP LEFT CORNER.
+                    float halfWidth = (float)globals.entities[i].uiComponent->boundingBox.width / 2.0;
+                    float halfHeight = (float)globals.entities[i].uiComponent->boundingBox.height / 2.0;
+                    float uiViewHalfWidth = (float)globals.views.ui.rect.width / 2.0;
+                    float uiViewHalfHeight = (float)globals.views.ui.rect.height / 2.0; // 100
+                    // uiBoundingBoxToSDLCoordinates(&globals.entities[i]); -375.0, 75.0 -> 0, 400
+                  
+                    
+                    float xLeftCornerSDL = globals.entities[i].uiComponent->boundingBox.x - halfWidth + uiViewHalfWidth; // 0
+                    float yTopCornerSDL = (globals.entities[i].uiComponent->boundingBox.y - uiViewHalfHeight) * -1 + (float)globals.views.main.rect.height - halfHeight; // 25 - 100 = -75*-1 = 75 + 400 = 475 - 25 = 450
+                    printf("xSDL %f \n", xLeftCornerSDL);
+                    printf("ySDL %f \n", yTopCornerSDL);
+                    
+
+                    
+                    
+                    
+                    Rectangle getRect;
+                    getRect.y = yTopCornerSDL;
+                    getRect.x = xLeftCornerSDL;
+                    getRect.height = globals.entities[i].uiComponent->boundingBox.height;
+                    getRect.width = globals.entities[i].uiComponent->boundingBox.width;
+                    if(getRect.x >= globals.mouseXpos && getRect.x + getRect.width <= globals.mouseXpos && getRect.y >= globals.mouseYpos && getRect.y + getRect.height <= globals.mouseYpos){
+                        printf("mouse is within bounding box\n");
+                    }
+                   // printf("ui_entity_pos_y %f \n", ui_entity_pos_y);
+                   // printf("ui_entity_pos_x %f \n", ui_entity_pos_x);
+
+                        // debug print
+                       // printf("point x: %f y: %f \n",globals.mouseXpos,globals.mouseYpos);
+                   /*      printf(
+                            " x: %d y: %d width: %d height: %d \n",
+                            getRect.x,getRect.y,K
+                            getRect.width,
+                            getRect.height); */
                     if(
                         globals.views.ui.isMousePointerWithin && 
-                        isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos})
+                        isPointInsideRect(getRect, (vec2){ globals.mouseXpos, globals.mouseYpos})
                     ){
-                         // debug print
-                        printf("point x: %f y: %f \n",globals.mouseXpos,globals.mouseYpos);
-                        printf(
-                            "rect x: %d y: %d width: %d height: %d \n",
-                            globals.entities[i].uiComponent->boundingBox.x,globals.entities[i].uiComponent->boundingBox.y,
-                            globals.entities[i].uiComponent->boundingBox.width,globals.entities[i].uiComponent->boundingBox.height);
+                    
                         
                         // Hover effect
                         globals.entities[i].materialComponent->useDiffuseMap = false;
@@ -971,8 +1006,9 @@ void initScene(){
    // Scale is in pixels, 100.0f is 100 pixels etc.
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
-   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 0.0f, 0.0f}, (vec3){50.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 75.0f, 0.0f}, (vec3){20.0f, 150.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){50.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
    
    

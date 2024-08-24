@@ -255,7 +255,7 @@ ObjData loadObjFile(const char *filepath)
 
 /**
  *  Function to check if a point is inside the rectangle.
- * NOTE: x,y,width,height is expected to be in SDL coordinates, 
+ * NOTE: x,y,width,height is expected to be in SDL coordinates, Where x,y is the bottom left corner of the rectangle.
  * use convertViewRectangleToSDLCoordinates to convert view coordinates to SDL coordinates if needed.
  * @param rect Rectangle to check against, x,y,width,height is expected to be in SDL coordinates
  */ 
