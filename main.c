@@ -994,10 +994,10 @@ void initScene(){
    // Assets
    TextureData textureData = loadTexture();
    GLuint diffuseTextureId = setupTexture(textureData);
-   ObjData objData = loadObjFile("truck.obj");
+  // ObjData objData = loadObjFile("truck.obj");
 
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
- createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
+// createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
 // createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
    //createCube(VIEWPORT_MAIN,red,diffuseTextureId);
    createLight(VIEWPORT_MAIN,green,diffuseTextureId);
