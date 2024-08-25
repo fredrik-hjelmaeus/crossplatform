@@ -29,6 +29,9 @@
 #include <time.h>
 #include "opengl.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -994,7 +997,7 @@ void initScene(){
    ObjData objData = loadObjFile("truck.obj");
 
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
- //createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
+ createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
 // createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
    //createCube(VIEWPORT_MAIN,red,diffuseTextureId);
    createLight(VIEWPORT_MAIN,green,diffuseTextureId);

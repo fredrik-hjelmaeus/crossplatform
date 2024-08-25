@@ -9,6 +9,8 @@ Dependencies:
   -stdio.h
   -time.h
   -stdlib.h
+  -freetype : 
+sudo apt-get install libfreetype6-dev
   
 
 ### Develop on macOS (^Catalina) native OpenGL
@@ -38,7 +40,9 @@ Dependencies:
 - install gcc?
 - sudo apt install libsdl2-dev
 - sudo apt-get install libgles2-mesa-dev
-- gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2 -lm
+- sudo apt-get update
+- sudo apt-get install libfreetype6-dev
+- gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2 -lm -I/usr/include/freetype2
 - to debug: gcc -std=c18 -Wall -pedantic *.c -lSDL2 -lGLESv2 -lm -g 
 
 ### Develop for Webassembly (wasm) OpenGL ES 3.0
