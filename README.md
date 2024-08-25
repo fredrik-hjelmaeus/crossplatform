@@ -40,7 +40,7 @@ Dependencies:
 - sudo apt-get install libgles2-mesa-dev
 - sudo apt-get update
 - sudo apt-get install libfreetype6-dev
-- gcc -std=c18 -Wall -pedantic \*.c -lSDL2 -lGLESv2 -lm -I/usr/include/freetype2
+- gcc -std=c18 -Wall -pedantic \*.c -lSDL2 -lGLESv2 -lm -I/usr/include/freetype2 -lfreetype
 - to debug: gcc -std=c18 -Wall -pedantic \*.c -lSDL2 -lGLESv2 -lm -g
 
 ### Develop for Webassembly (wasm) OpenGL ES 3.0
