@@ -959,32 +959,261 @@ void render(){
         }
     } */
    
-   if(globals.render){
-
-  
-    setViewportWithScissorAndClear(globals.views.full);
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active == 1){
-                    if(globals.entities[i].tag == TEXT && render){
-                        //printf("rendering text\n");
-                        // render text
-                      //   printf("rendering text entity with id: %i \n",i);
-                         printf("textt char 1 %c \n",globals.entities[i].uiComponent->text[0]);
-                           renderText(
-                            &globals.entities[i].meshComponent->gpuData,
-                            globals.entities[i].uiComponent->text, 
-                            &globals.entities[i].transformComponent,
-                            &globals.entities[i].materialComponent->diffuse
-                            ); 
-                            globals.render = false;
+   /* if(globals.render){
+        setViewportWithScissorAndClear(globals.views.full);
+        for(int i = 0; i < MAX_ENTITIES; i++) {
+            if(globals.entities[i].alive == 1) {
+                if(globals.entities[i].meshComponent->active == 1) {
+                    if(globals.entities[i].uiComponent->active == 1){
+                        if(globals.entities[i].tag == TEXT && render){
+                            //printf("rendering text\n");
+                            // render text
+                        //   printf("rendering text entity with id: %i \n",i);
+                            printf("textt char 1 %c \n",globals.entities[i].uiComponent->text[0]);
+                            renderText(
+                                &globals.entities[i].meshComponent->gpuData,
+                                globals.entities[i].uiComponent->text, 
+                                &globals.entities[i].transformComponent,
+                                &globals.entities[i].materialComponent->diffuse
+                                ); 
+                                globals.render = false;
+                        }
                     }
                 }
             }
         }
+    } */
+   //setViewportWithScissorAndClear(globals.views.full);
+    FT_Library ft;
+    if(FT_Init_FreeType(&ft)) {
+        printf("ERROR::FREETYPE: Could not init FreeType Library\n");
+        exit(1);
     }
-     }
+
+    // Load font
+    FT_Face face;
+    if (FT_New_Face(ft, "ARIAL.TTF", 0, &face))
+    {
+        printf("ERROR::FREETYPE: Failed to load font\n");
+        exit(1);
+    }
+
+    // Set font size
+    // The function sets the font's width and height parameters. 
+    // Setting the width to 0 lets the face dynamically calculate the width based on the given height.
+    FT_Set_Pixel_Sizes(face, 0, 48);
+
+    // A FreeType face hosts a collection of glyphs. 
+    // We can set one of those glyphs as the active glyph by calling FT_Load_Char. 
+    // Here we choose to load the character glyph 'X': 
+    if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
+    {
+        printf("ERROR::FREETYPE: Failed to load Glyph\n");
+        exit(1);
+    }
+    printf("number of glyphs in this font %ld \n", face->num_glyphs);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+     glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RED,
+        face->glyph->bitmap.width,
+        face->glyph->bitmap.rows,
+        0,
+        GL_RED,
+        GL_UNSIGNED_BYTE,
+        face->glyph->bitmap.buffer
+    );
+    // set texture options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    globals.characters[0] = (Character){texture, {face->glyph->bitmap.width,face->glyph->bitmap.rows}, {face->glyph->bitmap_left,face->glyph->bitmap_top}, face->glyph->advance.x};
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+
+    // mesh data
+    unsigned int VAO, VBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);  
+
+
+    // shader program
+    unsigned int shaderProgramId;
+     #ifdef __EMSCRIPTEN__
+        #error "This function is not implemented for Emscripten."
+      //  char* vertexShaderSource = readFile("shaders/wasm/vertex_wasm.glsl");
+      //  char* fragmentShaderSource = readFile("shaders/wasm/fragment_wasm.glsl");
+    #else
+        char* vertexShaderSource = readFile("shaders/vert_text.glsl");
+        char* fragmentShaderSource = readFile("shaders/frag_text.glsl");
+    #endif
+    if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
+        printf("Error loading shader source\n");
+        return;
+    }
+    
+    printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
+
+    // Compile shaders
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    if(vertexShader == 0) {
+        printf("Error creating vertex shader\n");
+        return;
+    }
+    glShaderSource(vertexShader, 1, (const GLchar* const*)&vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    // Check for shader compile errors
+    GLint success;
+    GLchar infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s\n", infoLog);
+    }
+
+    // Fragment shader
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    if(fragmentShader == 0) {
+        printf("Error creating fragment shader\n");
+        return;
+    }
+    glShaderSource(fragmentShader, 1, (const GLchar* const*)&fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+ 
+    // Check for shader compile errors
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
+    }
+   
+    
+
+    // free memory of shader sources
+    free(vertexShaderSource);
+    free(fragmentShaderSource);
+    
+    // Link shaders
+    shaderProgramId = glCreateProgram();
+    printf("setupFontMaterial\n");
+    glAttachShader(shaderProgramId, vertexShader);
+    glAttachShader(shaderProgramId, fragmentShader);
+    glLinkProgram(shaderProgramId);
+
+   
+    printf("Shader program: %d\n", shaderProgramId);
+
+    // Check for linking errors
+    glGetProgramiv(shaderProgramId, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgramId, 512, NULL, infoLog);
+        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
+    }
+    glUseProgram(shaderProgramId);
+
+    mat4x4 projection;
+    mat4x4_ortho(projection, 0.0f, 800.0f, 0.0f, 600.0f, -1.0f, 1.0f);
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgramId, "projection"), 1, GL_FALSE, &projection[0][0]);    
+
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    //glClear(GL_COLOR_BUFFER_BIT);
+
+    //RenderText(shader, "This is sample text", 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+    // OpenGL state
+    // ------------
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Set shader
+    //glUseProgram(buffer->shaderProgram);
+    //mat4x4 projection;
+   // mat4x4_ortho(projection, 0.0f, 800.0f, 0.0f, 600.0f, -1.0f, 1.0f);
+    //GLint projLoc = glGetUniformLocation(buffer->shaderProgram, "projection");
+  /*   if (projLoc == -1) {
+        printf("Could not find uniform location for 'projection'\n");
+    } */
+    //glUniformMatrix4fv(projLoc, 1, GL_FALSE, &projection[0][0]); 
+    //glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)projection); 
+
+    glActiveTexture(GL_TEXTURE0);
+    glUniform3f(glGetUniformLocation(shaderProgramId, "textColor"), 1.0f, 1.0f, 1.0f);
+    glBindVertexArray(VAO);
+
+    // iterate through all characters
+   // std::string::const_iterator c;
+  //  for (c = text.begin(); c != text.end(); c++) 
+  //  {
+        Character ch = globals.characters[0];
+        // print all things about ch:
+        printf("ch.TextureID: %d\n", ch.TextureID);
+        printf("ch.Size[0]: %d\n", ch.Size[0]);
+        printf("ch.Size[1]: %d\n", ch.Size[1]);
+        printf("ch.Bearing[0]: %d\n", ch.Bearing[0]);
+        printf("ch.Bearing[1]: %d\n", ch.Bearing[1]);
+        printf("ch.Advance: %d\n", ch.Advance);
+        
+        float scale = 1.0f;
+        float x = 1.0f;
+        float y = 1.0f;
+
+        float xpos = x + ch.Bearing[0] * scale;
+        float ypos = y - (ch.Size[1] - ch.Bearing[1]) * scale;
+        printf("xpos: %f\n", xpos);
+        printf("ypos: %f\n", ypos);
+
+        float w = ch.Size[0] * scale;
+        float h = ch.Size[1] * scale;
+        printf("w: %f\n", w);
+        printf("h: %f\n", h);
+        // update VBO for each character
+        float vertices[6][4] = {
+            { xpos,     ypos + h,   0.0f, 0.0f },            
+            { xpos,     ypos,       0.0f, 1.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+            { xpos + w, ypos + h,   1.0f, 0.0f }           
+        };
+        // render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+        // update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+       // x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+   // }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+
+    // Clean up FreeType library
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
 
     #endif
 
@@ -1089,7 +1318,7 @@ int main(int argc, char **argv) {
     // TODO: move to a separate fn or file and build abstraction/API for text rendering.
 
     // Init freetype
-    FT_Library ft;
+   /*  FT_Library ft;
     if(FT_Init_FreeType(&ft)) {
         printf("ERROR::FREETYPE: Could not init FreeType Library\n");
         exit(1);
@@ -1128,7 +1357,7 @@ int main(int argc, char **argv) {
 
     // Clean up FreeType library
     FT_Done_Face(face);
-    FT_Done_FreeType(ft);
+    FT_Done_FreeType(ft); */
 
     //------------------------------------------------------
     // Main loop
@@ -1524,7 +1753,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     } 
     createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
     
-    Entity* textEntity = addEntity(TEXT);
+  /*   Entity* textEntity = addEntity(TEXT);
     textEntity->meshComponent->active = 1;
     setupFontMesh(&textEntity->meshComponent->gpuData);
     printf("5555\n");
@@ -1544,7 +1773,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     textEntity->materialComponent->diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f}; // white
     textEntity->uiComponent->active = 1;
     textEntity->uiComponent->text = "This is a sample text";
-    printf("BINGO\n");
+    printf("BINGO\n"); */
     
 
 }
