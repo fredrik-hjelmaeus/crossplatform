@@ -20,6 +20,8 @@ struct Globals {
     float mouseXpos;
     float mouseYpos;
     bool drawBoundingBoxes;
+    Character characters[128];
+    bool render;
 };
 
 extern struct Globals globals;

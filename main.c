@@ -29,8 +29,8 @@
 #include <time.h>
 #include "opengl.h"
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
+
+
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -66,12 +66,13 @@ struct Globals globals = {
     .views = {
         .ui={{0, 0, 800, 200}, {0.0f, 0.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL,false},
         .main={{0, 200, 800, 400}, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL,false},
-        .full={{0, 0, 800, 600}, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL,false},
+        .full={{0, 0, 800, 600}, {0.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL,false},
     },
     .firstMouse=1,
     .mouseXpos=0.0f,
     .mouseYpos=0.0f,
-    .drawBoundingBoxes=false
+    .drawBoundingBoxes=false,
+    .render=true
 };
 
 // Colors
@@ -165,6 +166,9 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->useDiffuseMap = true;
 }
 
+// Max text length for UI components
+#define MAX_TEXT_LENGTH 100
+
 void initializeUIComponent(UIComponent* uiComponent){
     uiComponent->active = 0;
     uiComponent->hovered = 0;
@@ -173,6 +177,11 @@ void initializeUIComponent(UIComponent* uiComponent){
     uiComponent->boundingBox.y = 0;
     uiComponent->boundingBox.width = 0;
     uiComponent->boundingBox.height = 0;
+    uiComponent->text = (char*)malloc(MAX_TEXT_LENGTH * sizeof(char));
+    if (uiComponent->text != NULL) {
+        // Initialize the allocated memory to an empty string
+        uiComponent->text[0] = '\0';
+    }
 }
 
 
@@ -762,8 +771,8 @@ void hoverSystem(){
                     
                     float xLeftCornerSDL = globals.entities[i].uiComponent->boundingBox.x - halfWidth + uiViewHalfWidth; // 0
                     float yTopCornerSDL = (globals.entities[i].uiComponent->boundingBox.y - uiViewHalfHeight) * -1 + (float)globals.views.main.rect.height - halfHeight; // 25 - 100 = -75*-1 = 75 + 400 = 475 - 25 = 450
-                    printf("xSDL %f \n", xLeftCornerSDL);
-                    printf("ySDL %f \n", yTopCornerSDL);
+                  //  printf("xSDL %f \n", xLeftCornerSDL);
+                  //  printf("ySDL %f \n", yTopCornerSDL);
                     
 
                     
@@ -899,7 +908,7 @@ void render(){
 
     // Render main view & 3d objects
     // render ui, could be overhead with switching viewports?. profile.
-    setViewportWithScissorAndClear(globals.views.main);
+   /*  setViewportWithScissorAndClear(globals.views.main);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
@@ -923,26 +932,59 @@ void render(){
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active == 1){
-                    // render ui, could be overhead with switching viewports?. profile.
-                    Color* diff = &globals.entities[i].materialComponent->diffuse;
-                    Color* amb = &globals.entities[i].materialComponent->ambient;
-                    Color* spec = &globals.entities[i].materialComponent->specular;
-                    GLfloat shin = globals.entities[i].materialComponent->shininess;
-                    GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
-                    if(globals.drawBoundingBoxes){
-                        if(globals.entities[i].tag == BOUNDING_BOX){
-                            renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
-                        }
+                    if(globals.entities[i].tag == TEXT){
+                       
+                        // render text
+                    
                     }else {
-                        if(globals.entities[i].tag != BOUNDING_BOX){
-                            renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
+                        // render ui, could be overhead with switching viewports?. profile.
+                        Color* diff = &globals.entities[i].materialComponent->diffuse;
+                        Color* amb = &globals.entities[i].materialComponent->ambient;
+                        Color* spec = &globals.entities[i].materialComponent->specular;
+                        GLfloat shin = globals.entities[i].materialComponent->shininess;
+                        GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
+                        bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
+                        if(globals.drawBoundingBoxes){
+                            if(globals.entities[i].tag == BOUNDING_BOX){
+                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
+                            }
+                        }else {
+                            if(globals.entities[i].tag != BOUNDING_BOX){
+                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
+                            }
                         }
                     }
                 }
             }
         }
+    } */
+   
+   if(globals.render){
+
+  
+    setViewportWithScissorAndClear(globals.views.full);
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                if(globals.entities[i].uiComponent->active == 1){
+                    if(globals.entities[i].tag == TEXT && render){
+                        //printf("rendering text\n");
+                        // render text
+                      //   printf("rendering text entity with id: %i \n",i);
+                         printf("textt char 1 %c \n",globals.entities[i].uiComponent->text[0]);
+                           renderText(
+                            &globals.entities[i].meshComponent->gpuData,
+                            globals.entities[i].uiComponent->text, 
+                            &globals.entities[i].transformComponent,
+                            &globals.entities[i].materialComponent->diffuse
+                            ); 
+                            globals.render = false;
+                    }
+                }
+            }
+        }
     }
+     }
 
     #endif
 
@@ -1042,6 +1084,51 @@ int main(int argc, char **argv) {
     globals.views.main.camera = mainCamera;
 
     initScene();
+
+    // Font setup flow from: https://learnopengl.com/In-Practice/Text-Rendering
+    // TODO: move to a separate fn or file and build abstraction/API for text rendering.
+
+    // Init freetype
+    FT_Library ft;
+    if(FT_Init_FreeType(&ft)) {
+        printf("ERROR::FREETYPE: Could not init FreeType Library\n");
+        exit(1);
+    }
+
+    // Load font
+    FT_Face face;
+    if (FT_New_Face(ft, "ARIAL.TTF", 0, &face))
+    {
+        printf("ERROR::FREETYPE: Failed to load font\n");
+        exit(1);
+    }
+
+    // Set font size
+    // The function sets the font's width and height parameters. 
+    // Setting the width to 0 lets the face dynamically calculate the width based on the given height.
+    FT_Set_Pixel_Sizes(face, 0, 48);
+
+    // A FreeType face hosts a collection of glyphs. 
+    // We can set one of those glyphs as the active glyph by calling FT_Load_Char. 
+    // Here we choose to load the character glyph 'X': 
+    if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
+    {
+        printf("ERROR::FREETYPE: Failed to load Glyph\n");
+        exit(1);
+    }
+    printf("number of glyphs in this font %ld \n", face->num_glyphs);
+
+    GLuint textureId = setupFontTexture(face);
+    
+   
+    
+    globals.characters[0] = (Character){textureId, {face->glyph->bitmap.width,face->glyph->bitmap.rows}, {face->glyph->bitmap_left,face->glyph->bitmap_top}, face->glyph->advance.x};
+
+
+
+    // Clean up FreeType library
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
 
     //------------------------------------------------------
     // Main loop
@@ -1435,8 +1522,31 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
        // boundingBoxEntity->uiComponent->boundingBox = (Rectangle){0,400,50,50};
         // Create a button component with an initial position in ndc space coords. 1.0f is one pixel.
     } 
-   createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
     
+    Entity* textEntity = addEntity(TEXT);
+    textEntity->meshComponent->active = 1;
+    setupFontMesh(&textEntity->meshComponent->gpuData);
+    printf("5555\n");
+    setupFontMaterial(&textEntity->meshComponent->gpuData,width,height);
+    printf("after setupFontMaterial\n");
+    textEntity->transformComponent->active = 1;
+    textEntity->transformComponent->position[0] = position[0];
+    textEntity->transformComponent->position[1] = position[1];
+    textEntity->transformComponent->position[2] = position[2];
+    textEntity->transformComponent->scale[0] = scale[0];
+    textEntity->transformComponent->scale[1] = scale[1];
+    textEntity->transformComponent->scale[2] = scale[2];
+    textEntity->transformComponent->rotation[0] = rotation[0];
+    textEntity->transformComponent->rotation[1] = rotation[1];
+    textEntity->transformComponent->rotation[2] = rotation[2];
+    textEntity->materialComponent->active = 1;
+    textEntity->materialComponent->diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f}; // white
+    textEntity->uiComponent->active = 1;
+    textEntity->uiComponent->text = "This is a sample text";
+    printf("BINGO\n");
+    
+
 }
 
 
@@ -1586,3 +1696,6 @@ TextureData loadTexture(){
     TextureData textureData = {data, width, height, nrChannels};
     return textureData;
 }
+
+
+    

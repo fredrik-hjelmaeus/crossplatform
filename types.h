@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "opengl_types.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 typedef struct Color {
     GLfloat  r;
@@ -17,6 +19,13 @@ typedef enum {
     SPLIT_HORIZONTAL = 1,
     SPLIT_VERTICAL = 2
 } SplitDirection;
+
+ typedef struct {
+    unsigned int TextureID;  // ID handle of the glyph texture
+    int Size[2];             // Size of glyph (width, height)
+    int Bearing[2];          // Offset from baseline to left/top of glyph (x, y)
+    unsigned int Advance;    // Offset to advance to next glyph
+} Character;
 
 typedef struct Camera {
     vec3 position;
@@ -129,6 +138,7 @@ enum Tag {
     UNINITIALIZED = 0,
     MODEL = 1,
     BOUNDING_BOX = 2,
+    TEXT = 3,
 };
 
 typedef struct TransformComponent {
@@ -160,11 +170,11 @@ typedef struct UIComponent {
     bool hovered;
     bool clicked;
     Rectangle boundingBox;
+    char* text;
     // padding?
     // margin?
     // offset?
     // border?
-    // text?
     // font?
     // fontSize?
     // textAlign
