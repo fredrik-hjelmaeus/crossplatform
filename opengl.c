@@ -433,3 +433,72 @@ void setupFontMesh(GpuData *buffer){
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
+
+void setupFontTextures(){
+     FT_Library ft;
+    if(FT_Init_FreeType(&ft)) {
+        printf("ERROR::FREETYPE: Could not init FreeType Library\n");
+        exit(1);
+    }
+
+    // Load font
+    FT_Face face;
+    if (FT_New_Face(ft, "ARIAL.TTF", 0, &face))
+    {
+        printf("ERROR::FREETYPE: Failed to load font\n");
+        exit(1);
+    }
+
+    // Set font size
+    // The function sets the font's width and height parameters. 
+    // Setting the width to 0 lets the face dynamically calculate the width based on the given height.
+    FT_Set_Pixel_Sizes(face, 0, 48);
+
+    // A FreeType face hosts a collection of glyphs. 
+    // We can set one of those glyphs as the active glyph by calling FT_Load_Char. 
+    // Here we choose to load the character glyph 'X': 
+    // load first 128 characters of ASCII set
+     
+      for (unsigned char char_code = 0; char_code < 128; char_code++) {
+    
+       
+    
+        
+        if (FT_Load_Char(face, char_code, FT_LOAD_RENDER))
+        {
+            printf("ERROR::FREETYPE: Failed to load Glyph\n");
+            exit(1);
+        }
+    
+        printf("number of glyphs in this font %ld \n", face->num_glyphs);
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+        GLuint texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RED,
+            face->glyph->bitmap.width,
+            face->glyph->bitmap.rows,
+            0,
+            GL_RED,
+            GL_UNSIGNED_BYTE,
+            face->glyph->bitmap.buffer
+        );
+        // set texture options
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        globals.characters[char_code] = (Character){texture, {face->glyph->bitmap.width,face->glyph->bitmap.rows}, {face->glyph->bitmap_left,face->glyph->bitmap_top}, face->glyph->advance.x};
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Clean up FreeType library
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
+
+}

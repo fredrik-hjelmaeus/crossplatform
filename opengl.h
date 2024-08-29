@@ -17,5 +17,6 @@ GLuint setupTexture(TextureData textureData);
 GLuint setupFontTexture(FT_Face face);
 void setupFontMaterial(GpuData* buffer,int width,int height);
 void setupFontMesh(GpuData* buffer);
+void setupFontTextures();
 
 #endif // End of the OPENGL_H definition

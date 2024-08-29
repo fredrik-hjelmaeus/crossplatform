@@ -908,7 +908,7 @@ void render(){
 
     // Render main view & 3d objects
     // render ui, could be overhead with switching viewports?. profile.
-   /*  setViewportWithScissorAndClear(globals.views.main);
+   setViewportWithScissorAndClear(globals.views.main);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
@@ -957,9 +957,9 @@ void render(){
                 }
             }
         }
-    } */
+    } 
    
-   /* if(globals.render){
+/*    if(globals.render){
         setViewportWithScissorAndClear(globals.views.full);
         for(int i = 0; i < MAX_ENTITIES; i++) {
             if(globals.entities[i].alive == 1) {
@@ -982,61 +982,9 @@ void render(){
                 }
             }
         }
-    } */
+    }  */
    //setViewportWithScissorAndClear(globals.views.full);
-    FT_Library ft;
-    if(FT_Init_FreeType(&ft)) {
-        printf("ERROR::FREETYPE: Could not init FreeType Library\n");
-        exit(1);
-    }
-
-    // Load font
-    FT_Face face;
-    if (FT_New_Face(ft, "ARIAL.TTF", 0, &face))
-    {
-        printf("ERROR::FREETYPE: Failed to load font\n");
-        exit(1);
-    }
-
-    // Set font size
-    // The function sets the font's width and height parameters. 
-    // Setting the width to 0 lets the face dynamically calculate the width based on the given height.
-    FT_Set_Pixel_Sizes(face, 0, 48);
-
-    // A FreeType face hosts a collection of glyphs. 
-    // We can set one of those glyphs as the active glyph by calling FT_Load_Char. 
-    // Here we choose to load the character glyph 'X': 
-    if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
-    {
-        printf("ERROR::FREETYPE: Failed to load Glyph\n");
-        exit(1);
-    }
-    printf("number of glyphs in this font %ld \n", face->num_glyphs);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-     glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RED,
-        face->glyph->bitmap.width,
-        face->glyph->bitmap.rows,
-        0,
-        GL_RED,
-        GL_UNSIGNED_BYTE,
-        face->glyph->bitmap.buffer
-    );
-    // set texture options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    
-    globals.characters[0] = (Character){texture, {face->glyph->bitmap.width,face->glyph->bitmap.rows}, {face->glyph->bitmap_left,face->glyph->bitmap_top}, face->glyph->advance.x};
+   setViewport(globals.views.full);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
@@ -1105,15 +1053,13 @@ void render(){
         printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
     }
    
-    
-
     // free memory of shader sources
     free(vertexShaderSource);
     free(fragmentShaderSource);
     
     // Link shaders
     shaderProgramId = glCreateProgram();
-    printf("setupFontMaterial\n");
+
     glAttachShader(shaderProgramId, vertexShader);
     glAttachShader(shaderProgramId, fragmentShader);
     glLinkProgram(shaderProgramId);
@@ -1127,6 +1073,8 @@ void render(){
         glGetProgramInfoLog(shaderProgramId, 512, NULL, infoLog);
         printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
     }
+
+
     glUseProgram(shaderProgramId);
 
     mat4x4 projection;
@@ -1134,57 +1082,35 @@ void render(){
     glUniformMatrix4fv(glGetUniformLocation(shaderProgramId, "projection"), 1, GL_FALSE, &projection[0][0]);    
 
 
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     //glClear(GL_COLOR_BUFFER_BIT);
 
     //RenderText(shader, "This is sample text", 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-    // OpenGL state
-    // ------------
+
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Set shader
-    //glUseProgram(buffer->shaderProgram);
-    //mat4x4 projection;
-   // mat4x4_ortho(projection, 0.0f, 800.0f, 0.0f, 600.0f, -1.0f, 1.0f);
-    //GLint projLoc = glGetUniformLocation(buffer->shaderProgram, "projection");
-  /*   if (projLoc == -1) {
-        printf("Could not find uniform location for 'projection'\n");
-    } */
-    //glUniformMatrix4fv(projLoc, 1, GL_FALSE, &projection[0][0]); 
-    //glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)projection); 
+  
 
     glActiveTexture(GL_TEXTURE0);
     glUniform3f(glGetUniformLocation(shaderProgramId, "textColor"), 1.0f, 1.0f, 1.0f);
     glBindVertexArray(VAO);
 
+    float scale = 0.25f;
+    float x = 1.0f;
+    float y = 1.0f;
+
     // iterate through all characters
-   // std::string::const_iterator c;
-  //  for (c = text.begin(); c != text.end(); c++) 
-  //  {
-        Character ch = globals.characters[0];
-        // print all things about ch:
-        printf("ch.TextureID: %d\n", ch.TextureID);
-        printf("ch.Size[0]: %d\n", ch.Size[0]);
-        printf("ch.Size[1]: %d\n", ch.Size[1]);
-        printf("ch.Bearing[0]: %d\n", ch.Bearing[0]);
-        printf("ch.Bearing[1]: %d\n", ch.Bearing[1]);
-        printf("ch.Advance: %d\n", ch.Advance);
-        
-        float scale = 1.0f;
-        float x = 1.0f;
-        float y = 1.0f;
+    for (unsigned char c = 0; c < 128; c++) {
+        Character ch = globals.characters[c];
+      
+        float xpos = x + (float)ch.Bearing[0] * scale;
+        float ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
 
-        float xpos = x + ch.Bearing[0] * scale;
-        float ypos = y - (ch.Size[1] - ch.Bearing[1]) * scale;
-        printf("xpos: %f\n", xpos);
-        printf("ypos: %f\n", ypos);
+        float w = (float)ch.Size[0] * scale;
+        float h = (float)ch.Size[1] * scale;    
 
-        float w = ch.Size[0] * scale;
-        float h = ch.Size[1] * scale;
-        printf("w: %f\n", w);
-        printf("h: %f\n", h);
         // update VBO for each character
         float vertices[6][4] = {
             { xpos,     ypos + h,   0.0f, 0.0f },            
@@ -1205,15 +1131,16 @@ void render(){
         // render quad
         glDrawArrays(GL_TRIANGLES, 0, 6);
         // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-       // x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
-   // }
+        x += (float)(ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+   }  
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    // return opengl state to default
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ZERO);
 
-    // Clean up FreeType library
-    FT_Done_Face(face);
-    FT_Done_FreeType(ft);
 
     #endif
 
@@ -1263,6 +1190,7 @@ void emscriptenLoop() {
 void initScene(){
 
    // Assets
+   setupFontTextures();
    TextureData textureData = loadTexture();
    GLuint diffuseTextureId = setupTexture(textureData);
   // ObjData objData = loadObjFile("truck.obj");
