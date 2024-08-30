@@ -911,6 +911,7 @@ void render(){
     // Render main view & 3d objects
     // render ui, could be overhead with switching viewports?. profile.
    setViewportWithScissorAndClear(globals.views.main);
+   setFontProjection(&globals.gpuFontData,globals.views.main);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
@@ -934,11 +935,6 @@ void render(){
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active == 1){
-                    if(globals.entities[i].tag == TEXT){
-                       
-                        // render text
-                    
-                    }else {
                         // render ui, could be overhead with switching viewports?. profile.
                         Color* diff = &globals.entities[i].materialComponent->diffuse;
                         Color* amb = &globals.entities[i].materialComponent->ambient;
@@ -946,6 +942,7 @@ void render(){
                         GLfloat shin = globals.entities[i].materialComponent->shininess;
                         GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
                         bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
+                       
                         if(globals.drawBoundingBoxes){
                             if(globals.entities[i].tag == BOUNDING_BOX){
                                 renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
@@ -953,54 +950,25 @@ void render(){
                         }else {
                             if(globals.entities[i].tag != BOUNDING_BOX){
                                 renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
+                           
                             }
                         }
-                    }
                 }
             }
+        }
+    }
+    // render ui text
+    setFontProjection(&globals.gpuFontData,globals.views.ui);
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+                if(globals.entities[i].uiComponent->active == 1){
+                    if(strlen(globals.entities[i].uiComponent->text) > 0){
+                        renderText(&globals.gpuFontData, globals.entities[i].uiComponent->text, 200.0f, 75.0f, .5f,(Color){1.0f, 1.0f, 0.0f});
+                    }
+                }
         }
     } 
    
-/*    if(globals.render){
-        setViewportWithScissorAndClear(globals.views.full);
-        for(int i = 0; i < MAX_ENTITIES; i++) {
-            if(globals.entities[i].alive == 1) {
-                if(globals.entities[i].meshComponent->active == 1) {
-                    if(globals.entities[i].uiComponent->active == 1){
-                        if(globals.entities[i].tag == TEXT && render){
-                            //printf("rendering text\n");
-                            // render text
-                        //   printf("rendering text entity with id: %i \n",i);
-                            printf("textt char 1 %c \n",globals.entities[i].uiComponent->text[0]);
-                            renderText(
-                                &globals.entities[i].meshComponent->gpuData,
-                                globals.entities[i].uiComponent->text, 
-                                &globals.entities[i].transformComponent,
-                                &globals.entities[i].materialComponent->diffuse
-                                ); 
-                                globals.render = false;
-                        }
-                    }
-                }
-            }
-        }
-    }  */
-   //setViewportWithScissorAndClear(globals.views.full);
-    //setViewport(globals.views.ui);
-
- 
-
-    
-
-    // call only between view changes
-    setFontProjection(&globals.gpuFontData,globals.views.ui);
-
-    renderText(&globals.gpuFontData, "My very samply text", 200.0f, 75.0f, 1.0f,(Color){1.0f, 0.0f, 0.0f});
-   
-
-    
-
-
     #endif
 
     // Swap the window buffers to show the new frame
@@ -1534,6 +1502,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     if(ui == 1){
         entity->uiComponent->active = 1;
         entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
+        entity->uiComponent->text = "Test";
         // Create a button component with an initial position in ndc space coords. 1.0f is one pixel.
     }
 
