@@ -350,55 +350,6 @@ void setupFontMesh(GpuData *buffer){
     glBindVertexArray(0);  
 }
 
-void RenderTextTwo(GpuData *buffer, char *text, float x, float y, float scale, Color color){
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glActiveTexture(GL_TEXTURE0);
-    glUniform3f(glGetUniformLocation(buffer->shaderProgram, "textColor"), 1.0f, 1.0f, 1.0f);
-    glBindVertexArray(buffer->VAO);
-
-    // iterate through all characters
-    for (unsigned char c = 0; c < 128; c++) {
-        Character ch = globals.characters[c];
-      
-        float xpos = x + (float)ch.Bearing[0] * scale;
-        float ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
-
-        float w = (float)ch.Size[0] * scale;
-        float h = (float)ch.Size[1] * scale;    
-
-        // update VBO for each character
-        float vertices[6][4] = {
-            { xpos,     ypos + h,   0.0f, 0.0f },            
-            { xpos,     ypos,       0.0f, 1.0f },
-            { xpos + w, ypos,       1.0f, 1.0f },
-
-            { xpos,     ypos + h,   0.0f, 0.0f },
-            { xpos + w, ypos,       1.0f, 1.0f },
-            { xpos + w, ypos + h,   1.0f, 0.0f }           
-        };
-        // render glyph texture over quad
-        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-        // update content of VBO memory
-        glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // render quad
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-        x += (float)(ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
-   }  
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // return opengl state to default
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ZERO);
-}
 void setFontProjection(GpuData *buffer,View view){
     glUseProgram(buffer->shaderProgram);
 

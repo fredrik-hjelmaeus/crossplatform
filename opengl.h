@@ -19,7 +19,7 @@ void setupFontMaterial(GpuData* buffer,int width,int height);
 void setupFontTextures();
 void setupFontMesh(GpuData *buffer);
 void renderNonECSText(GpuData* buffer, char* text, float x, float y, float scale, Color color);
-void RenderTextTwo(GpuData* buffer, char* text, float x, float y, float scale, Color color);
+
 /**
  * @brief Generally called when view are switched
  * buffer is font gpu data
