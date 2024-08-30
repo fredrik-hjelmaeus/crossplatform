@@ -264,8 +264,9 @@ GLuint setupFontTexture(FT_Face face){
     glBindTexture(GL_TEXTURE_2D, 0);
     return texture;
 }
-
  void setupFontMaterial(GpuData* buffer,int width,int height){
+    // shader program
+    //unsigned int shaderProgramId;
      #ifdef __EMSCRIPTEN__
         #error "This function is not implemented for Emscripten."
       //  char* vertexShaderSource = readFile("shaders/wasm/vertex_wasm.glsl");
@@ -314,17 +315,14 @@ GLuint setupFontTexture(FT_Face face){
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
         printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
     }
-    printf("width: %d\n", width);
-    printf("height: %d\n", height); 
-    
-
+   
     // free memory of shader sources
     free(vertexShaderSource);
     free(fragmentShaderSource);
-
+    
     // Link shaders
     buffer->shaderProgram = glCreateProgram();
-    printf("setupFontMaterial\n");
+
     glAttachShader(buffer->shaderProgram, vertexShader);
     glAttachShader(buffer->shaderProgram, fragmentShader);
     glLinkProgram(buffer->shaderProgram);
@@ -338,63 +336,39 @@ GLuint setupFontTexture(FT_Face face){
         glGetProgramInfoLog(buffer->shaderProgram, 512, NULL, infoLog);
         printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
     }
- 
-    /* glUseProgram(buffer->shaderProgram);
-    mat4x4 projection;
-    mat4x4_ortho(projection, 0.0f, (float)width, 0.0f, (float)height, -1.0f, 1.0f);
-    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);  */
 }
- 
- void renderText(GpuData *buffer, char *text, TransformComponent *transformComponent, Color *diffuse)
-{
-  
-    // OpenGL state
-    // ------------
+   
+void setupFontMesh(GpuData *buffer){
+    glGenVertexArrays(1, &buffer->VAO);
+    glGenBuffers(1, &buffer->VBO);
+    glBindVertexArray(buffer->VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);  
+}
+
+void RenderTextTwo(GpuData *buffer, char *text, float x, float y, float scale, Color color){
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Set shader
-    glUseProgram(buffer->shaderProgram);
-    mat4x4 projection;
-    mat4x4_ortho(projection, 0.0f, 800.0f, 0.0f, 600.0f, -1.0f, 1.0f);
-    GLint projLoc = glGetUniformLocation(buffer->shaderProgram, "projection");
-    if (projLoc == -1) {
-        printf("Could not find uniform location for 'projection'\n");
-    }
-    //glUniformMatrix4fv(projLoc, 1, GL_FALSE, &projection[0][0]); 
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)projection); 
 
     glActiveTexture(GL_TEXTURE0);
     glUniform3f(glGetUniformLocation(buffer->shaderProgram, "textColor"), 1.0f, 1.0f, 1.0f);
     glBindVertexArray(buffer->VAO);
 
     // iterate through all characters
-   // std::string::const_iterator c;
-  //  for (c = text.begin(); c != text.end(); c++) 
-  //  {
-        Character ch = globals.characters[0];
-        // print all things about ch:
-        printf("ch.TextureID: %d\n", ch.TextureID);
-        printf("ch.Size[0]: %d\n", ch.Size[0]);
-        printf("ch.Size[1]: %d\n", ch.Size[1]);
-        printf("ch.Bearing[0]: %d\n", ch.Bearing[0]);
-        printf("ch.Bearing[1]: %d\n", ch.Bearing[1]);
-        printf("ch.Advance: %d\n", ch.Advance);
-        
-        float scale = 1.0f;
-        float x = 1.0f;
-        float y = 1.0f;
+    for (unsigned char c = 0; c < 128; c++) {
+        Character ch = globals.characters[c];
+      
+        float xpos = x + (float)ch.Bearing[0] * scale;
+        float ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
 
-        float xpos = x + ch.Bearing[0] * scale;
-        float ypos = y - (ch.Size[1] - ch.Bearing[1]) * scale;
-        printf("xpos: %f\n", xpos);
-        printf("ypos: %f\n", ypos);
+        float w = (float)ch.Size[0] * scale;
+        float h = (float)ch.Size[1] * scale;    
 
-        float w = ch.Size[0] * scale;
-        float h = ch.Size[1] * scale;
-        printf("w: %f\n", w);
-        printf("h: %f\n", h);
         // update VBO for each character
         float vertices[6][4] = {
             { xpos,     ypos + h,   0.0f, 0.0f },            
@@ -415,23 +389,72 @@ GLuint setupFontTexture(FT_Face face){
         // render quad
         glDrawArrays(GL_TRIANGLES, 0, 6);
         // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-       // x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
-   // }
+        x += (float)(ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+   }  
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
-     
+
+    // return opengl state to default
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ZERO);
 }
-   
-void setupFontMesh(GpuData *buffer){
-    glGenVertexArrays(1, &buffer->VAO);
-    glGenBuffers(1, &buffer->VBO);
-    glBindVertexArray(&buffer->VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, &buffer->VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+void setFontProjection(GpuData *buffer,View view){
+    glUseProgram(buffer->shaderProgram);
+
+    mat4x4 projection;
+    mat4x4_ortho(projection, 0.0f, view.rect.width, 0.0f, view.rect.height, -1.0f, 1.0f);
+    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);
+}
+void renderNonECSText(GpuData *buffer, char *text, float x, float y, float scale, Color color)
+{
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glActiveTexture(GL_TEXTURE0);
+    glUniform3f(glGetUniformLocation(buffer->shaderProgram, "textColor"), color.r, color.g, color.b);
+    glBindVertexArray(buffer->VAO);
+
+    // iterate through all characters
+    for (unsigned char c = 0; c < strlen(text); c++) {
+        Character ch = globals.characters[text[c]];
+      
+        float xpos = x + (float)ch.Bearing[0] * scale;
+        float ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
+
+        float w = (float)ch.Size[0] * scale;
+        float h = (float)ch.Size[1] * scale;    
+
+        // update VBO for each character
+        float vertices[6][4] = {
+            { xpos,     ypos + h,   0.0f, 0.0f },            
+            { xpos,     ypos,       0.0f, 1.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+            { xpos + w, ypos + h,   1.0f, 0.0f }           
+        };
+        // render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+        // update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += (float)(ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+   }  
     glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // return opengl state to default
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ZERO);
 }
 
 void setupFontTextures(){

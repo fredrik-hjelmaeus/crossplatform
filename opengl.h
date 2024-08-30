@@ -16,7 +16,13 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 GLuint setupTexture(TextureData textureData);
 GLuint setupFontTexture(FT_Face face);
 void setupFontMaterial(GpuData* buffer,int width,int height);
-void setupFontMesh(GpuData* buffer);
 void setupFontTextures();
-
+void setupFontMesh(GpuData *buffer);
+void renderNonECSText(GpuData* buffer, char* text, float x, float y, float scale, Color color);
+void RenderTextTwo(GpuData* buffer, char* text, float x, float y, float scale, Color color);
+/**
+ * @brief Generally called when view are switched
+ * buffer is font gpu data
+ */
+void setFontProjection(GpuData *buffer,View view);
 #endif // End of the OPENGL_H definition

@@ -984,162 +984,22 @@ void render(){
         }
     }  */
    //setViewportWithScissorAndClear(globals.views.full);
-   setViewport(globals.views.full);
+    //setViewport(globals.views.ui);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
-
-    // mesh data
-    unsigned int VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);  
-
-
-    // shader program
-    unsigned int shaderProgramId;
-     #ifdef __EMSCRIPTEN__
-        #error "This function is not implemented for Emscripten."
-      //  char* vertexShaderSource = readFile("shaders/wasm/vertex_wasm.glsl");
-      //  char* fragmentShaderSource = readFile("shaders/wasm/fragment_wasm.glsl");
-    #else
-        char* vertexShaderSource = readFile("shaders/vert_text.glsl");
-        char* fragmentShaderSource = readFile("shaders/frag_text.glsl");
-    #endif
-    if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
-        printf("Error loading shader source\n");
-        return;
-    }
-    
-    printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
-
-    // Compile shaders
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    if(vertexShader == 0) {
-        printf("Error creating vertex shader\n");
-        return;
-    }
-    glShaderSource(vertexShader, 1, (const GLchar* const*)&vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // Check for shader compile errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s\n", infoLog);
-    }
-
-    // Fragment shader
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    if(fragmentShader == 0) {
-        printf("Error creating fragment shader\n");
-        return;
-    }
-    glShaderSource(fragmentShader, 1, (const GLchar* const*)&fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
  
-    // Check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
-    }
+
+    GpuData gpuFontData;
+    setupFontMesh(&gpuFontData);
+    setupFontMaterial(&gpuFontData,width,height);
+
+    // call only between view changes
+    setFontProjection(&gpuFontData,globals.views.ui);
+
+   // RenderTextTwo(&gpuFontData, "This is sample text", 1.0f, 1.0f, .25f,(Color){1.0f, 1.0f, 1.0f});
+    renderNonECSText(&gpuFontData, "My very samply text", 200.0f, 75.0f, 1.0f,(Color){1.0f, 0.0f, 0.0f});
    
-    // free memory of shader sources
-    free(vertexShaderSource);
-    free(fragmentShaderSource);
+
     
-    // Link shaders
-    shaderProgramId = glCreateProgram();
-
-    glAttachShader(shaderProgramId, vertexShader);
-    glAttachShader(shaderProgramId, fragmentShader);
-    glLinkProgram(shaderProgramId);
-
-   
-    printf("Shader program: %d\n", shaderProgramId);
-
-    // Check for linking errors
-    glGetProgramiv(shaderProgramId, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgramId, 512, NULL, infoLog);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
-    }
-
-
-    glUseProgram(shaderProgramId);
-
-    mat4x4 projection;
-    mat4x4_ortho(projection, 0.0f, 800.0f, 0.0f, 600.0f, -1.0f, 1.0f);
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgramId, "projection"), 1, GL_FALSE, &projection[0][0]);    
-
-
-    //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    //glClear(GL_COLOR_BUFFER_BIT);
-
-    //RenderText(shader, "This is sample text", 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  
-
-    glActiveTexture(GL_TEXTURE0);
-    glUniform3f(glGetUniformLocation(shaderProgramId, "textColor"), 1.0f, 1.0f, 1.0f);
-    glBindVertexArray(VAO);
-
-    float scale = 0.25f;
-    float x = 1.0f;
-    float y = 1.0f;
-
-    // iterate through all characters
-    for (unsigned char c = 0; c < 128; c++) {
-        Character ch = globals.characters[c];
-      
-        float xpos = x + (float)ch.Bearing[0] * scale;
-        float ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
-
-        float w = (float)ch.Size[0] * scale;
-        float h = (float)ch.Size[1] * scale;    
-
-        // update VBO for each character
-        float vertices[6][4] = {
-            { xpos,     ypos + h,   0.0f, 0.0f },            
-            { xpos,     ypos,       0.0f, 1.0f },
-            { xpos + w, ypos,       1.0f, 1.0f },
-
-            { xpos,     ypos + h,   0.0f, 0.0f },
-            { xpos + w, ypos,       1.0f, 1.0f },
-            { xpos + w, ypos + h,   1.0f, 0.0f }           
-        };
-        // render glyph texture over quad
-        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-        // update content of VBO memory
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // render quad
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-        x += (float)(ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
-   }  
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // return opengl state to default
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ZERO);
 
 
     #endif
@@ -1683,10 +1543,8 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     
   /*   Entity* textEntity = addEntity(TEXT);
     textEntity->meshComponent->active = 1;
-    setupFontMesh(&textEntity->meshComponent->gpuData);
-    printf("5555\n");
-    setupFontMaterial(&textEntity->meshComponent->gpuData,width,height);
-    printf("after setupFontMaterial\n");
+    
+   
     textEntity->transformComponent->active = 1;
     textEntity->transformComponent->position[0] = position[0];
     textEntity->transformComponent->position[1] = position[1];
