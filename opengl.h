@@ -10,15 +10,15 @@
 
 
 void renderMesh(GpuData* buffer,TransformComponent* transformComponent,Color* ambient,Color* diffuse, Color* specular,float shininess,GLuint diffuseMap,Camera* camera,bool useDiffuseMap);
-void renderText(GpuData* buffer,char* text,TransformComponent* transformComponent,Color* diffuse);
+
 void setupMaterial(GpuData* buffer);
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
 GLuint setupTexture(TextureData textureData);
-GLuint setupFontTexture(FT_Face face);
+
 void setupFontMaterial(GpuData* buffer,int width,int height);
-void setupFontTextures();
+void setupFontTextures(char* fontPath);
 void setupFontMesh(GpuData *buffer);
-void renderNonECSText(GpuData* buffer, char* text, float x, float y, float scale, Color color);
+void renderText(GpuData* buffer, char* text, float x, float y, float scale, Color color);
 
 /**
  * @brief Generally called when view are switched

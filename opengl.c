@@ -239,32 +239,8 @@ GLuint setupTexture(TextureData textureData){
     stbi_image_free(textureData.data);
     return texture;
 }
-GLuint setupFontTexture(FT_Face face){
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-     glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RED,
-        face->glyph->bitmap.width,
-        face->glyph->bitmap.rows,
-        0,
-        GL_RED,
-        GL_UNSIGNED_BYTE,
-        face->glyph->bitmap.buffer
-    );
-    // set texture options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return texture;
-}
- void setupFontMaterial(GpuData* buffer,int width,int height){
+void setupFontMaterial(GpuData* buffer,int width,int height){
     // shader program
     //unsigned int shaderProgramId;
      #ifdef __EMSCRIPTEN__
@@ -337,7 +313,6 @@ GLuint setupFontTexture(FT_Face face){
         printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
     }
 }
-   
 void setupFontMesh(GpuData *buffer){
     glGenVertexArrays(1, &buffer->VAO);
     glGenBuffers(1, &buffer->VBO);
@@ -349,7 +324,6 @@ void setupFontMesh(GpuData *buffer){
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);  
 }
-
 void setFontProjection(GpuData *buffer,View view){
     glUseProgram(buffer->shaderProgram);
 
@@ -357,7 +331,7 @@ void setFontProjection(GpuData *buffer,View view){
     mat4x4_ortho(projection, 0.0f, view.rect.width, 0.0f, view.rect.height, -1.0f, 1.0f);
     glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);
 }
-void renderNonECSText(GpuData *buffer, char *text, float x, float y, float scale, Color color)
+void renderText(GpuData *buffer, char *text, float x, float y, float scale, Color color)
 {
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -407,8 +381,7 @@ void renderNonECSText(GpuData *buffer, char *text, float x, float y, float scale
     glDisable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ZERO);
 }
-
-void setupFontTextures(){
+void setupFontTextures(char* fontPath){
      FT_Library ft;
     if(FT_Init_FreeType(&ft)) {
         printf("ERROR::FREETYPE: Could not init FreeType Library\n");
@@ -417,7 +390,7 @@ void setupFontTextures(){
 
     // Load font
     FT_Face face;
-    if (FT_New_Face(ft, "ARIAL.TTF", 0, &face))
+    if (FT_New_Face(ft, fontPath, 0, &face))
     {
         printf("ERROR::FREETYPE: Failed to load font\n");
         exit(1);

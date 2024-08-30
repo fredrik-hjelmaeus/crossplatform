@@ -72,7 +72,9 @@ struct Globals globals = {
     .mouseXpos=0.0f,
     .mouseYpos=0.0f,
     .drawBoundingBoxes=false,
-    .render=true
+    .render=true,
+    .gpuFontData={0,0,0,0,0,NULL},
+
 };
 
 // Colors
@@ -988,15 +990,12 @@ void render(){
 
  
 
-    GpuData gpuFontData;
-    setupFontMesh(&gpuFontData);
-    setupFontMaterial(&gpuFontData,width,height);
+    
 
     // call only between view changes
-    setFontProjection(&gpuFontData,globals.views.ui);
+    setFontProjection(&globals.gpuFontData,globals.views.ui);
 
-   // RenderTextTwo(&gpuFontData, "This is sample text", 1.0f, 1.0f, .25f,(Color){1.0f, 1.0f, 1.0f});
-    renderNonECSText(&gpuFontData, "My very samply text", 200.0f, 75.0f, 1.0f,(Color){1.0f, 0.0f, 0.0f});
+    renderText(&globals.gpuFontData, "My very samply text", 200.0f, 75.0f, 1.0f,(Color){1.0f, 0.0f, 0.0f});
    
 
     
@@ -1027,6 +1026,18 @@ void initOpenGLWindow(){
    printf("OpenGL context created!\n");
 }
 
+/**
+ * @brief Initialize the font
+ * Load texture,setup mesh,setup material
+ * After this the projection matrix for the font need to be set using setFontProjection.
+ * And then you can render text using renderText.
+ */
+void initFont(){
+    setupFontTextures("ARIAL.TTF");
+    setupFontMesh(&globals.gpuFontData);
+    setupFontMaterial(&globals.gpuFontData,width,height);
+}
+
 #ifdef __EMSCRIPTEN__
 void emscriptenLoop() {
     if(!globals.running){
@@ -1050,7 +1061,7 @@ void emscriptenLoop() {
 void initScene(){
 
    // Assets
-   setupFontTextures();
+   initFont();
    TextureData textureData = loadTexture();
    GLuint diffuseTextureId = setupTexture(textureData);
   // ObjData objData = loadObjFile("truck.obj");
@@ -1135,7 +1146,7 @@ int main(int argc, char **argv) {
     }
     printf("number of glyphs in this font %ld \n", face->num_glyphs);
 
-    GLuint textureId = setupFontTexture(face);
+    
     
    
     

@@ -22,6 +22,7 @@ struct Globals {
     bool drawBoundingBoxes;
     Character characters[128];
     bool render;
+    GpuData gpuFontData;
 };
 
 extern struct Globals globals;
