@@ -963,7 +963,15 @@ void render(){
         if(globals.entities[i].alive == 1) {
                 if(globals.entities[i].uiComponent->active == 1){
                     if(strlen(globals.entities[i].uiComponent->text) > 0){
-                        renderText(&globals.gpuFontData, globals.entities[i].uiComponent->text, 200.0f, 75.0f, .5f,(Color){1.0f, 1.0f, 0.0f});
+                        //printf("transform position: %f %f \n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
+                        // convert transform position to viewport space
+                        //convertViewRectangleToSDLCoordinates(globals.views.ui,height);
+                        renderText(
+                            &globals.gpuFontData, 
+                            globals.entities[i].uiComponent->text, 
+                            0.0f,0.0f,//globals.entities[i].transformComponent->position[0], 
+                            //globals.entities[i].transformComponent->position[1], 
+                            .5f,(Color){1.0f, 1.0f, 0.0f});
                     }
                 }
         }
@@ -1001,7 +1009,7 @@ void initOpenGLWindow(){
  * And then you can render text using renderText.
  */
 void initFont(){
-    setupFontTextures("ARIAL.TTF");
+    setupFontTextures("ARIAL.TTF",48);
     setupFontMesh(&globals.gpuFontData);
     setupFontMaterial(&globals.gpuFontData,width,height);
 }

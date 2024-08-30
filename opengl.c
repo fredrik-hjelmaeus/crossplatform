@@ -381,7 +381,7 @@ void renderText(GpuData *buffer, char *text, float x, float y, float scale, Colo
     glDisable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ZERO);
 }
-void setupFontTextures(char* fontPath){
+void setupFontTextures(char* fontPath,int fontSize){
      FT_Library ft;
     if(FT_Init_FreeType(&ft)) {
         printf("ERROR::FREETYPE: Could not init FreeType Library\n");
@@ -399,7 +399,7 @@ void setupFontTextures(char* fontPath){
     // Set font size
     // The function sets the font's width and height parameters. 
     // Setting the width to 0 lets the face dynamically calculate the width based on the given height.
-    FT_Set_Pixel_Sizes(face, 0, 48);
+    FT_Set_Pixel_Sizes(face, 0, fontSize);
 
     // A FreeType face hosts a collection of glyphs. 
     // We can set one of those glyphs as the active glyph by calling FT_Load_Char. 
