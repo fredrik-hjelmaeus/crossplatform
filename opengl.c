@@ -7,9 +7,6 @@
 
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
 
-    if(buffer->drawMode == NULL){
-        buffer->drawMode = GL_TRIANGLES;
-    }
     buffer->numIndicies = indexCount;
     glGenVertexArrays(1, &(buffer->VAO));
     glGenBuffers(1, &(buffer->VBO));
@@ -244,9 +241,8 @@ void setupFontMaterial(GpuData* buffer,int width,int height){
     // shader program
     //unsigned int shaderProgramId;
      #ifdef __EMSCRIPTEN__
-        #error "This function is not implemented for Emscripten."
-      //  char* vertexShaderSource = readFile("shaders/wasm/vertex_wasm.glsl");
-      //  char* fragmentShaderSource = readFile("shaders/wasm/fragment_wasm.glsl");
+        char* vertexShaderSource = readFile("shaders/wasm/vert_text_wasm.glsl");
+        char* fragmentShaderSource = readFile("shaders/wasm/frag_text_wasm.glsl");
     #else
         char* vertexShaderSource = readFile("shaders/vert_text.glsl");
         char* fragmentShaderSource = readFile("shaders/frag_text.glsl");

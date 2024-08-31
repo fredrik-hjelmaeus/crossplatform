@@ -23,6 +23,7 @@ struct Globals {
     Character characters[128];
     bool render;
     GpuData gpuFontData;
+    float unitScale;
 };
 
 extern struct Globals globals;

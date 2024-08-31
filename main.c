@@ -73,8 +73,8 @@ struct Globals globals = {
     .mouseYpos=0.0f,
     .drawBoundingBoxes=false,
     .render=true,
-    .gpuFontData={0,0,0,0,0,NULL},
-
+    .gpuFontData={0,0,0,0,0,0,GL_TRIANGLES},
+    .unitScale=100.0f,
 };
 
 // Colors
@@ -295,7 +295,7 @@ void initWindow() {
 
     // Create an SDL window
     globals.window = SDL_CreateWindow(
-        "Hello, SDL2", 
+        "FH Engine", 
         SDL_WINDOWPOS_UNDEFINED, 
         SDL_WINDOWPOS_UNDEFINED, 
         width, 
@@ -671,8 +671,8 @@ void uiSystem(){
                 float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2; // 100
                 
                 // Half scale of element
-                float scaleFactorX = globals.entities[i].transformComponent->scale[0] / 100.0;  // 1.0
-                float scaleFactorY = globals.entities[i].transformComponent->scale[1] / 100.0; // 0.5
+                float scaleFactorX = globals.entities[i].transformComponent->scale[0] / globals.unitScale;  // 1.0
+                float scaleFactorY = globals.entities[i].transformComponent->scale[1] / globals.unitScale; // 0.5
 
                 // TODO: rotation
                 printf("requested x %f \n", globals.entities[i].transformComponent->position[0]);
@@ -683,9 +683,8 @@ void uiSystem(){
                 float requested_y = globals.entities[i].transformComponent->position[1];
 
                 // move element to upper left corner and then add requested position.
-               globals.entities[i].transformComponent->position[0] = -1.0 * ui_viewport_half_width + 100.0 / 2.0 * scaleFactorX + requested_x;
-               globals.entities[i].transformComponent->position[1] = 100.0 - (ui_viewport_half_height / 2.0 * scaleFactorY) - requested_y;
-
+               globals.entities[i].transformComponent->position[0] = -1.0 * ui_viewport_half_width + globals.unitScale / 2.0 * scaleFactorX + requested_x;
+               globals.entities[i].transformComponent->position[1] = globals.unitScale - (ui_viewport_half_height / 2.0 * scaleFactorY) - requested_y;
 
 
                 printf(" x %f \n",  globals.entities[i].transformComponent->position[0]);
@@ -898,7 +897,8 @@ void render(){
                 Color* spec = &globals.entities[i].materialComponent->specular;
                 GLfloat shin = globals.entities[i].materialComponent->shininess;
                 GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera);
+                bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
+                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera,useDiffMap);
             }
         }
     }
@@ -965,7 +965,8 @@ void render(){
                     if(strlen(globals.entities[i].uiComponent->text) > 0){
                         //printf("transform position: %f %f \n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
                         // convert transform position to viewport space
-                        //convertViewRectangleToSDLCoordinates(globals.views.ui,height);
+                        
+                        convertUIcoordinateToSDLcoordinates(globals.views.ui,globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1],height);
                         renderText(
                             &globals.gpuFontData, 
                             globals.entities[i].uiComponent->text, 

@@ -271,3 +271,13 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight) {
     view.rect.y = windowHeight - view.rect.y - view.rect.height;
     return view.rect;
 }
+
+void convertUIcoordinateToSDLcoordinates(View view, float p1,float p2, int windowHeight)
+{
+    
+    printf("point[0] %f \n", p1);
+    printf("point[1] %f \n", p2);
+    /* point[1] = windowHeight - point[1];
+    point[0] = point[0] + view.rect.x;
+    point[1] = point[1] + view.rect.y; */
+}
