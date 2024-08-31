@@ -196,6 +196,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
         glDrawArrays(buffer->drawMode, 0, buffer->vertexCount);
    }
     glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 

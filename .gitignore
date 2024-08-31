@@ -6,3 +6,5 @@
 *.html
 *.js
 .vscode
+*.obj
+*.data

@@ -959,6 +959,7 @@ void render(){
     }
     // render ui text
     setFontProjection(&globals.gpuFontData,globals.views.ui);
+    glDisable(GL_DEPTH_TEST);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
                 if(globals.entities[i].uiComponent->active == 1){
@@ -966,17 +967,23 @@ void render(){
                         //printf("transform position: %f %f \n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
                         // convert transform position to viewport space
                         
-                        convertUIcoordinateToSDLcoordinates(globals.views.ui,globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1],height);
+                        Vector2 convertedPoint = convertUIcoordinateToSDLcoordinates(
+                            globals.views.ui,
+                            globals.entities[i].transformComponent->position[0], 
+                            globals.entities[i].transformComponent->position[1],
+                            height,
+                            width
+                            );
                         renderText(
                             &globals.gpuFontData, 
                             globals.entities[i].uiComponent->text, 
-                            0.0f,0.0f,//globals.entities[i].transformComponent->position[0], 
-                            //globals.entities[i].transformComponent->position[1], 
+                            45,165.0,
                             .5f,(Color){1.0f, 1.0f, 0.0f});
                     }
                 }
         }
-    } 
+    }
+    glEnable(GL_DEPTH_TEST);
    
     #endif
 

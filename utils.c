@@ -272,11 +272,29 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight) {
     return view.rect;
 }
 
-void convertUIcoordinateToSDLcoordinates(View view, float p1,float p2, int windowHeight)
+/**
+ * Converts ui coordinates(x,y) to SDL coordinates for the provided view.
+ * So if view has x,y = 0,200 and width,height = 800,200 , 
+ * zero will be upper left corner: 0,400 and bottom right corner: 800,600
+ */
+Vector2 convertUIcoordinateToSDLcoordinates(View view, float p1,float p2, int windowHeight,int windowWidth)
 {
-    
+  
+    float newX = (float)windowWidth - (float)view.rect.width + (float)view.rect.width / 2.0 + p1;
+    float newY = (float)windowHeight - (float)view.rect.height + p2;
+    Vector2 result = {.x=newX,.y=newY};
+    printf("------------------\n");
+    printf("view.rect.x %f \n", (float)view.rect.x);
+    printf("view.rect.y %f \n", (float)view.rect.y);
+    printf("view.rect.width %f \n", (float)view.rect.width);
+    printf("view.rect.height %f \n", (float)view.rect.height);
+    printf("windowHeight %d \n", windowHeight);
     printf("point[0] %f \n", p1);
-    printf("point[1] %f \n", p2);
+    printf("point[1] %f \n", p2); 
+    printf("newX %f \n",newX);
+    printf("newY %f \n",newY); 
+    return result;
+    
     /* point[1] = windowHeight - point[1];
     point[0] = point[0] + view.rect.x;
     point[1] = point[1] + view.rect.y; */

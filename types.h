@@ -140,6 +140,10 @@ enum Tag {
     BOUNDING_BOX = 2,
     TEXT = 3,
 };
+typedef struct Vector2{
+    float x;
+    float y;
+} Vector2;
 
 typedef struct TransformComponent {
     bool active;
