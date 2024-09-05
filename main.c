@@ -64,9 +64,9 @@ struct Globals globals = {
     .overideDrawMode=GL_TRIANGLES,
     .overrideDrawModeBool=0,
     .views = {
-        .ui={{0, 0, 800, 200}, {0.0f, 0.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL,false},
-        .main={{0, 200, 800, 400}, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL,false},
-        .full={{0, 0, 800, 600}, {0.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL,false},
+        .ui={{0, 400, 800, 200}, {0.0f, 0.0f, 0.0f, 1.0f},NULL,false},
+        .main={{0, 0, 800, 400}, {1.0f, 0.0f, 0.0f, 1.0f},NULL,false},
+        .full={{0, 0, 800, 600}, {0.0f, 0.0f, 0.0f, 1.0f},NULL,false},
     },
     .firstMouse=1,
     .mouseXpos=0.0f,
@@ -77,14 +77,14 @@ struct Globals globals = {
     .unitScale=100.0f,
 };
 
+// Window dimensions
+static const int width = 800;  // If these change, the views defaults should be changed aswell.
+static const int height = 600; // If these change, the views defaults should be changed aswell.
+
 // Colors
 Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
 Color red = {1.0f, 0.0f, 0.0f, 1.0f};
 Color green = {0.0f, 1.0f, 0.0f, 1.0f};
-
-// Window dimensions
-static const int width = 800;
-static const int height = 600;
 
 // Time variables
 #define FPS 60
@@ -184,6 +184,7 @@ void initializeUIComponent(UIComponent* uiComponent){
         // Initialize the allocated memory to an empty string
         uiComponent->text[0] = '\0';
     }
+    uiComponent->uiNeedsUpdate = 0;
 }
 
 
@@ -311,12 +312,18 @@ void setViewport(struct View view) {
     glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
 }
 
+/**
+ * @brief Set the viewport, scissor box and clear color for a view
+ * Expects the view to be in opengl coordinates
+ */
 void setViewportWithScissorAndClear(View view) {
+    Rectangle rect = convertViewRectangleToSDLCoordinates(view,globals.views.full.rect.height);
+   
     // Set the viewport
-    glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
+    glViewport(rect.x, rect.y, rect.width, rect.height);
 
     // Set the scissor box
-    glScissor(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
+    glScissor(rect.x, rect.y, rect.width, rect.height);
     glEnable(GL_SCISSOR_TEST);
 
     // Set the clear color
@@ -364,43 +371,155 @@ void calcCameraFront(Camera* camera, float xpos, float ypos){
             vec3_norm(camera->front, direction);
 }
 
-void recalculateViewports(int w, int h){
-    // Recalculate viewports
-  if(globals.views.main.childView != NULL){
-        if(globals.views.main.childView->splitDirection == SPLIT_HORIZONTAL){
+void updateUIonViewportChange(){
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active) {
+               
+  
+                // Position of element on spawn:
+                float ui_viewport_half_width = 600;// (float)globals.views.ui.rect.width / 2; // 400 -> 960     250 / 400 = 0.625 => 0.625 * 960 = 600
+                float ui_viewport_half_height = 90;//(float)globals.views.ui.rect.height / 2; // 100 -> 180   100 / 200 = 0.5  => 0.5 * 180 = 90
+                
+                // Half scale of element
+                float scaleFactorX = globals.entities[i].transformComponent->scale[0] / globals.unitScale;  // 1.0
+                float scaleFactorY = globals.entities[i].transformComponent->scale[1] / globals.unitScale; // 0.5
 
-            // Calc new percentage height, using old main height.
-            float percentageChildHeight = (float)globals.views.main.childView->rect.height / ((float)globals.views.main.rect.height + (float)globals.views.main.childView->rect.height);
-            printf("percentageChildHeight: %f\n", percentageChildHeight);
+                // TODO: rotation
+               /*  printf("requested x %f \n", globals.entities[i].transformComponent->position[0]);
+                printf("requested y %f \n", globals.entities[i].transformComponent->position[1]);
+ */
+                // position of element
+                float requested_x = globals.entities[i].transformComponent->position[0];
+                float requested_y = globals.entities[i].transformComponent->position[1];
 
-            // Update childView height & the new width.
-            globals.views.main.childView->rect.height = h * percentageChildHeight;
-            printf("new childView height: %d\n", globals.views.main.childView->rect.height);
-            globals.views.main.childView->rect.width = w;
+                // move element to upper left corner and then add requested position.
+               globals.entities[i].transformComponent->position[0] = -1.0 * ui_viewport_half_width + globals.unitScale / 2.0 * scaleFactorX + requested_x;
+               globals.entities[i].transformComponent->position[1] = globals.unitScale - (ui_viewport_half_height / 2.0 * scaleFactorY) - requested_y;
 
-            // Update main height
-            globals.views.main.rect.height = h - globals.views.main.childView->rect.height;
-            globals.views.main.rect.width = w;
 
-            // Update main y position
-            globals.views.main.rect.y = globals.views.main.childView->rect.height;
+            /*     printf(" x %f \n",  globals.entities[i].transformComponent->position[0]);
+                printf(" y %f \n", globals.entities[i].transformComponent->position[1]);
+                printf(" width %f \n", globals.entities[i].transformComponent->scale[0]);
+                printf(" height %f \n", globals.entities[i].transformComponent->scale[1]) */;
+
+                
+                globals.entities[i].transformComponent->position[0] = 600.0f;
+                globals.entities[i].transformComponent->position[1] = 90.0f;
+                
+                // Bounding box
+                globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0];
+                globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1];
+                globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
+                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
+                
+                
+                
+                
+                
+                printf("-----------------entity %d \n", i);
+                printf(" x %f \n",  globals.entities[i].transformComponent->position[0]);
+                printf(" y %f \n", globals.entities[i].transformComponent->position[1]);
+                printf(" width %f \n", globals.entities[i].transformComponent->scale[0]);
+                printf(" height %f \n", globals.entities[i].transformComponent->scale[1]);
+                
+                globals.entities[i].transformComponent->modelNeedsUpdate = 1;
             
-            // TODO: here we need to update the childView y position,x pos & main x pos aswell. Atm they are not handled.
 
-        }
-        if(globals.views.main.childView->splitDirection == SPLIT_VERTICAL){
-            // Calc new percentage width, using old main width.
-            float percentageChildWidth = globals.views.main.childView->rect.width / globals.views.main.rect.width;
-
-            // Update childView height & the new width.
-            globals.views.main.childView->rect.width = w * percentageChildWidth;
-            globals.views.main.childView->rect.height = h;
-
-            // Update main height
-            globals.views.main.rect.height = h;
-            globals.views.main.rect.width = w - globals.views.main.childView->rect.width;
         }
     }
+}
+
+/**
+ * @brief Recalculate the viewports when the window is resized.
+ * TODO: This is fragile since the views are initialized with hardcoded pixel values 
+ *       and only when resizing the window we transfer to percentage values.
+ *       We also use the full view to determine what was the previous width & height of the window. 
+ *       This is because when this function is called, the window has already been resized.
+ *       This setup makes this function dependent on the full view beeing correct and also important
+ *       to update full view correctly in this function.
+ */
+void recalculateViewports(int w, int h){ // 600 -> 1024 = 600 / 1024 = 0.5859375
+    // Recalculate viewports
+    float prevHeight = (float)globals.views.full.rect.height;
+    float prevWidth = (float)globals.views.full.rect.width;
+
+    // main view
+    // Calc percentage height, using old height.
+    float percentageHeight = (float)globals.views.main.rect.height / prevHeight; // 400 / 600 = 0.6666666666666666
+   // printf("percentageHeight main: %f\n", percentageHeight);
+
+    // Update main height 
+    globals.views.main.rect.height = (float)h * percentageHeight; // 1
+    printf("new main height: %d\n", globals.views.main.rect.height);
+
+    // Calc percentage width, using old width.
+    float percentageWidth = (float)globals.views.main.rect.width / prevWidth; // 800 / 800 = 1.0
+   // printf("percentageWidth main: %f\n", percentageWidth);
+
+    // update main width
+    globals.views.main.rect.width = (float)w * percentageWidth;
+    printf("new main width: %d\n", globals.views.main.rect.width);
+
+    // Update main x position
+    float percentageX = (float)w / prevWidth; // ex 1024 / 800 = 1.28
+    globals.views.main.rect.x = percentageX * globals.views.main.rect.x; // ex 1.28 * 0 = 0 or 1.28 * 200 = 256
+    printf("new main x: %d\n", globals.views.main.rect.x);
+
+    // Update main y position
+    float percentageY = (float)h / prevHeight; // ex 1024 / 600 = 1.7066666666666668
+    globals.views.main.rect.y =  0.0f;//percentageY * globals.views.main.rect.y; // ex 1.7066666666666668 * 0 = 0 or 1.7066666666666668 * 200 = 341.3333333333333
+    printf("new main y: %d\n", globals.views.main.rect.y);
+    
+    // ui view
+    // Calc percentage height, using old height.
+    percentageHeight = (float)globals.views.ui.rect.height / prevHeight; // 200 / 600 = 0.3333333333333333
+   // printf("percentageHeight ui: %f\n", percentageHeight);
+
+    // Update ui height
+    globals.views.ui.rect.height = (float)h * percentageHeight;
+    printf("new ui height: %d\n", globals.views.ui.rect.height);
+
+    // Calc percentage width, using old width.
+    percentageWidth = (float)globals.views.ui.rect.width / prevWidth; // 800 / 800 = 1.0 
+   // printf("percentageWidth ui: %f\n", percentageWidth);
+
+    // update ui width
+    globals.views.ui.rect.width = (float)w * percentageWidth;
+    printf("new ui width: %d\n", globals.views.ui.rect.width);
+
+    // Update ui x position
+    percentageX = (float)w / prevWidth; // ex 1024 / 800 = 1.28
+    globals.views.ui.rect.x = percentageX * globals.views.ui.rect.x; // ex 1.28 * 0 = 0 or 1.28 * 200 = 256
+    printf("new ui x: %d\n", globals.views.ui.rect.x);
+
+    // Update ui y position
+    percentageY = (float)h / prevHeight; // ex 1080 / 600 = 1.8
+   // printf("------------------\n");
+   // printf("y BEFORE: %d\n", globals.views.ui.rect.y);
+    globals.views.ui.rect.y = 720.0f;//percentageY * (float)globals.views.ui.rect.y; // ex 1.8 * 0 = 0 or 1.8* 400 = 720
+    printf("new ui y: %d\n", globals.views.ui.rect.y);
+
+    globals.views.ui.camera->aspectRatio = (float)globals.views.ui.rect.width / globals.views.ui.rect.height;
+    globals.views.ui.camera->left = (-1 * (float)globals.views.ui.rect.width)/2.0f;
+    globals.views.ui.camera->right = (float)globals.views.ui.rect.width /2.0f;
+    globals.views.ui.camera->bottom = (-1 * (float)globals.views.ui.rect.height)/2.0f;
+    globals.views.ui.camera->top = (float)globals.views.ui.rect.height/2.0f;
+    globals.views.ui.camera->projectionMatrixNeedsUpdate = 1; 
+    updateUIonViewportChange();
+
+    /* globals.views.ui.camera->aspectRatio = 1920.0f/1080.0f;
+    globals.views.ui.camera->left = 1920.0f/2.0f;
+    globals.views.ui.camera->right = 1920.0f /2.0f;
+    globals.views.ui.camera->bottom = 1080.0f/2.0f;
+    globals.views.ui.camera->top = 1080.0f/2.0f; */
+  //  globals.views.ui.camera->projectionMatrixNeedsUpdate = 1;
+    
+    
+    // update full view ( this should be done last in this fn, since full view is used to calculate new views)
+    globals.views.full.rect.height = h;
+    globals.views.full.rect.width = w;
+    
+    // Update the projection on the perspective main view camera
     globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
 }
 
@@ -563,11 +682,9 @@ void input() {
 
             
            
-            // If mouse pos is within the main view
-            // view is not a rectangle with SDL-coords, we need to flip the y-value.
-            Rectangle convertedMainViewRectangle = convertViewRectangleToSDLCoordinates(globals.views.main,height);
+      
      
-            if(isPointInsideRect(convertedMainViewRectangle, (vec2){xpos, ypos})){ 
+            if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
                 
                // printf("Mouse is within main view\n ");
                 // Update the camera front vector
@@ -576,11 +693,8 @@ void input() {
                 globals.views.main.camera->viewMatrixNeedsUpdate = 1;
             }
 
-            // If mouse pos is within the ui view
-            // view is not a rectangle with SDL-coords, we need to flip the y-value.
-            Rectangle convertedUIViewRectangle = convertViewRectangleToSDLCoordinates(globals.views.ui,height);
      
-            if(isPointInsideRect(convertedUIViewRectangle, (vec2){xpos, ypos})){
+            if(isPointInsideRect(globals.views.ui.rect, (vec2){xpos, ypos})){
                 globals.views.ui.isMousePointerWithin = true; 
                 /* float degrees = 15.5f * globals.delta_time;
                 float radians = degrees * M_PI / 180.0f;  */ 
@@ -649,70 +763,45 @@ void updateCamera(Camera* camera){
  * Movement is handled in the input function, but will eventually be moved here.
  */
 void cameraSystem(){
-    
     updateCamera(globals.views.main.camera);
     updateCamera(globals.views.ui.camera);
-    
-    
 }
 
 void uiSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active) {
-            // Do ui logic here
-            if(globals.entities[i].transformComponent->modelNeedsUpdate == 1){
-
+        if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active && globals.entities[i].transformComponent->active && globals.entities[i].uiComponent->uiNeedsUpdate) {
+                
                 // Goal here: Position element in "UI" space, where start 0,0 is the center of the ui-viewport screen. 
                 // We will position the element to top left corner of the screen and treat this as 0,0 instead.
-                // If position or scale changes, this needs to be recalculated. This is not done automatically, modelNeedsUpdate flag needs to be set.
+                // If position or scale changes, this calculation won't be correct anymore.
+                // This calculation only works for elements that are spawned in the center of the screen.
                 
                 // Position of element on spawn:
-                float ui_viewport_half_width = (float)globals.views.ui.rect.width / 2; // 400
-                float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2; // 100
+                float ui_viewport_half_width = (float)globals.views.ui.rect.width / 2; 
+                float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2; 
                 
                 // Half scale of element
-                float scaleFactorX = globals.entities[i].transformComponent->scale[0] / globals.unitScale;  // 1.0
-                float scaleFactorY = globals.entities[i].transformComponent->scale[1] / globals.unitScale; // 0.5
+                float scaleFactorX = globals.entities[i].transformComponent->scale[0] / globals.unitScale;  
+                float scaleFactorY = globals.entities[i].transformComponent->scale[1] / globals.unitScale; 
 
                 // TODO: rotation
-                printf("requested x %f \n", globals.entities[i].transformComponent->position[0]);
-                printf("requested y %f \n", globals.entities[i].transformComponent->position[1]);
-
+            
                 // position of element
                 float requested_x = globals.entities[i].transformComponent->position[0];
                 float requested_y = globals.entities[i].transformComponent->position[1];
 
                 // move element to upper left corner and then add requested position.
                globals.entities[i].transformComponent->position[0] = -1.0 * ui_viewport_half_width + globals.unitScale / 2.0 * scaleFactorX + requested_x;
-               globals.entities[i].transformComponent->position[1] = globals.unitScale - (ui_viewport_half_height / 2.0 * scaleFactorY) - requested_y;
-
-
-                printf(" x %f \n",  globals.entities[i].transformComponent->position[0]);
-                printf(" y %f \n", globals.entities[i].transformComponent->position[1]);
-                printf(" width %f \n", globals.entities[i].transformComponent->scale[0]);
-                printf(" height %f \n", globals.entities[i].transformComponent->scale[1]);
-
-                
-                
+               globals.entities[i].transformComponent->position[1] = globals.unitScale - (ui_viewport_half_height / 2.0 * scaleFactorY) - requested_y;  
                 
                 // Bounding box
                 globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0];
                 globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1];
                 globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
-                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
+                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];       
 
-  
-               /*  printf("bb x %d \n", globals.entities[i].uiComponent->boundingBox.x);
-                printf("bb y %d \n", globals.entities[i].uiComponent->boundingBox.y);
-                printf("bb width %d \n", globals.entities[i].uiComponent->boundingBox.width);
-                printf("bb height %d \n", globals.entities[i].uiComponent->boundingBox.height);
-                printf("----------------------------------------\n"); */
-              
-
-
+                globals.entities[i].uiComponent->uiNeedsUpdate = 0;
                 
-            }
-
         }
     }
 }
@@ -909,7 +998,6 @@ void render(){
     // TODO: find a way to avoid having to iterate over all entities twice, once for ui and once for 3d objects.
 
     // Render main view & 3d objects
-    // render ui, could be overhead with switching viewports?. profile.
    setViewportWithScissorAndClear(globals.views.main);
    setFontProjection(&globals.gpuFontData,globals.views.main);
     for(int i = 0; i < MAX_ENTITIES; i++) {
@@ -950,7 +1038,6 @@ void render(){
                         }else {
                             if(globals.entities[i].tag != BOUNDING_BOX){
                                 renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
-                           
                             }
                         }
                 }
@@ -964,20 +1051,26 @@ void render(){
         if(globals.entities[i].alive == 1) {
                 if(globals.entities[i].uiComponent->active == 1){
                     if(strlen(globals.entities[i].uiComponent->text) > 0){
-                        //printf("transform position: %f %f \n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
+                        printf("rendertext entity %d \n", i);
+                        printf("transform position: %f %f \n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
                         // convert transform position to viewport space
-                        
-                        Vector2 convertedPoint = convertUIcoordinateToSDLcoordinates(
+                        vec2 result;
+                        convertUIcoordinateToWindowcoordinates(
                             globals.views.ui,
-                            globals.entities[i].transformComponent->position[0], 
-                            globals.entities[i].transformComponent->position[1],
+                            globals.entities[i].transformComponent,
                             height,
-                            width
-                            );
+                            width,
+                            result);
+                          //  printf("result x %f \n", result[0]);
+                          //  printf("result y %f \n", result[1]);
+                            // align text center vertically
+                            
+                            result[1] -= (float)globals.characters[0].Size[1] / 4.0;
+                          //  printf("globals.characters[0].Size %i \n", (float)globals.characters[0].Size[1] / 2.0);
                         renderText(
                             &globals.gpuFontData, 
                             globals.entities[i].uiComponent->text, 
-                            45,165.0,
+                            result[0],result[1],
                             .5f,(Color){1.0f, 1.0f, 0.0f});
                     }
                 }
@@ -1064,8 +1157,9 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
   // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 75.0f, 0.0f}, (vec3){20.0f, 150.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){50.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){600.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){50.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){300.0f, 120.0f, 0.0f}, (vec3){100.0f, 40.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
    
    
@@ -1081,8 +1175,7 @@ int main(int argc, char **argv) {
    
     initOpenGLWindow();
     
-    
-    
+    // Camera setup
     Camera* uiCamera = initCamera();
     uiCamera->isOrthographic = 1;
     uiCamera->aspectRatio = globals.views.ui.rect.width / globals.views.ui.rect.height;
@@ -1097,51 +1190,7 @@ int main(int argc, char **argv) {
 
     initScene();
 
-    // Font setup flow from: https://learnopengl.com/In-Practice/Text-Rendering
-    // TODO: move to a separate fn or file and build abstraction/API for text rendering.
-
-    // Init freetype
-   /*  FT_Library ft;
-    if(FT_Init_FreeType(&ft)) {
-        printf("ERROR::FREETYPE: Could not init FreeType Library\n");
-        exit(1);
-    }
-
-    // Load font
-    FT_Face face;
-    if (FT_New_Face(ft, "ARIAL.TTF", 0, &face))
-    {
-        printf("ERROR::FREETYPE: Failed to load font\n");
-        exit(1);
-    }
-
-    // Set font size
-    // The function sets the font's width and height parameters. 
-    // Setting the width to 0 lets the face dynamically calculate the width based on the given height.
-    FT_Set_Pixel_Sizes(face, 0, 48);
-
-    // A FreeType face hosts a collection of glyphs. 
-    // We can set one of those glyphs as the active glyph by calling FT_Load_Char. 
-    // Here we choose to load the character glyph 'X': 
-    if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
-    {
-        printf("ERROR::FREETYPE: Failed to load Glyph\n");
-        exit(1);
-    }
-    printf("number of glyphs in this font %ld \n", face->num_glyphs);
-
     
-    
-   
-    
-    globals.characters[0] = (Character){textureId, {face->glyph->bitmap.width,face->glyph->bitmap.rows}, {face->glyph->bitmap_left,face->glyph->bitmap_top}, face->glyph->advance.x};
-
-
-
-    // Clean up FreeType library
-    FT_Done_Face(face);
-    FT_Done_FreeType(ft); */
-
     //------------------------------------------------------
     // Main loop
     // -----------------------------------------------------
@@ -1519,7 +1568,8 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
         entity->uiComponent->active = 1;
         entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
         entity->uiComponent->text = "Test";
-        // Create a button component with an initial position in ndc space coords. 1.0f is one pixel.
+        entity->uiComponent->uiNeedsUpdate =1;
+
     }
 
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
@@ -1532,32 +1582,11 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
     if(ui == 1){
         boundingBoxEntity->uiComponent->active = 1;
-       // boundingBoxEntity->uiComponent->boundingBox = (Rectangle){0,400,50,50};
-        // Create a button component with an initial position in ndc space coords. 1.0f is one pixel.
+        boundingBoxEntity->uiComponent->uiNeedsUpdate = 1;
+
     } 
     createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
     
-  /*   Entity* textEntity = addEntity(TEXT);
-    textEntity->meshComponent->active = 1;
-    
-   
-    textEntity->transformComponent->active = 1;
-    textEntity->transformComponent->position[0] = position[0];
-    textEntity->transformComponent->position[1] = position[1];
-    textEntity->transformComponent->position[2] = position[2];
-    textEntity->transformComponent->scale[0] = scale[0];
-    textEntity->transformComponent->scale[1] = scale[1];
-    textEntity->transformComponent->scale[2] = scale[2];
-    textEntity->transformComponent->rotation[0] = rotation[0];
-    textEntity->transformComponent->rotation[1] = rotation[1];
-    textEntity->transformComponent->rotation[2] = rotation[2];
-    textEntity->materialComponent->active = 1;
-    textEntity->materialComponent->diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f}; // white
-    textEntity->uiComponent->active = 1;
-    textEntity->uiComponent->text = "This is a sample text";
-    printf("BINGO\n"); */
-    
-
 }
 
 
@@ -1686,8 +1715,6 @@ Camera* initCamera() {
     camera->isOrthographic = 0;
 
     return camera;
-
- 
 }
 
 // -----------------------------------------------------

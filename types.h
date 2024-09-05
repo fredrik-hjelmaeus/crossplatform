@@ -60,10 +60,8 @@ typedef struct Rectangle{
 
 // TODO: introduce concept of Layouts?
 typedef struct View {
-    Rectangle rect;
+    Rectangle rect; // x left start corner, y top start corner, x right corner = x + width, y bottom corner = y + height
     Color clearColor;
-    SplitDirection splitDirection;
-    struct View* childView; // Pointer to a child view, can be NULL if no child
     Camera* camera; // Pointer to a camera, can be NULL if no camera
     bool isMousePointerWithin; // Flag to indicate if the mouse pointer is within the view
 } View;
@@ -175,6 +173,7 @@ typedef struct UIComponent {
     bool clicked;
     Rectangle boundingBox;
     char* text;
+    bool uiNeedsUpdate;
     // padding?
     // margin?
     // offset?

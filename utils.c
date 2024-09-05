@@ -268,7 +268,7 @@ int isPointInsideRect(Rectangle rect, vec2 point) {
  * Function to convert a view rectangle to SDL coordinates from view coordinates(opengl viewport coords).
  */
 Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight) {
-    view.rect.y = windowHeight - view.rect.y - view.rect.height;
+    view.rect.y = (float)windowHeight - (float)view.rect.y - (float)view.rect.height;
     return view.rect;
 }
 
@@ -277,25 +277,27 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight) {
  * So if view has x,y = 0,200 and width,height = 800,200 , 
  * zero will be upper left corner: 0,400 and bottom right corner: 800,600
  */
-Vector2 convertUIcoordinateToSDLcoordinates(View view, float p1,float p2, int windowHeight,int windowWidth)
-{
-  
-    float newX = (float)windowWidth - (float)view.rect.width + (float)view.rect.width / 2.0 + p1;
-    float newY = (float)windowHeight - (float)view.rect.height + p2;
-    Vector2 result = {.x=newX,.y=newY};
-    printf("------------------\n");
+void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint) {
+    float scaleFactorX = transformComponent->scale[0] / 100.0;  // 0,2
+    float scaleFactorY = transformComponent->scale[1] / 100.0; // 1,5
+    transformComponent->scale[0] / 2.0 + transformComponent->position[0];
+    convertedPoint[0] = (float)windowWidth / 2.0 + (transformComponent->position[0] - scaleFactorX * 100 / 2.0); // 400 -50 (-40 - 0.2 * 100 / 2 = -50) = 350
+    convertedPoint[1] = ((float)view.rect.height / 2.0) + transformComponent->position[1];
+   /*  float newX = point[0] + (float)windowWidth / 2.0f;
+    float newY = (float)windowHeight - (float)view.rect.height + point[1];  */
+    //convertedPoint[0] = newX;
+    //convertedPoint[1] = newY;
+   /*  printf("------------------\n");
     printf("view.rect.x %f \n", (float)view.rect.x);
     printf("view.rect.y %f \n", (float)view.rect.y);
     printf("view.rect.width %f \n", (float)view.rect.width);
     printf("view.rect.height %f \n", (float)view.rect.height);
     printf("windowHeight %d \n", windowHeight);
-    printf("point[0] %f \n", p1);
-    printf("point[1] %f \n", p2); 
-    printf("newX %f \n",newX);
-    printf("newY %f \n",newY); 
-    return result;
-    
-    /* point[1] = windowHeight - point[1];
-    point[0] = point[0] + view.rect.x;
-    point[1] = point[1] + view.rect.y; */
+    printf("scaleFactorX %f \n", scaleFactorX);
+    printf("scaleFactorY %f \n", scaleFactorY); 
+    printf("transformComponent->position[0] %f \n", transformComponent->position[0]);
+    printf("transformComponent->position[1] %f \n", transformComponent->position[1]); */
+   /*  printf("newX %f \n",newX);
+    printf("newY %f \n",newY);   */
+    //return convertedPoint;
 }

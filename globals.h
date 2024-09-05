@@ -2,8 +2,7 @@
 #define GLOBALS_H
 
 #include <SDL2/SDL.h>
-//#include "opengl.h"
-//#include "types.h"
+
 struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -30,4 +29,4 @@ extern struct Globals globals;
 extern Camera uiCamera;
 extern Camera mainCamera;
 
-#endif // GLOBALS_H
+#endif 

@@ -414,7 +414,7 @@ void setupFontTextures(char* fontPath,int fontSize){
             exit(1);
         }
     
-        printf("number of glyphs in this font %ld \n", face->num_glyphs);
+        //printf("number of glyphs in this font %ld \n", face->num_glyphs);
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
         GLuint texture;
