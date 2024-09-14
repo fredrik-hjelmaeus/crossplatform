@@ -278,26 +278,12 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight) {
  * zero will be upper left corner: 0,400 and bottom right corner: 800,600
  */
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint) {
-    float scaleFactorX = transformComponent->scale[0] / 100.0;  // 0,2
-    float scaleFactorY = transformComponent->scale[1] / 100.0; // 1,5
+    float scaleFactorX = transformComponent->scale[0] / 100.0;  
+    float scaleFactorY = transformComponent->scale[1] / 100.0; 
     transformComponent->scale[0] / 2.0 + transformComponent->position[0];
-    convertedPoint[0] = (float)windowWidth / 2.0 + (transformComponent->position[0] - scaleFactorX * 100 / 2.0); // 400 -50 (-40 - 0.2 * 100 / 2 = -50) = 350
+    convertedPoint[0] = (float)windowWidth / 2.0 + (transformComponent->position[0] - scaleFactorX * 100 / 2.0); 
     convertedPoint[1] = ((float)view.rect.height / 2.0) + transformComponent->position[1];
-   /*  float newX = point[0] + (float)windowWidth / 2.0f;
-    float newY = (float)windowHeight - (float)view.rect.height + point[1];  */
-    //convertedPoint[0] = newX;
-    //convertedPoint[1] = newY;
-   /*  printf("------------------\n");
-    printf("view.rect.x %f \n", (float)view.rect.x);
-    printf("view.rect.y %f \n", (float)view.rect.y);
-    printf("view.rect.width %f \n", (float)view.rect.width);
-    printf("view.rect.height %f \n", (float)view.rect.height);
-    printf("windowHeight %d \n", windowHeight);
-    printf("scaleFactorX %f \n", scaleFactorX);
-    printf("scaleFactorY %f \n", scaleFactorY); 
-    printf("transformComponent->position[0] %f \n", transformComponent->position[0]);
-    printf("transformComponent->position[1] %f \n", transformComponent->position[1]); */
-   /*  printf("newX %f \n",newX);
-    printf("newY %f \n",newY);   */
-    //return convertedPoint;
+}
+float absValue(float value) {
+    return value < 0 ? -value : value;
 }

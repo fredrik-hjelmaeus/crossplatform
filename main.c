@@ -32,6 +32,7 @@
 
 
 
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -371,60 +372,30 @@ void calcCameraFront(Camera* camera, float xpos, float ypos){
             vec3_norm(camera->front, direction);
 }
 
-void updateUIonViewportChange(){
+/**
+ * @brief When viewport size changes, this function is called to update the UI components positions
+ */
+void updateUIonViewportChange(float prevWidth, float prevHeight,float ui_percentageWidth,float main_percentageWidth,float ui_percentageHeight){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active) {
-               
-  
-                // Position of element on spawn:
-                float ui_viewport_half_width = 600;// (float)globals.views.ui.rect.width / 2; // 400 -> 960     250 / 400 = 0.625 => 0.625 * 960 = 600
-                float ui_viewport_half_height = 90;//(float)globals.views.ui.rect.height / 2; // 100 -> 180   100 / 200 = 0.5  => 0.5 * 180 = 90
-                
-                // Half scale of element
-                float scaleFactorX = globals.entities[i].transformComponent->scale[0] / globals.unitScale;  // 1.0
-                float scaleFactorY = globals.entities[i].transformComponent->scale[1] / globals.unitScale; // 0.5
-
-                // TODO: rotation
-               /*  printf("requested x %f \n", globals.entities[i].transformComponent->position[0]);
-                printf("requested y %f \n", globals.entities[i].transformComponent->position[1]);
- */
-                // position of element
-                float requested_x = globals.entities[i].transformComponent->position[0];
-                float requested_y = globals.entities[i].transformComponent->position[1];
-
-                // move element to upper left corner and then add requested position.
-               globals.entities[i].transformComponent->position[0] = -1.0 * ui_viewport_half_width + globals.unitScale / 2.0 * scaleFactorX + requested_x;
-               globals.entities[i].transformComponent->position[1] = globals.unitScale - (ui_viewport_half_height / 2.0 * scaleFactorY) - requested_y;
-
-
-            /*     printf(" x %f \n",  globals.entities[i].transformComponent->position[0]);
-                printf(" y %f \n", globals.entities[i].transformComponent->position[1]);
-                printf(" width %f \n", globals.entities[i].transformComponent->scale[0]);
-                printf(" height %f \n", globals.entities[i].transformComponent->scale[1]) */;
-
-                
-                globals.entities[i].transformComponent->position[0] = 600.0f;
-                globals.entities[i].transformComponent->position[1] = 90.0f;
-                
-                // Bounding box
-                globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0];
-                globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1];
-                globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
-                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
-                
-                
-                
-                
-                
-                printf("-----------------entity %d \n", i);
-                printf(" x %f \n",  globals.entities[i].transformComponent->position[0]);
-                printf(" y %f \n", globals.entities[i].transformComponent->position[1]);
-                printf(" width %f \n", globals.entities[i].transformComponent->scale[0]);
-                printf(" height %f \n", globals.entities[i].transformComponent->scale[1]);
-                
-                globals.entities[i].transformComponent->modelNeedsUpdate = 1;
             
+            float px = globals.entities[i].transformComponent->position[0];
+            float py = globals.entities[i].transformComponent->position[1];
+    
+            // Calculate new position
+            px = px / ((prevWidth /  2.0) * ui_percentageWidth ) * ((float)globals.views.ui.rect.width  / 2.0);  
+            py = py / ((prevHeight / 2.0) * ui_percentageHeight) * ((float)globals.views.ui.rect.height / 2.0); 
+                                   
+            globals.entities[i].transformComponent->position[0] = px;
+            globals.entities[i].transformComponent->position[1] = py;
+           
+            // Bounding box
+            globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0];
+            globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1];
+            globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
+            globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
 
+            globals.entities[i].transformComponent->modelNeedsUpdate = 1;
         }
     }
 }
@@ -438,66 +409,52 @@ void updateUIonViewportChange(){
  *       This setup makes this function dependent on the full view beeing correct and also important
  *       to update full view correctly in this function.
  */
-void recalculateViewports(int w, int h){ // 600 -> 1024 = 600 / 1024 = 0.5859375
+void recalculateViewports(int w, int h){ 
     // Recalculate viewports
-    float prevHeight = (float)globals.views.full.rect.height;
-    float prevWidth = (float)globals.views.full.rect.width;
+    float prevHeight = (float)globals.views.full.rect.height; 
+    float prevWidth = (float)globals.views.full.rect.width; 
 
-    // main view
+    // MAIN VIEW
     // Calc percentage height, using old height.
-    float percentageHeight = (float)globals.views.main.rect.height / prevHeight; // 400 / 600 = 0.6666666666666666
-   // printf("percentageHeight main: %f\n", percentageHeight);
+    float percentageHeight = (float)globals.views.main.rect.height / prevHeight; 
 
     // Update main height 
-    globals.views.main.rect.height = (float)h * percentageHeight; // 1
-    printf("new main height: %d\n", globals.views.main.rect.height);
+    globals.views.main.rect.height = (float)h * percentageHeight; 
 
     // Calc percentage width, using old width.
-    float percentageWidth = (float)globals.views.main.rect.width / prevWidth; // 800 / 800 = 1.0
-   // printf("percentageWidth main: %f\n", percentageWidth);
+    float main_percentageWidth = (float)globals.views.main.rect.width / prevWidth; 
 
     // update main width
-    globals.views.main.rect.width = (float)w * percentageWidth;
-    printf("new main width: %d\n", globals.views.main.rect.width);
-
+    globals.views.main.rect.width = (float)w * main_percentageWidth;
+  
     // Update main x position
-    float percentageX = (float)w / prevWidth; // ex 1024 / 800 = 1.28
-    globals.views.main.rect.x = percentageX * globals.views.main.rect.x; // ex 1.28 * 0 = 0 or 1.28 * 200 = 256
-    printf("new main x: %d\n", globals.views.main.rect.x);
-
+    float percentageX = (float)w / prevWidth; 
+    globals.views.main.rect.x = percentageX * (float)globals.views.main.rect.x; 
+  
     // Update main y position
-    float percentageY = (float)h / prevHeight; // ex 1024 / 600 = 1.7066666666666668
-    globals.views.main.rect.y =  0.0f;//percentageY * globals.views.main.rect.y; // ex 1.7066666666666668 * 0 = 0 or 1.7066666666666668 * 200 = 341.3333333333333
-    printf("new main y: %d\n", globals.views.main.rect.y);
+    float percentageY = (float)h / prevHeight;
+    globals.views.main.rect.y = percentageY * globals.views.main.rect.y; 
     
-    // ui view
+    // UI VIEW
     // Calc percentage height, using old height.
-    percentageHeight = (float)globals.views.ui.rect.height / prevHeight; // 200 / 600 = 0.3333333333333333
-   // printf("percentageHeight ui: %f\n", percentageHeight);
+    percentageHeight = (float)globals.views.ui.rect.height / prevHeight; 
 
     // Update ui height
     globals.views.ui.rect.height = (float)h * percentageHeight;
-    printf("new ui height: %d\n", globals.views.ui.rect.height);
 
     // Calc percentage width, using old width.
-    percentageWidth = (float)globals.views.ui.rect.width / prevWidth; // 800 / 800 = 1.0 
-   // printf("percentageWidth ui: %f\n", percentageWidth);
+    float ui_percentageWidth = (float)globals.views.ui.rect.width / prevWidth;
 
     // update ui width
-    globals.views.ui.rect.width = (float)w * percentageWidth;
-    printf("new ui width: %d\n", globals.views.ui.rect.width);
+    globals.views.ui.rect.width = (float)w * ui_percentageWidth; 
 
     // Update ui x position
-    percentageX = (float)w / prevWidth; // ex 1024 / 800 = 1.28
-    globals.views.ui.rect.x = percentageX * globals.views.ui.rect.x; // ex 1.28 * 0 = 0 or 1.28 * 200 = 256
-    printf("new ui x: %d\n", globals.views.ui.rect.x);
+    float ui_percentageX = (float)w / prevWidth; 
+    globals.views.ui.rect.x = ui_percentageX * (float)globals.views.ui.rect.x; 
 
     // Update ui y position
-    percentageY = (float)h / prevHeight; // ex 1080 / 600 = 1.8
-   // printf("------------------\n");
-   // printf("y BEFORE: %d\n", globals.views.ui.rect.y);
-    globals.views.ui.rect.y = 720.0f;//percentageY * (float)globals.views.ui.rect.y; // ex 1.8 * 0 = 0 or 1.8* 400 = 720
-    printf("new ui y: %d\n", globals.views.ui.rect.y);
+    percentageY = (float)h / prevHeight; 
+    globals.views.ui.rect.y = percentageY * (float)globals.views.ui.rect.y;
 
     globals.views.ui.camera->aspectRatio = (float)globals.views.ui.rect.width / globals.views.ui.rect.height;
     globals.views.ui.camera->left = (-1 * (float)globals.views.ui.rect.width)/2.0f;
@@ -505,15 +462,7 @@ void recalculateViewports(int w, int h){ // 600 -> 1024 = 600 / 1024 = 0.5859375
     globals.views.ui.camera->bottom = (-1 * (float)globals.views.ui.rect.height)/2.0f;
     globals.views.ui.camera->top = (float)globals.views.ui.rect.height/2.0f;
     globals.views.ui.camera->projectionMatrixNeedsUpdate = 1; 
-    updateUIonViewportChange();
-
-    /* globals.views.ui.camera->aspectRatio = 1920.0f/1080.0f;
-    globals.views.ui.camera->left = 1920.0f/2.0f;
-    globals.views.ui.camera->right = 1920.0f /2.0f;
-    globals.views.ui.camera->bottom = 1080.0f/2.0f;
-    globals.views.ui.camera->top = 1080.0f/2.0f; */
-  //  globals.views.ui.camera->projectionMatrixNeedsUpdate = 1;
-    
+    updateUIonViewportChange(prevWidth,prevHeight ,ui_percentageWidth,main_percentageWidth,percentageHeight);
     
     // update full view ( this should be done last in this fn, since full view is used to calculate new views)
     globals.views.full.rect.height = h;
@@ -667,23 +616,13 @@ void input() {
             globals.mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
-            printf("Mouse moved to %d, %d\n", xpos, ypos);
+            //printf("Mouse moved to %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
             //  float x_ndc = (2.0f * xpos) / width - 1.0f;
             //   float y_ndc = 1.0f - (2.0f * ypos) / height;
             //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
-            /*  
-            .views = {
-                .ui={0, 0, 800, 200, {0.0f, 1.0f, 0.0f, 1.0f}, SPLIT_HORIZONTAL, NULL,NULL},
-                .main={0, 200, 800, 400, {1.0f, 0.0f, 0.0f, 1.0f}, SPLIT_DEFAULT, &globals.views.ui,NULL},
-                .full={0, 0, 800, 600, {0.0f, 0.0f, 1.0f, 1.0f}, SPLIT_DEFAULT, NULL,NULL},
-            }, */
             // END TEMP CODE------------------
 
-            
-           
-      
-     
             if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
                 
                // printf("Mouse is within main view\n ");
@@ -855,19 +794,11 @@ void hoverSystem(){
                     float halfWidth = (float)globals.entities[i].uiComponent->boundingBox.width / 2.0;
                     float halfHeight = (float)globals.entities[i].uiComponent->boundingBox.height / 2.0;
                     float uiViewHalfWidth = (float)globals.views.ui.rect.width / 2.0;
-                    float uiViewHalfHeight = (float)globals.views.ui.rect.height / 2.0; // 100
-                    // uiBoundingBoxToSDLCoordinates(&globals.entities[i]); -375.0, 75.0 -> 0, 400
-                  
-                    
+                    float uiViewHalfHeight = (float)globals.views.ui.rect.height / 2.0; 
+                   
                     float xLeftCornerSDL = globals.entities[i].uiComponent->boundingBox.x - halfWidth + uiViewHalfWidth; // 0
-                    float yTopCornerSDL = (globals.entities[i].uiComponent->boundingBox.y - uiViewHalfHeight) * -1 + (float)globals.views.main.rect.height - halfHeight; // 25 - 100 = -75*-1 = 75 + 400 = 475 - 25 = 450
-                  //  printf("xSDL %f \n", xLeftCornerSDL);
-                  //  printf("ySDL %f \n", yTopCornerSDL);
-                    
-
-                    
-                    
-                    
+                    float yTopCornerSDL = (globals.entities[i].uiComponent->boundingBox.y - uiViewHalfHeight) * -1 + (float)globals.views.main.rect.height - halfHeight;
+     
                     Rectangle getRect;
                     getRect.y = yTopCornerSDL;
                     getRect.x = xLeftCornerSDL;
@@ -876,22 +807,10 @@ void hoverSystem(){
                     if(getRect.x >= globals.mouseXpos && getRect.x + getRect.width <= globals.mouseXpos && getRect.y >= globals.mouseYpos && getRect.y + getRect.height <= globals.mouseYpos){
                         printf("mouse is within bounding box\n");
                     }
-                   // printf("ui_entity_pos_y %f \n", ui_entity_pos_y);
-                   // printf("ui_entity_pos_x %f \n", ui_entity_pos_x);
-
-                        // debug print
-                       // printf("point x: %f y: %f \n",globals.mouseXpos,globals.mouseYpos);
-                   /*      printf(
-                            " x: %d y: %d width: %d height: %d \n",
-                            getRect.x,getRect.y,K
-                            getRect.width,
-                            getRect.height); */
                     if(
                         globals.views.ui.isMousePointerWithin && 
                         isPointInsideRect(getRect, (vec2){ globals.mouseXpos, globals.mouseYpos})
                     ){
-                    
-                        
                         // Hover effect
                         globals.entities[i].materialComponent->useDiffuseMap = false;
                         globals.entities[i].materialComponent->ambient.g = 0.5f;
@@ -1051,22 +970,18 @@ void render(){
         if(globals.entities[i].alive == 1) {
                 if(globals.entities[i].uiComponent->active == 1){
                     if(strlen(globals.entities[i].uiComponent->text) > 0){
-                        printf("rendertext entity %d \n", i);
-                        printf("transform position: %f %f \n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
+                     
                         // convert transform position to viewport space
                         vec2 result;
                         convertUIcoordinateToWindowcoordinates(
                             globals.views.ui,
                             globals.entities[i].transformComponent,
-                            height,
-                            width,
+                            globals.views.full.rect.height,
+                            globals.views.full.rect.width,
                             result);
-                          //  printf("result x %f \n", result[0]);
-                          //  printf("result y %f \n", result[1]);
+                      
                             // align text center vertically
-                            
                             result[1] -= (float)globals.characters[0].Size[1] / 4.0;
-                          //  printf("globals.characters[0].Size %i \n", (float)globals.characters[0].Size[1] / 2.0);
                         renderText(
                             &globals.gpuFontData, 
                             globals.entities[i].uiComponent->text, 
@@ -1157,9 +1072,10 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
   // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){600.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
- //  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){50.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){300.0f, 120.0f, 0.0f}, (vec3){100.0f, 40.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){600.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 100.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
    
    
@@ -1326,8 +1242,6 @@ void createMesh(
         printf("not using indicies\n");
     }
 
-    printf("position %f %f %f\n", position[0], position[1], position[2]);
-
     // transform data
     entity->transformComponent->active = 1;
     entity->transformComponent->position[0] = position[0];
@@ -1357,13 +1271,6 @@ void createMesh(
                 entity->meshComponent->gpuData
                 );
     
-    // Print mesh setup data for debugging
-    // gpuData vao:
-    printf("vao: %d\n", entity->meshComponent->gpuData->VAO);
-    printf("vbo: %d\n", entity->meshComponent->gpuData->VBO);
-    printf("ebo: %d\n", entity->meshComponent->gpuData->EBO);
-
-
     setupMaterial( entity->meshComponent->gpuData );
 }
 
