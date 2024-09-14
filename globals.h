@@ -18,6 +18,7 @@ struct Globals {
     int firstMouse;
     float mouseXpos;
     float mouseYpos;
+    bool mouseLeftButtonPressed;
     bool drawBoundingBoxes;
     Character characters[128];
     bool render;

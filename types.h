@@ -130,6 +130,8 @@ typedef enum {
     VERTS_COLOR_ONEUV_INDICIES = 2
 } VertexDataType;
 
+typedef void (*ButtonCallback)();
+
 // ECS
 
 enum Tag {
@@ -174,6 +176,7 @@ typedef struct UIComponent {
     Rectangle boundingBox;
     char* text;
     bool uiNeedsUpdate;
+    ButtonCallback onClick;
     // padding?
     // margin?
     // offset?

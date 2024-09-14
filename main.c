@@ -22,16 +22,11 @@
 // Raylib
 
 #include <stdio.h>
-
 #include "types.h"
 #include "globals.h"
 #include "utils.h"
 #include <time.h>
 #include "opengl.h"
-
-
-
-
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -46,6 +41,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
 void createCube(int ui,Color diffuse,GLuint diffuseTextureId);
 void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj);
 void createLight(int ui,Color diffuse,GLuint diffuseTextureId);
+void onButtonClick();
 Camera* initCamera();
 TextureData loadTexture();
 
@@ -72,6 +68,7 @@ struct Globals globals = {
     .firstMouse=1,
     .mouseXpos=0.0f,
     .mouseYpos=0.0f,
+    .mouseLeftButtonPressed=false,
     .drawBoundingBoxes=false,
     .render=true,
     .gpuFontData={0,0,0,0,0,0,GL_TRIANGLES},
@@ -598,6 +595,7 @@ void input() {
             // A button was pressed
             if (globals.event.button.button == SDL_BUTTON_LEFT) {
                 // Left Button Pressed
+                globals.mouseLeftButtonPressed = true;
                 printf("Left button pressed\n");
             } else if (globals.event.button.button == SDL_BUTTON_RIGHT) {
                 // Left Button Released
@@ -606,6 +604,7 @@ void input() {
         }  
         if (globals.event.type == SDL_MOUSEBUTTONUP) {
             // A button was released
+            globals.mouseLeftButtonPressed = false;
             printf("Mouse button released\n");
         }
         if (globals.event.type == SDL_MOUSEMOTION) {
@@ -763,7 +762,7 @@ void movementSystem(){
             
            if(globals.entities[i].transformComponent->active == 1){
                 // Do movement logic here:
-
+                
                 // Example of movement logic: Rotate on y-axis on all entities that are not ui (temporary)
                 if(globals.entities[i].uiComponent->active == 1){
                   //  printf("entity %d \n", i);
@@ -779,13 +778,13 @@ void movementSystem(){
                         //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                    // }
                 }
-                // globals.entities[i].transformComponent->rotation[1] += radians; <- This is an example of acceleration.
+                //globals.entities[i].transformComponent->rotation[1] += radians; //<- This is an example of acceleration.
            }
         }
     }
 }
 
-void hoverSystem(){
+void hoverAndClickSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
@@ -811,16 +810,73 @@ void hoverSystem(){
                         globals.views.ui.isMousePointerWithin && 
                         isPointInsideRect(getRect, (vec2){ globals.mouseXpos, globals.mouseYpos})
                     ){
+                        // Left Click or just hover?
+                        if(globals.mouseLeftButtonPressed){
+                            if(strlen(globals.entities[i].uiComponent->text) > 0){
+                                //printf("clicked\n");
+                            }
+                          
+                            globals.entities[i].uiComponent->clicked = 1;
+                        } else {
+                            
+                             if(strlen(globals.entities[i].uiComponent->text) > 0){
+                                //printf("hovered\n");
+                            }
+                            globals.entities[i].uiComponent->hovered = 1;
+                            globals.entities[i].uiComponent->clicked = 0;
+                        }
+
                         // Hover effect
-                        globals.entities[i].materialComponent->useDiffuseMap = false;
-                        globals.entities[i].materialComponent->ambient.g = 0.5f;
-                        globals.entities[i].materialComponent->diffuse.g = 0.5f;
-                        globals.entities[i].materialComponent->diffuse.a = 0.5f;
+                        if(globals.entities[i].uiComponent->hovered == 1){
+                            if(strlen(globals.entities[i].uiComponent->text) > 0){
+                                //printf("hovered changes done\n");
+                            }
+                             // Appearance changes when hovered
+                            globals.entities[i].materialComponent->useDiffuseMap = true;
+                            globals.entities[i].materialComponent->ambient.r = 0.0f;
+                            globals.entities[i].materialComponent->ambient.g = 0.5f;
+                            globals.entities[i].materialComponent->ambient.b = 0.0f;
+                            globals.entities[i].materialComponent->ambient.a = 1.0f;
+                            globals.entities[i].materialComponent->diffuse.r = 0.0f;
+                            globals.entities[i].materialComponent->diffuse.g = 0.0f;
+                            globals.entities[i].materialComponent->diffuse.b = 0.0f;
+                            globals.entities[i].materialComponent->diffuse.a = 0.0f;
+                        }
+
+                        if(globals.entities[i].uiComponent->clicked == 1){
+                            if(strlen(globals.entities[i].uiComponent->text) > 0){
+                                //printf("clicked changes done\n");
+                            }
+                            // Appearance changes when clicked
+                            globals.entities[i].materialComponent->useDiffuseMap = true;
+                            globals.entities[i].materialComponent->ambient.r = 1.0f;
+                            globals.entities[i].materialComponent->ambient.g = 1.0f;
+                            globals.entities[i].materialComponent->ambient.b = 1.0f;
+                            globals.entities[i].materialComponent->ambient.a = 1.0f;
+                            globals.entities[i].materialComponent->diffuse.r = 1.0f;
+                            globals.entities[i].materialComponent->diffuse.g = 1.0f;
+                            globals.entities[i].materialComponent->diffuse.b = 1.0f;
+                            globals.entities[i].materialComponent->diffuse.a = 1.0f;
+                            // Actions when clicked
+                            if(globals.entities[i].uiComponent->onClick != NULL){
+                                globals.entities[i].uiComponent->onClick();
+                            }
+                        }
                     
                     } else {
+                        if(strlen(globals.entities[i].uiComponent->text) > 0){
+                               // printf("no action,disable actions\n");
+                            }
+                        globals.entities[i].uiComponent->hovered = 0;
+                        globals.entities[i].uiComponent->clicked = 0;
                         globals.entities[i].materialComponent->useDiffuseMap = true;
+                        globals.entities[i].materialComponent->ambient.r = 0.0f;
                         globals.entities[i].materialComponent->ambient.g = 0.0f;
+                        globals.entities[i].materialComponent->ambient.b = 0.0f;
+                        globals.entities[i].materialComponent->ambient.a = 1.0f;
+                        globals.entities[i].materialComponent->diffuse.r = 0.0f;
                         globals.entities[i].materialComponent->diffuse.g = 0.0f;
+                        globals.entities[i].materialComponent->diffuse.b = 0.0f;
                         globals.entities[i].materialComponent->diffuse.a = 1.0f;
                     }
             }
@@ -884,7 +940,7 @@ void update(){
     // Systems
     cameraSystem();
     uiSystem();
-    hoverSystem();
+    hoverAndClickSystem();
     movementSystem();
     modelSystem();
 }
@@ -1074,8 +1130,9 @@ void initScene(){
   // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
  //  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){600.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
   createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 100.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 100.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createButton(VIEWPORT_UI,red,diffuseTextureId, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    
@@ -1474,9 +1531,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     if(ui == 1){
         entity->uiComponent->active = 1;
         entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
-        entity->uiComponent->text = "Test";
         entity->uiComponent->uiNeedsUpdate =1;
-
     }
 
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
@@ -1493,7 +1548,58 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
 
     } 
     createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
-    
+}
+/**
+ * @brief Create a button
+ * Create a button mesh in ui
+ * @param ui - 1 for ui, 0 for 3d scene
+ * @param diffuse - color of the rectangle
+*/
+void createButton(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick){
+    // vertex data
+    GLfloat vertices[] = {
+    // positions          // colors           // texture coords
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // top right
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f  // top left  
+    };
+    // index data (counterclockwise)
+    GLuint indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
+
+    //material
+    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
+   // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
+    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
+    GLfloat shininess = 32.0f;
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId,true};
+
+    Entity* entity = addEntity(MODEL);
+    if(ui == 1){
+        entity->uiComponent->active = 1;
+        entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
+        entity->uiComponent->text = text;
+        entity->uiComponent->uiNeedsUpdate =1;
+        entity->uiComponent->onClick = onClick;
+    }
+
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
+
+    // Bounding box, reuses the vertices from the rectangle
+    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, specular, shininess, diffuseTextureId, false};
+    GLuint bbIndices[] = {
+        0, 1, 1,2, 2,3 ,3,0, 
+    };
+    Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
+    if(ui == 1){
+        boundingBoxEntity->uiComponent->active = 1;
+        boundingBoxEntity->uiComponent->uiNeedsUpdate = 1;
+
+    } 
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
 }
 
 
@@ -1622,6 +1728,17 @@ Camera* initCamera() {
     camera->isOrthographic = 0;
 
     return camera;
+}
+void onButtonClick() {
+
+    for(int i = 0; i < MAX_ENTITIES; i++){
+       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].transformComponent->active == 1){
+            globals.entities[i].transformComponent->rotation[1] += 0.01f;
+            globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+            
+       }
+    }
+    printf("Button pressed!\n");
 }
 
 // -----------------------------------------------------
