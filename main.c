@@ -38,13 +38,13 @@
 // Prototypes
 void createTriangle(int ui,Color diffuse);
 void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
-void createCube(int ui,Color diffuse,GLuint diffuseTextureId);
+void createCube(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
 void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj);
-void createLight(int ui,Color diffuse,GLuint diffuseTextureId);
+void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
 void onButtonClick();
 Camera* initCamera();
 TextureData loadTexture();
-
+#define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 //------------------------------------------------------
 // Global variables / Initialization
 //------------------------------------------------------
@@ -185,6 +185,18 @@ void initializeUIComponent(UIComponent* uiComponent){
     uiComponent->uiNeedsUpdate = 0;
 }
 
+void initializeLightComponent(LightComponent* lightComponent){
+    lightComponent->active = 0;
+    lightComponent->direction[0] = 0.0f;
+    lightComponent->direction[1] = 0.0f;
+    lightComponent->direction[2] = 0.0f;
+    lightComponent->color.r = 0.0f;
+    lightComponent->color.g = 0.0f;
+    lightComponent->color.b = 0.0f;
+    lightComponent->color.a = 1.0f;
+    lightComponent->intensity = 0.0f;
+}
+
 
 /**
  * @brief Initialize the ECS
@@ -197,6 +209,7 @@ void initECS(){
     MeshComponent* meshComponents = allocateComponentMemory(sizeof(MeshComponent), "mesh");
     MaterialComponent* materialComponents = allocateComponentMemory(sizeof(MaterialComponent), "material");
     UIComponent* uiComponents = allocateComponentMemory(sizeof(UIComponent), "ui");
+    LightComponent* lightComponents = allocateComponentMemory(sizeof(LightComponent), "light");
 
     // Allocate memory for MAX_ENTITIES Entity structs
     Entity* entities = (Entity*)calloc(MAX_ENTITIES, sizeof(Entity));
@@ -220,6 +233,8 @@ void initECS(){
         initializeMaterialComponent(entities[i].materialComponent); 
         entities[i].uiComponent = &uiComponents[i];
         initializeUIComponent(entities[i].uiComponent);
+        entities[i].lightComponent = &lightComponents[i];
+        initializeLightComponent(entities[i].lightComponent);
     }
 
     globals.entities = entities;
@@ -909,14 +924,16 @@ void modelSystem(){
                     // set model scale
                     mat4x4_scale_aniso(model, model, globals.entities[i].transformComponent->scale[0],globals.entities[i].transformComponent->scale[1],globals.entities[i].transformComponent->scale[2]);
 
-                    // rotate model (atm only in x axis)
-                    mat4x4 rotatedModel;
+                    // rotate model on x, y, and z axes
                     // The cast on model tells the compiler that you're aware of the 
                     // const requirement and that you're promising not to modify the model matrix.
-                    mat4x4_rotate(rotatedModel, (const float (*)[4])model, 0.0f,1.0f,0.0f, globals.entities[i].transformComponent->rotation[1]);
+                    mat4x4 rotatedModelX, rotatedModelY, rotatedModelZ;
+                    mat4x4_rotate_X(rotatedModelX, (const float (*)[4])model, globals.entities[i].transformComponent->rotation[0]);
+                    mat4x4_rotate_Y(rotatedModelY, (const float (*)[4])rotatedModelX, globals.entities[i].transformComponent->rotation[1]);
+                    mat4x4_rotate_Z(rotatedModelZ, (const float (*)[4])rotatedModelY, globals.entities[i].transformComponent->rotation[2]);
 
                     // Copy the rotated model matrix to the transform component
-                    memcpy(globals.entities[i].transformComponent->transform, rotatedModel, sizeof(mat4x4));
+                    memcpy(globals.entities[i].transformComponent->transform, rotatedModelZ, sizeof(mat4x4));
 
                     globals.entities[i].transformComponent->modelNeedsUpdate = 0;
            }
@@ -987,7 +1004,6 @@ void render(){
                     GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
                     bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
                     renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera,useDiffMap);
-                 
                 }
             }
         }
@@ -1117,22 +1133,20 @@ void initScene(){
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
 // createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
 // createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
-   //createCube(VIEWPORT_MAIN,red,diffuseTextureId);
-   createLight(VIEWPORT_MAIN,green,diffuseTextureId);
-   // createCube(VIEWPORT_UI,red,diffuseTextureId);
-  // createCube(VIEWPORT_MAIN,green,diffuseTextureId);
+  
+  createLight(green,diffuseTextureId,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.5f, 0.5f, 0.5f}, (vec3){0.0f, 0.0f, 0.0f});
+  // createPlane(VIEWPORT_MAIN,green,diffuseTextureId, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
+   createCube(VIEWPORT_MAIN,red,diffuseTextureId,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  
 
 
    // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. 
    // Scale is in pixels, 100.0f is 100 pixels etc.
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
-  // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){350.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
- //  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){600.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
- // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 100.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
- // createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){0.0f, 0.0f, 0.0f}, (vec3){100.0f, 100.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createButton(VIEWPORT_UI,red,diffuseTextureId, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+ 
+  //createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ // createButton(VIEWPORT_UI,red,diffuseTextureId, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    
@@ -1201,6 +1215,154 @@ int main(int argc, char **argv) {
  *  - material data
 */
 void createMesh(
+    GLfloat* verts,
+    GLuint num_of_vertex, 
+    GLuint* indices, // atm plug in some dummy-data if not used.
+    GLuint numIndicies, // atm just set to 0 if not used.
+    vec3 position,
+    vec3 scale,
+    vec3 rotation,
+    Material* material,
+    int ui,
+    GLenum drawMode,
+    VertexDataType vertexDataType,
+    Entity* entity
+    ){
+    
+    entity->meshComponent->active = 1;
+
+    // vertex data
+    entity->meshComponent->vertices = (Vertex*)malloc(num_of_vertex * sizeof(Vertex));
+     if (entity->meshComponent->vertices == NULL) {
+        printf("Failed to allocate memory for vertices\n");
+        exit(1);
+    }
+    
+    int stride = 11;
+    int vertexIndex = 0;
+
+    // We have three types of vertex data input:
+    // - one with color & indices VERT_COLOR_INDICIES
+    // - one with color & no indicies VERT_COLOR
+    // - one with no color & no indicies VERT
+    if(numIndicies == 0 && vertexDataType == VERTS_ONEUV) {
+
+        // vertices + texcoords but no indices and no color
+        stride = 11;
+        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
+            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
+            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+
+            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
+            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
+            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5]; 
+
+            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
+            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+
+            entity->meshComponent->vertices[vertexIndex].normal[0] = verts[i + 8];
+            entity->meshComponent->vertices[vertexIndex].normal[1] = verts[i + 9];
+            entity->meshComponent->vertices[vertexIndex].normal[2] = verts[i + 10];
+
+            vertexIndex++;
+        } 
+
+    }else if(vertexDataType == VERTS_COLOR_ONEUV_INDICIES){
+
+        // indexed data with color
+        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
+            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
+            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3]; 
+            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
+            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
+            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+            vertexIndex++;
+        }
+    }else if(vertexDataType == VERTS_COLOR_ONEUV){
+         // not indexed data with color
+        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
+            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
+            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
+            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3]; 
+            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
+            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
+            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+            vertexIndex++;
+        }
+    }else {
+        printf("UNSUPPORTED vertexData");
+        exit(1);
+    }
+    
+    entity->meshComponent->vertexCount = num_of_vertex;
+    entity->meshComponent->gpuData->vertexCount = num_of_vertex;
+
+    // index data
+    entity->meshComponent->indices = (GLuint*)malloc(numIndicies * sizeof(GLuint));
+    if(entity->meshComponent->indices == NULL) {
+        printf("Failed to allocate memory for indices\n");
+        exit(1);
+    }
+    for(int i = 0; i < numIndicies; i++) {
+        entity->meshComponent->indices[i] = indices[i];
+    }
+    entity->meshComponent->indexCount = numIndicies;
+
+    if(numIndicies == 0){
+        printf("not using indicies\n");
+    }
+
+    // transform data
+    entity->transformComponent->active = 1;
+    entity->transformComponent->position[0] = position[0];
+    entity->transformComponent->position[1] = position[1];
+    entity->transformComponent->position[2] = position[2];
+    entity->transformComponent->scale[0] = scale[0];
+    entity->transformComponent->scale[1] = scale[1];
+    entity->transformComponent->scale[2] = scale[2];
+    entity->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
+    entity->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
+    entity->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
+    entity->transformComponent->modelNeedsUpdate = 1;
+
+    // material data
+    entity->materialComponent->active = 1;
+    entity->materialComponent->ambient = material->ambient;
+    entity->materialComponent->diffuse = material->diffuse;
+    entity->materialComponent->specular = material->specular;
+    entity->materialComponent->shininess = material->shininess;
+    entity->materialComponent->diffuseMap = material->diffuseMap;
+    entity->meshComponent->gpuData->drawMode = drawMode;
+
+    setupMesh(  entity->meshComponent->vertices, 
+                entity->meshComponent->vertexCount, 
+                entity->meshComponent->indices, 
+                entity->meshComponent->indexCount,
+                entity->meshComponent->gpuData
+                );
+    
+    if(entity->lightComponent->active == 1){
+        setupLightMaterial( entity->meshComponent->gpuData );
+    }else {
+        setupMeshMaterial( entity->meshComponent->gpuData );
+    }
+}
+
+/**
+ * @brief Create a mesh
+ * Main function to create a mesh. 
+ *  - vertex data (with normals)
+ *  - index data
+ *  - transform data
+ *  - material data
+*/
+void createMeshWithNormals(
     GLfloat* verts,
     GLuint num_of_vertex, 
     GLuint* indices, // atm plug in some dummy-data if not used.
@@ -1307,9 +1469,9 @@ void createMesh(
     entity->transformComponent->scale[0] = scale[0];
     entity->transformComponent->scale[1] = scale[1];
     entity->transformComponent->scale[2] = scale[2];
-    entity->transformComponent->rotation[0] = rotation[0];
-    entity->transformComponent->rotation[1] = rotation[1];
-    entity->transformComponent->rotation[2] = rotation[2];
+    entity->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
+    entity->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
+    entity->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
     entity->transformComponent->modelNeedsUpdate = 1;
 
     // material data
@@ -1328,56 +1490,70 @@ void createMesh(
                 entity->meshComponent->gpuData
                 );
     
-    setupMaterial( entity->meshComponent->gpuData );
+    if(entity->lightComponent->active == 1){
+        setupLightMaterial( entity->meshComponent->gpuData );
+    }else {
+        setupMeshMaterial( entity->meshComponent->gpuData );
+    }
 }
 
-
-void createLight(int ui,Color diffuse,GLuint diffuseTextureId){
-    // vertex data
+void createPoint(vec3 position){
     GLfloat vertices[] = {
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f
+        position[0], position[1], position[2],  1.0f, 1.0f, 1.0f, 0.0f, 0.0f
     };
-    // index data NOT USED ATM
+}
+/**
+ * @brief Create a light
+ * Create a light source in the scene.
+ * 
+ */
+void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
+    // vertex data
+   // vertex data
+    GLfloat vertices[] = {
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f, 
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  0.0f, -1.0f, 
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
+
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f,
+
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f,  0.0f,
+
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f
+};
+    // index data NOT USED ATM and not correct anymore
     GLuint indices[] = {
         // front and back
         0, 3, 2,
@@ -1396,12 +1572,53 @@ void createLight(int ui,Color diffuse,GLuint diffuseTextureId){
         22, 23, 20
     };
     // transform
-    vec3 position = {0.0f, 0.0f, 0.0f};
-    vec3 scale =    {1.0f, 1.0f, 1.0f};
-    vec3 rotation = {0.0f, 0.0f, 0.0f};
+   // vec3 position = {0.0f, 0.0f, 0.0f};
+   // vec3 scale =    {0.50f, 0.50f, 0.50f};
+    //vec3 rotation = {0.0f, 0.0f, 0.0f};
 
     //material
     Color ambient = {1.0f, 1.0f, 0.0f, 1.0f};
+    //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f}; not used, comes from attribute data
+    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
+    GLfloat shininess = 32.0f;
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, true};
+
+    Entity* entity = addEntity(MODEL);
+    entity->lightComponent->active = 1;
+    entity->lightComponent->direction[0] = 0.0f;
+    entity->lightComponent->direction[1] = 0.0f;
+    entity->lightComponent->direction[2] = -1.0f;
+    entity->lightComponent->intensity = 1.0f;
+
+    // TODO: This is a temporary solution, need to implement a better way to handle lights.
+    globals.lights[0] = *entity;
+
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
+}
+void createPlane(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
+    // vertex data
+    GLfloat vertices[] = {
+   // Positions          // Colors           // Texture Coords
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // Bottom-left
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Bottom-right
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Top-right
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Top-right
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f, // Top-left
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f  // Bottom-left
+    };
+    // index data NOT USED ATM
+    GLuint indices[] = {
+    0, 1, 2, // First triangle
+    2, 3, 0  // Second triangle
+    };
+   
+    // transform
+    //vec3 position = pos;//{2.0f, 0.0f, 0.0f};
+    //vec3 scale =    scale;//{1.0f, 1.0f, 1.0f};
+    //vec3 rotation = rot;//{90.0f, 0.0f, 0.0f};
+
+    //material
+    Color ambient = {0.5f, 0.5f, 0.5f, 1.0f};
     //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f}; not used, comes from attribute data
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
@@ -1413,7 +1630,7 @@ void createLight(int ui,Color diffuse,GLuint diffuseTextureId){
         entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
     }
 
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV,entity);
+    createMesh(vertices,6,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
 /**
  * @brief Create a object. Used together with obj-load/parse. Expects data from obj-parser to be of type ObjData.
@@ -1602,61 +1819,58 @@ void createButton(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec
     createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
 }
 
-
-
-
 /**
  * @brief Create a Cube
  * Create a Cube mesh
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the cube
 */
-void createCube(int ui,Color diffuse,GLuint diffuseTextureId){
+void createCube(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f, 
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  0.0f, -1.0f, 
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
 
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
 
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
 
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f,
 
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f,  0.0f,
 
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f
 };
-    // index data NOT USED ATM
+    // index data NOT USED ATM and not correct anymore
     GLuint indices[] = {
         // front and back
         0, 3, 2,
@@ -1675,9 +1889,9 @@ void createCube(int ui,Color diffuse,GLuint diffuseTextureId){
         22, 23, 20
     };
     // transform
-    vec3 position = {0.0f, 0.0f, 0.0f};
-    vec3 scale = {1.0f, 1.0f, 1.0f};
-    vec3 rotation = {0.0f, 0.0f, 0.0f};
+   // vec3 position = {0.0f, 0.0f, 0.0f};
+   // vec3 scale = {1.0f, 1.0f, 1.0f};
+  //  vec3 rotation = {0.0f, 0.0f, 0.0f};
 
     //material
     Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
@@ -1714,7 +1928,7 @@ Camera* initCamera() {
     memcpy(camera->up, up, sizeof(vec3));
     memcpy(camera->target, target, sizeof(vec3));
     // Initialize other fields as needed
-    camera->speed = 0.1f;
+    camera->speed = 0.01f;
     camera->viewMatrixNeedsUpdate = 1;
     camera->projectionMatrixNeedsUpdate = 1;
     camera->fov = 45.0f;

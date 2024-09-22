@@ -27,17 +27,21 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
     // This line tells OpenGL how to interpret the vertex data
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
 
     // Color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
     
 
     // Texture attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
+
+    // Normal attribute
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid*)(8 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(3);
 
     // Unbind VBO/buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -47,13 +51,13 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
 }
 
-void setupMaterial(GpuData* buffer){
+void setupMeshMaterial(GpuData* buffer){
      #ifdef __EMSCRIPTEN__
-        char* vertexShaderSource = readFile("shaders/wasm/vertex_wasm.glsl");
-        char* fragmentShaderSource = readFile("shaders/wasm/fragment_wasm.glsl");
+        char* vertexShaderSource = readFile("shaders/wasm/mesh_vertex_wasm.glsl");
+        char* fragmentShaderSource = readFile("shaders/wasm/mesh_fragment_wasm.glsl");
     #else
-        char* vertexShaderSource = readFile("shaders/vertex.glsl");
-        char* fragmentShaderSource = readFile("shaders/fragment.glsl");
+        char* vertexShaderSource = readFile("shaders/mesh_vertex.glsl");
+        char* fragmentShaderSource = readFile("shaders/mesh_fragment.glsl");
     #endif
 
     if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
@@ -115,7 +119,76 @@ void setupMaterial(GpuData* buffer){
         glGetProgramInfoLog(buffer->shaderProgram, 512, NULL, infoLog);
         printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
     }
+}
 
+void setupLightMaterial(GpuData* buffer){
+     #ifdef __EMSCRIPTEN__
+        char* vertexShaderSource = readFile("shaders/wasm/light_vertex_wasm.glsl");
+        char* fragmentShaderSource = readFile("shaders/wasm/light_fragment_wasm.glsl");
+    #else
+        char* vertexShaderSource = readFile("shaders/light_vertex.glsl");
+        char* fragmentShaderSource = readFile("shaders/light_fragment.glsl");
+    #endif
+
+    if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
+        printf("Error loading shader source\n");
+        return;
+    }
+    
+    printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
+
+    // Compile shaders
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    if(vertexShader == 0) {
+        printf("Error creating vertex shader\n");
+        return;
+    }
+    glShaderSource(vertexShader, 1, (const GLchar* const*)&vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    // Check for shader compile errors
+    GLint success;
+    GLchar infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s\n", infoLog);
+    }
+
+    // Fragment shader
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    if(fragmentShader == 0) {
+        printf("Error creating fragment shader\n");
+        return;
+    }
+    glShaderSource(fragmentShader, 1, (const GLchar* const*)&fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+ 
+    // Check for shader compile errors
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
+    }
+
+    // free memory of shader sources
+    free(vertexShaderSource);
+    free(fragmentShaderSource);
+
+    // Link shaders
+    buffer->shaderProgram = glCreateProgram();
+    glAttachShader(buffer->shaderProgram, vertexShader);
+    glAttachShader(buffer->shaderProgram, fragmentShader);
+    glLinkProgram(buffer->shaderProgram);
+
+    printf("Shader program: %d\n", buffer->shaderProgram);
+
+    // Check for linking errors
+    glGetProgramiv(buffer->shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(buffer->shaderProgram, 512, NULL, infoLog);
+        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
+    }
 }
 
 /**
@@ -178,6 +251,17 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     // Set the ambient light uniform
     GLint ambientLocation = glGetUniformLocation(buffer->shaderProgram, "ambient");
     glUniform4f(ambientLocation, ambient->r, ambient->g, ambient->b, ambient->a);
+
+    // Set the light color uniform
+    GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+    Entity* lightEntity = &globals.lights[0];
+    glUniform4f(lightColorLocation, lightEntity->lightComponent->color.r, lightEntity->lightComponent->color.r, lightEntity->lightComponent->color.r, lightEntity->lightComponent->color.r);
+
+
+    printf("light position: %f %f %f\n", lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
+    // Set the light position uniform
+    GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "lightPosition");
+    glUniform3f(lightPositionLocation, lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
 
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
@@ -242,11 +326,11 @@ void setupFontMaterial(GpuData* buffer,int width,int height){
     // shader program
     //unsigned int shaderProgramId;
      #ifdef __EMSCRIPTEN__
-        char* vertexShaderSource = readFile("shaders/wasm/vert_text_wasm.glsl");
-        char* fragmentShaderSource = readFile("shaders/wasm/frag_text_wasm.glsl");
+        char* vertexShaderSource = readFile("shaders/wasm/text_vertex_wasm.glsl");
+        char* fragmentShaderSource = readFile("shaders/wasm/text_fragment_wasm.glsl");
     #else
-        char* vertexShaderSource = readFile("shaders/vert_text.glsl");
-        char* fragmentShaderSource = readFile("shaders/frag_text.glsl");
+        char* vertexShaderSource = readFile("shaders/text_vertex.glsl");
+        char* fragmentShaderSource = readFile("shaders/text_fragment.glsl");
     #endif
     if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
         printf("Error loading shader source\n");

@@ -287,3 +287,4 @@ void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* trans
 float absValue(float value) {
     return value < 0 ? -value : value;
 }
+

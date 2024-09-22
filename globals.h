@@ -24,6 +24,7 @@ struct Globals {
     bool render;
     GpuData gpuFontData;
     float unitScale;
+    Entity lights[1]; // TODO: temporary solution for lights?
 };
 
 extern struct Globals globals;

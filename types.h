@@ -81,7 +81,7 @@ typedef struct Vertex {
     vec3 position;
     vec3 color;
     vec2 texcoord;
-    //vec3 normal;
+    vec3 normal;
 } Vertex;
 
 typedef struct TextureData {
@@ -139,6 +139,7 @@ enum Tag {
     MODEL = 1,
     BOUNDING_BOX = 2,
     TEXT = 3,
+    LIGHT = 4,
 };
 typedef struct Vector2{
     float x;
@@ -189,6 +190,13 @@ typedef struct UIComponent {
     // visibility?
 } UIComponent;
 
+typedef struct LightComponent {
+    bool active;
+    vec3 direction;
+    Color color;
+    float intensity;
+} LightComponent;
+
 typedef struct MaterialComponent {
     bool active;
     Color ambient;
@@ -210,10 +218,10 @@ typedef struct Entity {
     MeshComponent* meshComponent;
     MaterialComponent* materialComponent;
     UIComponent* uiComponent;
+    LightComponent* lightComponent;
 } Entity;
 
-
-
+typedef vec3 Point;
 
 
 
