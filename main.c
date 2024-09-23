@@ -793,6 +793,13 @@ void movementSystem(){
                         //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                    // }
                 }
+                if(globals.entities[i].lightComponent->active == 1){
+                    globals.entities[i].transformComponent->rotation[1] = radians;
+                    globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                    float offset = 2.0 * sin(1.0 * globals.delta_time);
+                    printf("offset %f\n", offset);
+                    globals.entities[i].transformComponent->position[0] = offset;
+                }
                 //globals.entities[i].transformComponent->rotation[1] += radians; //<- This is an example of acceleration.
            }
         }
@@ -1134,8 +1141,8 @@ void initScene(){
 // createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
 // createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
   
-  createLight(green,diffuseTextureId,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.5f, 0.5f, 0.5f}, (vec3){0.0f, 0.0f, 0.0f});
-  // createPlane(VIEWPORT_MAIN,green,diffuseTextureId, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
+   createLight((Color){1.0f,165.0f/255.0f,0.0f,1.0f},diffuseTextureId,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.5f, 0.5f, 0.5f}, (vec3){0.0f, 0.0f, 0.0f});
+   createPlane((Color){1.0f,0.5f,0.0f,1.0f},diffuseTextureId, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
    createCube(VIEWPORT_MAIN,red,diffuseTextureId,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
@@ -1145,8 +1152,8 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
-  //createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
- // createButton(VIEWPORT_UI,red,diffuseTextureId, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createButton(VIEWPORT_UI,red,diffuseTextureId, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    
@@ -1338,149 +1345,7 @@ void createMesh(
     entity->materialComponent->specular = material->specular;
     entity->materialComponent->shininess = material->shininess;
     entity->materialComponent->diffuseMap = material->diffuseMap;
-    entity->meshComponent->gpuData->drawMode = drawMode;
-
-    setupMesh(  entity->meshComponent->vertices, 
-                entity->meshComponent->vertexCount, 
-                entity->meshComponent->indices, 
-                entity->meshComponent->indexCount,
-                entity->meshComponent->gpuData
-                );
-    
-    if(entity->lightComponent->active == 1){
-        setupLightMaterial( entity->meshComponent->gpuData );
-    }else {
-        setupMeshMaterial( entity->meshComponent->gpuData );
-    }
-}
-
-/**
- * @brief Create a mesh
- * Main function to create a mesh. 
- *  - vertex data (with normals)
- *  - index data
- *  - transform data
- *  - material data
-*/
-void createMeshWithNormals(
-    GLfloat* verts,
-    GLuint num_of_vertex, 
-    GLuint* indices, // atm plug in some dummy-data if not used.
-    GLuint numIndicies, // atm just set to 0 if not used.
-    vec3 position,
-    vec3 scale,
-    vec3 rotation,
-    Material* material,
-    int ui,
-    GLenum drawMode,
-    VertexDataType vertexDataType,
-    Entity* entity
-    ){
-    
-    entity->meshComponent->active = 1;
-
-    // vertex data
-    entity->meshComponent->vertices = (Vertex*)malloc(num_of_vertex * sizeof(Vertex));
-     if (entity->meshComponent->vertices == NULL) {
-        printf("Failed to allocate memory for vertices\n");
-        exit(1);
-    }
-    
-    int stride = 8;
-    int vertexIndex = 0;
-
-    // We have three types of vertex data input:
-    // - one with color & indices VERT_COLOR_INDICIES
-    // - one with color & no indicies VERT_COLOR
-    // - one with no color & no indicies VERT
-    if(numIndicies == 0 && vertexDataType == VERTS_ONEUV) {
-
-        // vertices + texcoords but no indices and no color
-        stride = 8;
-        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
-            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
-            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
-            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
-
-            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
-            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
-            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5]; 
-
-            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
-            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
-            vertexIndex++;
-        } 
-
-    }else if(vertexDataType == VERTS_COLOR_ONEUV_INDICIES){
-
-        // indexed data with color
-        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
-            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
-            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
-            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
-            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3]; 
-            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
-            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
-            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
-            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
-            vertexIndex++;
-        }
-    }else if(vertexDataType == VERTS_COLOR_ONEUV){
-         // not indexed data with color
-        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
-            entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
-            entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
-            entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
-            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3]; 
-            entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
-            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
-            entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
-            entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
-            vertexIndex++;
-        }
-    }else {
-        printf("UNSUPPORTED vertexData");
-        exit(1);
-    }
-    
-    entity->meshComponent->vertexCount = num_of_vertex;
-    entity->meshComponent->gpuData->vertexCount = num_of_vertex;
-
-    // index data
-    entity->meshComponent->indices = (GLuint*)malloc(numIndicies * sizeof(GLuint));
-    if(entity->meshComponent->indices == NULL) {
-        printf("Failed to allocate memory for indices\n");
-        exit(1);
-    }
-    for(int i = 0; i < numIndicies; i++) {
-        entity->meshComponent->indices[i] = indices[i];
-    }
-    entity->meshComponent->indexCount = numIndicies;
-
-    if(numIndicies == 0){
-        printf("not using indicies\n");
-    }
-
-    // transform data
-    entity->transformComponent->active = 1;
-    entity->transformComponent->position[0] = position[0];
-    entity->transformComponent->position[1] = position[1];
-    entity->transformComponent->position[2] = position[2];
-    entity->transformComponent->scale[0] = scale[0];
-    entity->transformComponent->scale[1] = scale[1];
-    entity->transformComponent->scale[2] = scale[2];
-    entity->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
-    entity->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
-    entity->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
-    entity->transformComponent->modelNeedsUpdate = 1;
-
-    // material data
-    entity->materialComponent->active = 1;
-    entity->materialComponent->ambient = material->ambient;
-    entity->materialComponent->diffuse = material->diffuse;
-    entity->materialComponent->specular = material->specular;
-    entity->materialComponent->shininess = material->shininess;
-    entity->materialComponent->diffuseMap = material->diffuseMap;
+    entity->materialComponent->useDiffuseMap = material->useDiffuseMap;
     entity->meshComponent->gpuData->drawMode = drawMode;
 
     setupMesh(  entity->meshComponent->vertices, 
@@ -1581,7 +1446,7 @@ void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,
     //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f}; not used, comes from attribute data
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, true};
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, false};
 
     Entity* entity = addEntity(MODEL);
     entity->lightComponent->active = 1;
@@ -1589,22 +1454,23 @@ void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,
     entity->lightComponent->direction[1] = 0.0f;
     entity->lightComponent->direction[2] = -1.0f;
     entity->lightComponent->intensity = 1.0f;
-
+    entity->lightComponent->color = diffuse;
+    
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
     globals.lights[0] = *entity;
 
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
-void createPlane(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
+void createPlane(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
-   // Positions          // Colors           // Texture Coords
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // Bottom-left
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Bottom-right
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Top-right
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Top-right
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f, // Top-left
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f  // Bottom-left
+   // Positions          // Colors           // Texture Coords    // Normals
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f, 0.0f, 0.0f,    // Bottom-left
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,  0.0f, 0.0f, 0.0f,    // Bottom-right
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f, 0.0f, 0.0f,    // Top-right
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f, 0.0f, 0.0f,    // Top-right
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  0.0f, 0.0f, 0.0f,    // Top-left
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f, 0.0f, 0.0f,    // Bottom-left
     };
     // index data NOT USED ATM
     GLuint indices[] = {
@@ -1622,15 +1488,11 @@ void createPlane(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3
     //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f}; not used, comes from attribute data
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, true};
+    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, false};
 
     Entity* entity = addEntity(MODEL);
-    if(ui == 1){
-        entity->uiComponent->active = 1;
-        entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
-    }
 
-    createMesh(vertices,6,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV,entity);
+    createMesh(vertices,6,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
 /**
  * @brief Create a object. Used together with obj-load/parse. Expects data from obj-parser to be of type ObjData.
@@ -1679,44 +1541,6 @@ void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
 }
 
 /**
- * @brief Create a triangle
- * Create a triangle mesh
- * @param ui - 1 for ui, 0 for 3d scene
- * @param diffuse - color of the triangle
- * TODO: does not work with wasm atm. indices? GLtype?
-*/
-void createTriangle(int ui,Color diffuse){
-    // vertex data
-    GLfloat verts[] = {
-         0.0f,  0.5f, 0.0f,  // top
-        -0.5f, -0.5f, 0.0f,  // bottom left
-         0.5f, -0.5f, 0.0f   // bottom right
-    };
-    // index data
-    GLuint indices[] = {
-        0, 1, 2,  // first triangle
-        1, 2, 3   // second triangle
-    }; 
-    // transform
-    vec3 position = {0.0f, 0.0f, 0.0f};
-    vec3 scale = {1.0f, 1.0f, 1.0f};
-    vec3 rotation = {0.0f, 0.0f, 0.0f};
-
-    //material
-    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
-    //Color diffuse = diffuseColor;
-    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess};
-
-    Entity* entity = addEntity(MODEL);
-    if(ui == 1){
-        entity->uiComponent->active = 1;
-    }
-
-    createMesh(verts,3,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV,entity);
-}
-/**
  * @brief Create a rectangle
  * Create a rectangle mesh
  * @param ui - 1 for ui, 0 for 3d scene
@@ -1725,11 +1549,11 @@ void createTriangle(int ui,Color diffuse){
 void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
-    // positions          // colors           // texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f  // top left  
+    // positions          // colors           // texture coords // normals
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,0.0f, // top right
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,0.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,0.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,0.0f,  // top left  
     };
     // index data (counterclockwise)
     GLuint indices[] = {
@@ -1775,11 +1599,11 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
 void createButton(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick){
     // vertex data
     GLfloat vertices[] = {
-    // positions          // colors           // texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f  // top left  
+     // positions          // colors           // texture coords // normals
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,0.0f, // top right
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,0.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,0.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,0.0f,  // top left  
     };
     // index data (counterclockwise)
     GLuint indices[] = {

@@ -11,7 +11,7 @@ in vec3 FragPos;
 
 uniform vec4 ambient;
 uniform vec3 lightPos; 
-//uniform vec3 lightColor;
+uniform vec4 lightColor;
 
 // texture samplers
 uniform sampler2D texture1;
@@ -20,31 +20,26 @@ uniform bool useDiffuseMap;
 
 void main()
 {
-	// New------------------
-	// Temp:
-	vec3 lightColor = vec3(0.5, 0.5, 1.0);
 	// ambient
-    float ambientStrength = 0.1;
-    vec3 ambient = ambientStrength * lightColor;
+    vec4 ambientLight = ambient * lightColor;
     
-
 	// diffuse 
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(lightPos - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
-   
-            
-   // vec3 result = (ambient + diffuse) * diffuseColor;
-    vec3 result = (ambient + diffuse) * vec3(1.0, 1.0, 1.0);
-    FragColor = vec4(result, 1.0);
+    vec3 diffuseShading = diff * lightColor.xyz;
 
-	// Before -------------------
-	//vec4 diffuse = vec4(diffuseColor, 1.0f) * ambient;
-	//if (useDiffuseMap) {
-	//	FragColor = mix(texture(texture1, texCoord), diffuse, 0.5);
-   // } else {
-//		FragColor = diffuse;
-//    }
+    // Combine diffuse shading with object diffuse color
+    vec3 diffuseComponent = diffuseShading * diffuseColor;
+   
+    if (useDiffuseMap) {
+        vec3 textureColor = texture(texture1, texCoord).rgb;
+        diffuseComponent = mix(diffuseComponent, textureColor, 0.5);
+    }         
+ 
+    // Combine ambient and diffuse components
+    vec3 result = ambientLight.xyz + diffuseComponent;
+
+    FragColor = vec4(result, 1.0);
 
 }
