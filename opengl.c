@@ -254,15 +254,15 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
 
     // Set the light color uniform
     GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+    
     Entity* lightEntity = &globals.lights[0];
-    glUniform4f(lightColorLocation, lightEntity->lightComponent->color.r, lightEntity->lightComponent->color.g, lightEntity->lightComponent->color.b, lightEntity->lightComponent->color.a);
+    if(lightEntity != NULL && lightEntity->lightComponent != NULL){
+        glUniform4f(lightColorLocation, lightEntity->lightComponent->color.r, lightEntity->lightComponent->color.g, lightEntity->lightComponent->color.b, lightEntity->lightComponent->color.a);
 
-
-    //printf("light position: %f %f %f\n", lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
-    // Set the light position uniform
-    GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "lightPos");
-    glUniform3f(lightPositionLocation, lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
-
+        // Set the light position uniform
+        GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "lightPos");
+        glUniform3f(lightPositionLocation, lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
+    }
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
     unsigned int viewLoc  = glGetUniformLocation(buffer->shaderProgram, "view");

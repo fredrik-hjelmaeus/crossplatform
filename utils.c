@@ -76,14 +76,17 @@ ObjData loadObjFile(const char *filepath)
     int MAX = 30000;
     int vf[30000] = {0}; 
     int tf[30000] = {0}; 
+    int vn[30000] = {0};
     float vArr[MAX];
     float tArr[MAX];
+    float nArr[MAX];
 
     int vIndex = 0;
     int uvCount = 0;
     int normalCount = 0;
     int vfCount = 0;
     int tfCount = 0;
+    int vnCount = 0;
     int faceLineCount = 0;
     char material[100];
     char group[100];
@@ -152,7 +155,16 @@ ObjData loadObjFile(const char *filepath)
         }
         // vn: v & n, read normals
         if((int)line[0] == 118 && (int)line[1] == 110){
-            normalCount++;
+            // TODO: grab normals in an array
+            char *token = strtok(line, " ");
+            token = strtok(NULL, " ");
+            nArr[normalCount] = strtof(token, NULL);
+            token = strtok(NULL, " ");
+            nArr[normalCount+1] = strtof(token, NULL);
+            token = strtok(NULL, " ");
+            nArr[normalCount+2] = strtof(token, NULL);
+            //vnCount+=3;
+            normalCount+=3;
             continue;
         }
         // f: face indicies, ex: f 1/1/1 2/2/2 3/3/3 
@@ -172,6 +184,9 @@ ObjData loadObjFile(const char *filepath)
            tf[tfCount] = facetokentInt;
            tfCount++;
            facetoken = strtok(NULL, " /");
+           int facetokenvInt = atoi(facetoken);
+           vn[vnCount] = facetokenvInt;
+           vnCount++;
            facetoken = strtok(NULL, " /"); // v2
            int facetokenInt2 = atoi(facetoken);
            vf[vfCount] = facetokenInt2;
@@ -181,6 +196,9 @@ ObjData loadObjFile(const char *filepath)
            tf[tfCount] = facetokentInt2;
            tfCount++;
            facetoken = strtok(NULL, " /");
+           int facetokenv2Int = atoi(facetoken);
+           vn[vnCount] = facetokenv2Int;
+           vnCount++;
            facetoken = strtok(NULL, " /");
            int facetokenInt3 = atoi(facetoken);
            vf[vfCount] = facetokenInt3;
@@ -189,6 +207,10 @@ ObjData loadObjFile(const char *filepath)
            int facetokentInt3 = atoi(facetoken);
            tf[tfCount] = facetokentInt3;
            tfCount++;
+           facetoken = strtok(NULL, " /");
+           int facetokenv3Int = atoi(facetoken);
+           vn[vnCount] = facetokenv3Int;
+           vnCount++;
            continue;
         }
   
@@ -208,7 +230,8 @@ ObjData loadObjFile(const char *filepath)
   //  printf("vIndex %d \n", vIndex);
     //printf("vfCount %d \n", vfCount); 
   //  printf("uvCount %d \n", uvCount);
-  //  printf("normalCount %d \n", normalCount); 
+   // printf("normalCount %d \n", normalCount); 
+   // printf("vnCount %d \n", vnCount);
   
  objData.vertexData = malloc(vfCount * sizeof(Vertex));
    if(objData.vertexData == NULL){
@@ -217,26 +240,33 @@ ObjData loadObjFile(const char *filepath)
  
 
     for(int i = 0; i < vfCount; i+=1){
-    //  printf("vertex %i \n",vf[i]);
-     //printf("vertex %i \n",i);
+        //  printf("vertex %i \n",vf[i]);
+        //printf("vertex %i \n",i);
 
-      // x y z
-    //printf("v %f %f %f ",vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
-      objData.vertexData[i].position[0] = vArr[(vf[i]-1)*3];
-      objData.vertexData[i].position[1] = vArr[(vf[i]-1)*3+1];
-      objData.vertexData[i].position[2] = vArr[(vf[i]-1)*3+2];
+        // x y z
+        //printf("v %f %f %f ",vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
+        objData.vertexData[i].position[0] = vArr[(vf[i]-1)*3];
+        objData.vertexData[i].position[1] = vArr[(vf[i]-1)*3+1];
+        objData.vertexData[i].position[2] = vArr[(vf[i]-1)*3+2];
 
-      // color, default to black atm
-     objData.vertexData[i].color[0] = 0.0; 
-     objData.vertexData[i].color[1] = 0.0;
-     objData.vertexData[i].color[2] = 0.0;
+        // color, default to black atm
+        objData.vertexData[i].color[0] = 1.0; 
+        objData.vertexData[i].color[1] = 1.0;
+        objData.vertexData[i].color[2] = 1.0;
 
-      // uv
-      //printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
-   // printf("\n");
+        // uv
+       // printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
+        // printf("\n");
 
-      objData.vertexData[i].texcoord[0] = tArr[(tf[i]-1)*2];
-      objData.vertexData[i].texcoord[1] = tArr[(tf[i]-1)*2+1];
+        objData.vertexData[i].texcoord[0] = tArr[(tf[i]-1)*2];
+        objData.vertexData[i].texcoord[1] = tArr[(tf[i]-1)*2+1];
+
+        // normals
+        objData.vertexData[i].normal[0] = nArr[(vn[i]-1)*3];
+        objData.vertexData[i].normal[1] = nArr[(vn[i]-1)*3+1];
+        objData.vertexData[i].normal[2] = nArr[(vn[i]-1)*3+2];
+        // print normals
+     //   printf("n %f %f %f \n",nArr[(vn[i]-1)*3],nArr[(vn[i]-1)*3+1],nArr[(vn[i]-1)*3+2]);
     }
 
     objData.num_of_vertices = vfCount;

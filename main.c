@@ -36,7 +36,6 @@
 #endif
 
 // Prototypes
-void createTriangle(int ui,Color diffuse);
 void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
 void createCube(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
 void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj);
@@ -73,6 +72,7 @@ struct Globals globals = {
     .render=true,
     .gpuFontData={0,0,0,0,0,0,GL_TRIANGLES},
     .unitScale=100.0f,
+    .culling=false,
 };
 
 // Window dimensions
@@ -505,6 +505,9 @@ void input() {
         
                 //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
             }
+            if(strcmp(key, "T") == 0) {
+                globals.culling = !globals.culling;
+            }
             if(strcmp(key, "B") == 0) {
                 globals.drawBoundingBoxes = !globals.drawBoundingBoxes;
             }
@@ -797,7 +800,7 @@ void movementSystem(){
                     globals.entities[i].transformComponent->rotation[1] = radians;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                     float offset = 2.0 * sin(1.0 * globals.delta_time);
-                    printf("offset %f\n", offset);
+                    //printf("offset %f\n", offset);
                     globals.entities[i].transformComponent->position[0] = offset;
                 }
                 //globals.entities[i].transformComponent->rotation[1] += radians; //<- This is an example of acceleration.
@@ -974,6 +977,17 @@ void render(){
     // Clear the entire window
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glEnable(GL_DEPTH_TEST);
+
+    // Set culling
+    if(globals.culling){
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        glFrontFace(GL_CCW);
+    }else {
+        glDisable(GL_CULL_FACE);
+    }
+
     // Render without ui on wasm
     #ifdef __EMSCRIPTEN__
     setViewport(globals.views.full);
@@ -1070,7 +1084,7 @@ void render(){
                 }
         }
     }
-    glEnable(GL_DEPTH_TEST);
+    
    
     #endif
 
@@ -1135,14 +1149,15 @@ void initScene(){
    initFont();
    TextureData textureData = loadTexture();
    GLuint diffuseTextureId = setupTexture(textureData);
-  // ObjData objData = loadObjFile("truck.obj");
+   ObjData objData = loadObjFile("truck.obj");
+   //ObjData objData = loadObjFile("triangle_volumes.obj");
 
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
-// createObject(VIEWPORT_MAIN,green,diffuseTextureId,&objData);
+ createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},diffuseTextureId,&objData);
 // createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
   
-   createLight((Color){1.0f,165.0f/255.0f,0.0f,1.0f},diffuseTextureId,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.5f, 0.5f, 0.5f}, (vec3){0.0f, 0.0f, 0.0f});
-   createPlane((Color){1.0f,0.5f,0.0f,1.0f},diffuseTextureId, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
+   createLight((Color){1.0f,165.0f/255.0f,0.0f,1.0f},diffuseTextureId,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f});
+   createPlane((Color){0.0f,0.0f,0.0f,0.0f},diffuseTextureId, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
    createCube(VIEWPORT_MAIN,red,diffuseTextureId,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
@@ -1300,6 +1315,9 @@ void createMesh(
             entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
             entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
             entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+            entity->meshComponent->vertices[vertexIndex].normal[0] = verts[i + 8];
+            entity->meshComponent->vertices[vertexIndex].normal[1] = verts[i + 9];
+            entity->meshComponent->vertices[vertexIndex].normal[2] = verts[i + 10];
             vertexIndex++;
         }
     }else {
@@ -1464,14 +1482,14 @@ void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,
 void createPlane(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
-   // Positions          // Colors           // Texture Coords    // Normals
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f, 0.0f, 0.0f,    // Bottom-left
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,  0.0f, 0.0f, 0.0f,    // Bottom-right
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f, 0.0f, 0.0f,    // Top-right
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f, 0.0f, 0.0f,    // Top-right
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  0.0f, 0.0f, 0.0f,    // Top-left
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f, 0.0f, 0.0f,    // Bottom-left
-    };
+    // Positions          // Colors           // Texture Coords    // Normals
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f, 0.0f, 1.0f,    // Bottom-left
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,  0.0f, 0.0f, 1.0f,    // Bottom-right
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f, 0.0f, 1.0f,    // Top-right
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f, 0.0f, 1.0f,    // Top-right
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  0.0f, 0.0f, 1.0f,    // Top-left
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f, 0.0f, 1.0f,    // Bottom-left
+};
     // index data NOT USED ATM
     GLuint indices[] = {
     0, 1, 2, // First triangle
@@ -1502,7 +1520,7 @@ void createPlane(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,
 */
 void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
    // vertex data
-    int stride = 8;
+    int stride = 11;
     GLfloat vertices[(obj->num_of_vertices)*stride];
     for(int i = 0; i < obj->num_of_vertices; i++){
             vertices[i * stride + 0] = obj->vertexData[i].position[0];
@@ -1513,6 +1531,9 @@ void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
             vertices[i * stride + 5] = obj->vertexData[i].color[2];
             vertices[i * stride + 6] = obj->vertexData[i].texcoord[0];
             vertices[i * stride + 7] = obj->vertexData[i].texcoord[1];
+            vertices[i * stride + 8] = obj->vertexData[i].normal[0];
+            vertices[i * stride + 9] = obj->vertexData[i].normal[1];
+            vertices[i * stride + 10] = obj->vertexData[i].normal[2];
     }  
    
     // NOT USED
@@ -1522,12 +1543,12 @@ void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
     }; 
 
     // transform
-    vec3 position = {0.0f, 0.0f, 0.0f};
+    vec3 position = {0.0f,1.0f, 0.0f};
     vec3 scale = {1.0f, 1.0f, 1.0f};
     vec3 rotation = {0.0f, 0.0f, 0.0f};
 
     //material
-    Color ambient = {1.0f, 0.1f, 0.1f, 1.0f};
+    Color ambient = {0.0f, 0.0f, 0.0f, 1.0f};
     Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
     GLfloat shininess = 32.0f;
     Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, true};
