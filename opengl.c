@@ -254,7 +254,6 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
 
     // Set the light color uniform
     GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
-    
     Entity* lightEntity = &globals.lights[0];
     if(lightEntity != NULL && lightEntity->lightComponent != NULL){
         glUniform4f(lightColorLocation, lightEntity->lightComponent->color.r, lightEntity->lightComponent->color.g, lightEntity->lightComponent->color.b, lightEntity->lightComponent->color.a);
@@ -263,6 +262,15 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
         GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "lightPos");
         glUniform3f(lightPositionLocation, lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
     }
+
+    // Set viewPos uniform
+    GLint viewPosLocation = glGetUniformLocation(buffer->shaderProgram, "viewPos");
+    glUniform3f(viewPosLocation, camera->position[0], camera->position[1], camera->position[2]);
+
+    // Set the shininess uniform
+    GLint shininessLocation = glGetUniformLocation(buffer->shaderProgram, "shininess");
+    glUniform1f(shininessLocation, shininess);
+
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
     unsigned int viewLoc  = glGetUniformLocation(buffer->shaderProgram, "view");

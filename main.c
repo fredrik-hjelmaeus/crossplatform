@@ -1149,7 +1149,8 @@ void initScene(){
    initFont();
    TextureData textureData = loadTexture();
    GLuint diffuseTextureId = setupTexture(textureData);
-   ObjData objData = loadObjFile("truck.obj");
+   //ObjData objData = loadObjFile("truck.obj");
+   ObjData objData = loadObjFile("blender_sphere3.obj");
    //ObjData objData = loadObjFile("triangle_volumes.obj");
 
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
