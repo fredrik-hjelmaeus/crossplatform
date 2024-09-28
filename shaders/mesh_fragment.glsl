@@ -4,49 +4,54 @@ precision mediump float;
 
 out vec4 FragColor;
 
-in vec3 diffuseColor; // objectColor
-in vec2 texCoord;
-in vec3 normal;
+in vec3 diffuseColor; // diffuse base color from attribute data  (NOT USED ATM)
+in vec2 TexCoords; // texcoords
+in vec3 Normal; // normal
 in vec3 FragPos; 
 
-uniform vec4 ambient;
-uniform vec3 viewPos; 
-uniform vec3 lightPos; 
-uniform vec4 lightColor;
-uniform float shininess;
+struct Light {
+    vec3 position; 
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+};
 
-// texture samplers
-uniform sampler2D texture1;
-uniform bool useDiffuseMap;
+struct Material {
+    sampler2D diffuse; // diffuseMap
+    sampler2D specular; // specularMap
+    float shininess;
+    float diffuseMapOpacity;
+};
 
+//uniform bool useDiffuseMap;
+uniform vec4 color; // diffuse base color from material (used atm) (alpha is not used)
+uniform Material material;
+uniform Light light;
+uniform vec3 viewPos;
 
 void main()
 {
-	// ambient
-    vec3 ambientLight = ambient.xyz * lightColor.xyz;
+   
+   
     
-	// diffuse 
-    vec3 norm = normalize(normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
+    // ambient
+    vec3 ambient = light.ambient.xyz * texture(material.diffuse, TexCoords).rgb;
+  	
+    // diffuse 
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(light.position - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor.xyz;
-
+    vec3 textureColor = texture(material.diffuse, TexCoords).rgb;
+    vec3 blendedDiffuse = mix(color.xyz, textureColor, material.diffuseMapOpacity);
+    vec3 diffuse = light.diffuse.xyz * diff * blendedDiffuse;
+    
     // specular
-    float specularStrength = 0.5;
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    vec3 specular = specularStrength * spec * lightColor.xyz; 
-
-    // combine
-    vec3 result = (ambientLight + diffuse + specular) * diffuseColor;
-
-    // add texture
-    if (useDiffuseMap) {
-        vec3 textureColor = texture(texture1, texCoord).rgb;
-        result = mix(result, textureColor, 0.5);
-    }        
- 
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular = light.specular.xyz * spec * texture(material.specular, TexCoords).rgb;  
+        
+    vec3 result = ambient + diffuse + specular;
     FragColor = vec4(result, 1.0);
-
+    
 }

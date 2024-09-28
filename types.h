@@ -96,6 +96,18 @@ typedef struct Texture {
     char* type;
 } Texture;
 
+typedef struct Material {
+    bool active;
+    Color ambient;
+    Color diffuse;
+    Color specular;
+    float shininess;
+    GLuint diffuseMap;
+    float diffuseMapOpacity;
+    GLuint specularMap;
+  //  Texture* normalMap;
+} Material;
+
 typedef struct GpuData {
     GLuint VBO;
     GLuint VAO;
@@ -105,17 +117,6 @@ typedef struct GpuData {
     GLuint vertexCount;
     GLenum drawMode;
 } GpuData;
-
-typedef struct Material {
-    Color ambient;
-    Color diffuse;
-    Color specular;
-    GLfloat shininess;
-    GLuint diffuseMap;
-    bool useDiffuseMap;
-   /* Texture* specularMap;
-    Texture* normalMap; */
-} Material;
 
 // Data we get from obj-loader/parser.
 typedef struct ObjData {
@@ -193,7 +194,9 @@ typedef struct UIComponent {
 typedef struct LightComponent {
     bool active;
     vec3 direction;
-    Color color;
+    Color ambient;
+    Color diffuse;
+    Color specular;
     float intensity;
 } LightComponent;
 
@@ -204,8 +207,8 @@ typedef struct MaterialComponent {
     Color specular;
     float shininess;
     GLuint diffuseMap;
-    bool useDiffuseMap;
-  //  Texture* specularMap;
+    float diffuseMapOpacity;
+    GLuint specularMap;
   //  Texture* normalMap;
 } MaterialComponent;
 

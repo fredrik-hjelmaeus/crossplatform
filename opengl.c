@@ -224,7 +224,7 @@ void initializeShaderProgram(ShaderProgram* shaderProgram, const char* vertexPat
     shaderProgram->texture1Loc = glGetUniformLocation(shaderProgram->shaderProgram, "texture1");
 }
  */
-void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* diffuse,Color* ambient, Color* specular,float shininess,GLuint diffuseMap,Camera* camera,bool useDiffuseMap) {
+void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material) {
 
     // Check if camera is NULL
     if (camera == NULL) {
@@ -235,41 +235,61 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Color* d
     // Set shader
     glUseProgram(buffer->shaderProgram);
 
+    // prin material->diffuseMapOpacity
+    printf("diffuseMapOpacity: %f\n", material->diffuseMapOpacity);
+
     // Assign diffuseMap to texture1 slot
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, diffuseMap);
-    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "texture1"), 0);
+    glBindTexture(GL_TEXTURE_2D, material->diffuseMap);
+    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "material.diffuse"), 0);
 
-    // Enable or disable the diffuse map
-    //bool useDiffuseMap = true; // or false to disable
-    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "useDiffuseMap"), useDiffuseMap);
+    // Assign specularMap to texture2 slot
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, material->specularMap);
+    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "material.specular"), 1);
+
+    // Set diffuseMapOpacity uniform
+    glUniform1f(glGetUniformLocation(buffer->shaderProgram, "material.diffuseMapOpacity"), material->diffuseMapOpacity);
 
     // Set the color uniform
     GLint colorLocation = glGetUniformLocation(buffer->shaderProgram, "color");
-    glUniform4f(colorLocation, diffuse->r, diffuse->g, diffuse->b, diffuse->a);
+    glUniform4f(colorLocation, material->diffuse.r, material->diffuse.g, material->diffuse.b, material->diffuse.a);
 
-    // Set the ambient light uniform
+    // Set the ambient uniform
     GLint ambientLocation = glGetUniformLocation(buffer->shaderProgram, "ambient");
-    glUniform4f(ambientLocation, ambient->r, ambient->g, ambient->b, ambient->a);
+    glUniform4f(ambientLocation, material->ambient.r, material->ambient.g, material->ambient.b, material->ambient.a);
 
-    // Set the light color uniform
-    GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+    // Set the shininess uniform
+    GLint shininessLocation = glGetUniformLocation(buffer->shaderProgram, "material.shininess");
+    glUniform1f(shininessLocation, material->shininess);
+
+    // Set the specular uniform
+    GLint specularLocation = glGetUniformLocation(buffer->shaderProgram, "specular");
+    glUniform4f(specularLocation, material->specular.r, material->specular.g, material->specular.b, material->specular.a);
+    
+    // Set the light ambient uniform
+    GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "light.ambient");
     Entity* lightEntity = &globals.lights[0];
+
+    // Set the light diffuse uniform
+    GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "light.diffuse");
+    glUniform4f(lightDiffuseLocation, lightEntity->lightComponent->diffuse.r, lightEntity->lightComponent->diffuse.g, lightEntity->lightComponent->diffuse.b, lightEntity->lightComponent->diffuse.a);
+
+    // Set the light specular uniform
+    GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "light.specular");
+    glUniform4f(lightSpecularLocation, lightEntity->lightComponent->specular.r, lightEntity->lightComponent->specular.g, lightEntity->lightComponent->specular.b, lightEntity->lightComponent->specular.a);
+    
     if(lightEntity != NULL && lightEntity->lightComponent != NULL){
-        glUniform4f(lightColorLocation, lightEntity->lightComponent->color.r, lightEntity->lightComponent->color.g, lightEntity->lightComponent->color.b, lightEntity->lightComponent->color.a);
+        glUniform4f(lightAmbientLocation, lightEntity->lightComponent->ambient.r, lightEntity->lightComponent->ambient.g, lightEntity->lightComponent->ambient.b, lightEntity->lightComponent->ambient.a);
 
         // Set the light position uniform
-        GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "lightPos");
+        GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "light.position");
         glUniform3f(lightPositionLocation, lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
     }
 
     // Set viewPos uniform
     GLint viewPosLocation = glGetUniformLocation(buffer->shaderProgram, "viewPos");
     glUniform3f(viewPosLocation, camera->position[0], camera->position[1], camera->position[2]);
-
-    // Set the shininess uniform
-    GLint shininessLocation = glGetUniformLocation(buffer->shaderProgram, "shininess");
-    glUniform1f(shininessLocation, shininess);
 
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");

@@ -35,14 +35,21 @@
 #include <emscripten.h>
 #endif
 
+#ifdef DEV_MODE
+    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }
+    #else  // Tell compiler to do nothing in release mode
+    #define ASSERT(Expression, message) ((void)0)
+#endif
+
+
 // Prototypes
-void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
-void createCube(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
-void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj);
-void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation);
+void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
+void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
+void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
+void createLight(Material material,vec3 position,vec3 scale,vec3 rotation);
 void onButtonClick();
 Camera* initCamera();
-TextureData loadTexture();
+TextureData loadTexture(char* path);
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 //------------------------------------------------------
 // Global variables / Initialization
@@ -163,7 +170,7 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->specular.b = 0.0f;
     materialComponent->specular.a = 1.0f;
     materialComponent->shininess = 0.0f;
-    materialComponent->useDiffuseMap = true;
+    materialComponent->diffuseMapOpacity = 0.0f;
 }
 
 // Max text length for UI components
@@ -190,11 +197,19 @@ void initializeLightComponent(LightComponent* lightComponent){
     lightComponent->direction[0] = 0.0f;
     lightComponent->direction[1] = 0.0f;
     lightComponent->direction[2] = 0.0f;
-    lightComponent->color.r = 0.0f;
-    lightComponent->color.g = 0.0f;
-    lightComponent->color.b = 0.0f;
-    lightComponent->color.a = 1.0f;
     lightComponent->intensity = 0.0f;
+    lightComponent->ambient.r = 0.0f;
+    lightComponent->ambient.g = 0.0f;
+    lightComponent->ambient.b = 0.0f;
+    lightComponent->ambient.a = 1.0f;
+    lightComponent->diffuse.r = 0.0f;
+    lightComponent->diffuse.g = 0.0f;
+    lightComponent->diffuse.b = 0.0f;
+    lightComponent->diffuse.a = 1.0f;
+    lightComponent->specular.r = 0.0f;
+    lightComponent->specular.g = 0.0f;
+    lightComponent->specular.b = 0.0f;
+    lightComponent->specular.a = 1.0f;
 }
 
 
@@ -502,7 +517,14 @@ void input() {
                 globals.views.main.clearColor.r = randFloat(0.0,1.0);
                 globals.views.main.clearColor.g = randFloat(0.0,1.0);
                 globals.views.main.clearColor.b = randFloat(0.0,1.0);
-        
+
+                for(int i = 0; i < MAX_ENTITIES; i++){
+                    if(globals.entities[i].alive == 1 && globals.entities[i].lightComponent->active == 1){
+                        globals.entities[i].lightComponent->ambient.r = globals.views.main.clearColor.r;
+                        globals.entities[i].lightComponent->ambient.g = globals.views.main.clearColor.g;
+                        globals.entities[i].lightComponent->ambient.b = globals.views.main.clearColor.b;
+                    }
+                }
                 //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
             }
             if(strcmp(key, "T") == 0) {
@@ -838,14 +860,14 @@ void hoverAndClickSystem(){
                         // Left Click or just hover?
                         if(globals.mouseLeftButtonPressed){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                //printf("clicked\n");
+                                printf("clicked\n");
                             }
                           
                             globals.entities[i].uiComponent->clicked = 1;
                         } else {
                             
                              if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                //printf("hovered\n");
+                                printf("hovered\n");
                             }
                             globals.entities[i].uiComponent->hovered = 1;
                             globals.entities[i].uiComponent->clicked = 0;
@@ -854,34 +876,20 @@ void hoverAndClickSystem(){
                         // Hover effect
                         if(globals.entities[i].uiComponent->hovered == 1){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                //printf("hovered changes done\n");
+                               printf("hovered changes done\n");
                             }
                              // Appearance changes when hovered
-                            globals.entities[i].materialComponent->useDiffuseMap = true;
-                            globals.entities[i].materialComponent->ambient.r = 0.0f;
-                            globals.entities[i].materialComponent->ambient.g = 0.5f;
-                            globals.entities[i].materialComponent->ambient.b = 0.0f;
-                            globals.entities[i].materialComponent->ambient.a = 1.0f;
-                            globals.entities[i].materialComponent->diffuse.r = 0.0f;
-                            globals.entities[i].materialComponent->diffuse.g = 0.0f;
-                            globals.entities[i].materialComponent->diffuse.b = 0.0f;
-                            globals.entities[i].materialComponent->diffuse.a = 0.0f;
+                            globals.entities[i].materialComponent->diffuseMapOpacity = 0.0f;
+           
                         }
 
                         if(globals.entities[i].uiComponent->clicked == 1){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                //printf("clicked changes done\n");
+                                printf("clicked changes done\n");
                             }
                             // Appearance changes when clicked
-                            globals.entities[i].materialComponent->useDiffuseMap = true;
-                            globals.entities[i].materialComponent->ambient.r = 1.0f;
-                            globals.entities[i].materialComponent->ambient.g = 1.0f;
-                            globals.entities[i].materialComponent->ambient.b = 1.0f;
-                            globals.entities[i].materialComponent->ambient.a = 1.0f;
-                            globals.entities[i].materialComponent->diffuse.r = 1.0f;
-                            globals.entities[i].materialComponent->diffuse.g = 1.0f;
-                            globals.entities[i].materialComponent->diffuse.b = 1.0f;
-                            globals.entities[i].materialComponent->diffuse.a = 1.0f;
+                            globals.entities[i].materialComponent->diffuseMapOpacity = 0.0f;
+                         
                             // Actions when clicked
                             if(globals.entities[i].uiComponent->onClick != NULL){
                                 globals.entities[i].uiComponent->onClick();
@@ -890,11 +898,11 @@ void hoverAndClickSystem(){
                     
                     } else {
                         if(strlen(globals.entities[i].uiComponent->text) > 0){
-                               // printf("no action,disable actions\n");
+                                printf("no action,disable actions\n");
                             }
                         globals.entities[i].uiComponent->hovered = 0;
                         globals.entities[i].uiComponent->clicked = 0;
-                        globals.entities[i].materialComponent->useDiffuseMap = true;
+                        globals.entities[i].materialComponent->diffuseMapOpacity = 0.0f;
                         globals.entities[i].materialComponent->ambient.r = 0.0f;
                         globals.entities[i].materialComponent->ambient.g = 0.0f;
                         globals.entities[i].materialComponent->ambient.b = 0.0f;
@@ -1017,14 +1025,7 @@ void render(){
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active != 1){
-                
-                    Color* diff = &globals.entities[i].materialComponent->diffuse;
-                    Color* amb = &globals.entities[i].materialComponent->ambient;
-                    Color* spec = &globals.entities[i].materialComponent->specular;
-                    GLfloat shin = globals.entities[i].materialComponent->shininess;
-                    GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                    bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera,useDiffMap);
+                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
                 }
             }
         }
@@ -1035,21 +1036,14 @@ void render(){
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active == 1){
-                        // render ui, could be overhead with switching viewports?. profile.
-                        Color* diff = &globals.entities[i].materialComponent->diffuse;
-                        Color* amb = &globals.entities[i].materialComponent->ambient;
-                        Color* spec = &globals.entities[i].materialComponent->specular;
-                        GLfloat shin = globals.entities[i].materialComponent->shininess;
-                        GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                        bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
-                       
+                        // render ui, could be overhead with switching viewports?. profile.    
                         if(globals.drawBoundingBoxes){
                             if(globals.entities[i].tag == BOUNDING_BOX){
-                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
+                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
                             }
                         }else {
                             if(globals.entities[i].tag != BOUNDING_BOX){
-                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.ui.camera,useDiffMap);
+                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera,globals.entities[i].materialComponent);
                             }
                         }
                 }
@@ -1147,19 +1141,49 @@ void initScene(){
 
    // Assets
    initFont();
-   TextureData textureData = loadTexture();
-   GLuint diffuseTextureId = setupTexture(textureData);
-   //ObjData objData = loadObjFile("truck.obj");
-   ObjData objData = loadObjFile("blender_sphere3.obj");
-   //ObjData objData = loadObjFile("triangle_volumes.obj");
+   TextureData containerTextureData = loadTexture("container.jpg");
+   GLuint containerMap = setupTexture(containerTextureData);
+   TextureData containerTwoTextureData = loadTexture("container2.png");
+   GLuint containerTwoMap = setupTexture(containerTwoTextureData);
+   TextureData containerTwoSpecTextureData = loadTexture("container2_specular.png");
+   GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
+   ObjData truck = loadObjFile("truck.obj");
+   ObjData sphere = loadObjFile("blender_sphere3.obj");
+   ObjData triangleVolumes = loadObjFile("triangle_volumes.obj");
+
+   struct Material objectMaterial = {
+    .active = 1,
+    .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
+    .diffuse = (Color){1.0f, 0.0f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
+    .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
+    .shininess = 4.0f,                           // used
+    .diffuseMap = containerTwoMap,               // used
+    .specularMap = containerTwoSpecularMap,      // used
+    .diffuseMapOpacity = 1.0                     // used
+ };
+   struct Material lightMaterial = {
+    .active = 1,
+    .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // used
+    .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
+    .specular = (Color){1.0f, 1.0f, 1.0f, 1.0f}, // used
+    .shininess = 512.0f,                         // NOT used
+    .diffuseMap = containerMap,                  // NOT used
+    .specularMap = containerMap,                 // NOT used
+    .diffuseMapOpacity = 1.0                     // NOT used
+ };
+
+   
 
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
- createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},diffuseTextureId,&objData);
-// createObject(VIEWPORT_UI,red,diffuseTextureId,&objData);
+ createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&truck);
+ //createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&sphere);
+ //createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&triangleVolumes);
+ 
   
-   createLight((Color){1.0f,165.0f/255.0f,0.0f,1.0f},diffuseTextureId,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f});
-   createPlane((Color){0.0f,0.0f,0.0f,0.0f},diffuseTextureId, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   createCube(VIEWPORT_MAIN,red,diffuseTextureId,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f});
+   createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1168,8 +1192,8 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
-  createRectangle(VIEWPORT_UI,red,diffuseTextureId, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createButton(VIEWPORT_UI,red,diffuseTextureId, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+  createRectangle(VIEWPORT_UI,objectMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createButton(VIEWPORT_UI,objectMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    
@@ -1364,7 +1388,8 @@ void createMesh(
     entity->materialComponent->specular = material->specular;
     entity->materialComponent->shininess = material->shininess;
     entity->materialComponent->diffuseMap = material->diffuseMap;
-    entity->materialComponent->useDiffuseMap = material->useDiffuseMap;
+    entity->materialComponent->diffuseMapOpacity = material->diffuseMapOpacity;
+    entity->materialComponent->specularMap = material->specularMap;
     entity->meshComponent->gpuData->drawMode = drawMode;
 
     setupMesh(  entity->meshComponent->vertices, 
@@ -1391,7 +1416,7 @@ void createPoint(vec3 position){
  * Create a light source in the scene.
  * 
  */
-void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
+void createLight(Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
    // vertex data
     GLfloat vertices[] = {
@@ -1455,17 +1480,7 @@ void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,
         20, 21, 22,
         22, 23, 20
     };
-    // transform
-   // vec3 position = {0.0f, 0.0f, 0.0f};
-   // vec3 scale =    {0.50f, 0.50f, 0.50f};
-    //vec3 rotation = {0.0f, 0.0f, 0.0f};
-
-    //material
-    Color ambient = {1.0f, 1.0f, 0.0f, 1.0f};
-    //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f}; not used, comes from attribute data
-    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, false};
+  
 
     Entity* entity = addEntity(MODEL);
     entity->lightComponent->active = 1;
@@ -1473,14 +1488,16 @@ void createLight(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,
     entity->lightComponent->direction[1] = 0.0f;
     entity->lightComponent->direction[2] = -1.0f;
     entity->lightComponent->intensity = 1.0f;
-    entity->lightComponent->color = diffuse;
+    entity->lightComponent->diffuse = material.diffuse;
+    entity->lightComponent->specular = material.specular;
+    entity->lightComponent->ambient = material.ambient;
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
     globals.lights[0] = *entity;
 
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
-void createPlane(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
+void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
@@ -1497,18 +1514,6 @@ void createPlane(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,
     2, 3, 0  // Second triangle
     };
    
-    // transform
-    //vec3 position = pos;//{2.0f, 0.0f, 0.0f};
-    //vec3 scale =    scale;//{1.0f, 1.0f, 1.0f};
-    //vec3 rotation = rot;//{90.0f, 0.0f, 0.0f};
-
-    //material
-    Color ambient = {0.5f, 0.5f, 0.5f, 1.0f};
-    //Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f}; not used, comes from attribute data
-    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, false};
-
     Entity* entity = addEntity(MODEL);
 
     createMesh(vertices,6,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
@@ -1519,7 +1524,7 @@ void createPlane(Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
-void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
+void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
    // vertex data
     int stride = 11;
     GLfloat vertices[(obj->num_of_vertices)*stride];
@@ -1543,17 +1548,6 @@ void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
         1, 2, 3   // second triangle
     }; 
 
-    // transform
-    vec3 position = {0.0f,1.0f, 0.0f};
-    vec3 scale = {1.0f, 1.0f, 1.0f};
-    vec3 rotation = {0.0f, 0.0f, 0.0f};
-
-    //material
-    Color ambient = {0.0f, 0.0f, 0.0f, 1.0f};
-    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId, true};
-
     Entity* entity = addEntity(MODEL);
     if(ui == 1){
         entity->uiComponent->active = 1;
@@ -1568,7 +1562,7 @@ void createObject(int ui,Color diffuse,GLuint diffuseTextureId,ObjData* obj){
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
-void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
+void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
     // positions          // colors           // texture coords // normals
@@ -1583,13 +1577,6 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
         1, 2, 3  // second triangle
     };
 
-    //material
-    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
-   // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
-    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId,true};
-
     Entity* entity = addEntity(MODEL);
     if(ui == 1){
         entity->uiComponent->active = 1;
@@ -1600,7 +1587,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
 
     // Bounding box, reuses the vertices from the rectangle
-    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, specular, shininess, diffuseTextureId, false};
+    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
     GLuint bbIndices[] = {
         0, 1, 1,2, 2,3 ,3,0, 
     };
@@ -1618,7 +1605,7 @@ void createRectangle(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
-void createButton(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick){
+void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick){
     // vertex data
     GLfloat vertices[] = {
      // positions          // colors           // texture coords // normals
@@ -1633,13 +1620,6 @@ void createButton(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec
         1, 2, 3  // second triangle
     };
 
-    //material
-    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
-   // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
-    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId,true};
-
     Entity* entity = addEntity(MODEL);
     if(ui == 1){
         entity->uiComponent->active = 1;
@@ -1652,7 +1632,7 @@ void createButton(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
 
     // Bounding box, reuses the vertices from the rectangle
-    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, specular, shininess, diffuseTextureId, false};
+    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
     GLuint bbIndices[] = {
         0, 1, 1,2, 2,3 ,3,0, 
     };
@@ -1671,7 +1651,7 @@ void createButton(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the cube
 */
-void createCube(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 scale,vec3 rotation){
+void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
     -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
@@ -1734,17 +1714,6 @@ void createCube(int ui,Color diffuse,GLuint diffuseTextureId,vec3 position,vec3 
         20, 21, 22,
         22, 23, 20
     };
-    // transform
-   // vec3 position = {0.0f, 0.0f, 0.0f};
-   // vec3 scale = {1.0f, 1.0f, 1.0f};
-  //  vec3 rotation = {0.0f, 0.0f, 0.0f};
-
-    //material
-    Color ambient = {0.1f, 0.1f, 0.1f, 1.0f};
-   // Color diffuse = {0.0f, 0.0f, 1.0f, 1.0f};
-    Color specular = {0.6f, 0.6f, 0.6f, 1.0f};
-    GLfloat shininess = 32.0f;
-    Material material = {ambient, diffuse, specular, shininess, diffuseTextureId,true };
 
     Entity* entity = addEntity(MODEL);
     if(ui == 1){
@@ -1808,9 +1777,9 @@ void onButtonClick() {
  * @brief Load a texture
  * Load a texture from file
 */
-TextureData loadTexture(){
+TextureData loadTexture(char* path) {
     int width, height, nrChannels;
-    unsigned char *data = loadImage("container.jpg", &width, &height, &nrChannels); 
+    unsigned char *data = loadImage(path, &width, &height, &nrChannels); 
     if(data == NULL) {
         printf(TEXT_COLOR_ERROR "Failed to load texture\n" TEXT_COLOR_RESET);
         exit(1);
