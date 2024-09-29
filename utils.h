@@ -43,7 +43,7 @@ ObjData loadObjFile(const char* filepath);
 int isPointInsideRect(Rectangle rect, vec2 point);
 Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
-
+void captureFramebuffer(int width, int height, int drawCallsCounter);
 #endif // End of the UTILS_H definition
 
 

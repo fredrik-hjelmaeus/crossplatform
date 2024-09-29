@@ -28,8 +28,12 @@
 #include <time.h>
 #include "opengl.h"
 
+// Stb
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -80,6 +84,8 @@ struct Globals globals = {
     .gpuFontData={0,0,0,0,0,0,GL_TRIANGLES},
     .unitScale=100.0f,
     .culling=false,
+    .drawCallsCounter=0,
+    .debugDrawCalls=false
 };
 
 // Window dimensions
@@ -530,6 +536,10 @@ void input() {
             if(strcmp(key, "T") == 0) {
                 globals.culling = !globals.culling;
             }
+            if(strcmp(key, "L") == 0) {
+                // Pressing L will write all drawcalls of a frame to disk as a pngs
+                globals.debugDrawCalls = true;
+            }
             if(strcmp(key, "B") == 0) {
                 globals.drawBoundingBoxes = !globals.drawBoundingBoxes;
             }
@@ -958,6 +968,15 @@ void modelSystem(){
           }}
 }
 
+void debugSystem(){
+    
+    // Turn off debug draw calls, we only want one frame of drawcalls saved.
+    if(globals.debugDrawCalls){
+        
+        globals.debugDrawCalls = false;
+    }
+}
+
 void update(){
 
     // Time 
@@ -1237,7 +1256,7 @@ int main(int argc, char **argv) {
         input();
         update();
         render();
-      
+        debugSystem();
     }
 
     // -----------------------------------------------------

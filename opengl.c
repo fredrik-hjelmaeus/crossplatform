@@ -307,8 +307,14 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     }else {
         glDrawArrays(buffer->drawMode, 0, buffer->vertexCount);
    }
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+
+   // debug drawcalls
+   if(globals.debugDrawCalls){
+        captureFramebuffer(globals.views.full.rect.width,globals.views.full.rect.height, globals.drawCallsCounter++);
+   }
+
+   glBindVertexArray(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 

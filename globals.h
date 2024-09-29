@@ -26,6 +26,8 @@ struct Globals {
     float unitScale;
     Entity lights[1]; // TODO: temporary solution for lights?
     bool culling;
+    int drawCallsCounter;
+    bool debugDrawCalls;
 };
 
 extern struct Globals globals;

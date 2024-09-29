@@ -276,7 +276,14 @@ ObjData loadObjFile(const char *filepath)
    
 }
 
-
+// Function to convert an integer to a string and append ".png"
+void intToPngFilename(int number, char* buffer, size_t bufferSize) {
+    if (bufferSize < 10) {
+        fprintf(stderr, "Buffer size is too small\n");
+        return;
+    }
+    snprintf(buffer, bufferSize, "%d.png", number);
+}
 
 
 //----------------------------------------
@@ -318,3 +325,30 @@ float absValue(float value) {
     return value < 0 ? -value : value;
 }
 
+
+
+// DEBUG
+
+/**
+ * Function to capture the framebuffer and save it to a png file.
+ * Used to write every drawcall to a png file, for debugging purposes.
+ */
+void captureFramebuffer(int width, int height, int drawCallsCounter) {
+    char filename[20];
+    intToPngFilename(drawCallsCounter, filename, sizeof(filename));
+
+    GLubyte* pixels = (GLubyte*)malloc(3 * width * height);
+    if (!pixels) {
+        fprintf(stderr, "Failed to allocate memory for pixels\n");
+        return;
+    }
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+
+    // Flip y
+    stbi_flip_vertically_on_write(1);
+
+    // Save the pixels to an image file (e.g., using stb_image_write)
+    stbi_write_png(filename, width, height, 3, pixels, width * 3);
+
+    free(pixels);
+}
