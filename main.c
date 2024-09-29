@@ -1131,7 +1131,7 @@ void initOpenGLWindow(){
  * And then you can render text using renderText.
  */
 void initFont(){
-    setupFontTextures("ARIAL.TTF",48);
+    setupFontTextures("./Assets/ARIAL.TTF",48);
     setupFontMesh(&globals.gpuFontData);
     setupFontMaterial(&globals.gpuFontData,width,height);
 }
@@ -1160,15 +1160,15 @@ void initScene(){
 
    // Assets
    initFont();
-   TextureData containerTextureData = loadTexture("container.jpg");
+   TextureData containerTextureData = loadTexture("./Assets/container.jpg");
    GLuint containerMap = setupTexture(containerTextureData);
-   TextureData containerTwoTextureData = loadTexture("container2.png");
+   TextureData containerTwoTextureData = loadTexture("./Assets/container2.png");
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
-   TextureData containerTwoSpecTextureData = loadTexture("container2_specular.png");
+   TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
-   ObjData truck = loadObjFile("truck.obj");
-   ObjData sphere = loadObjFile("blender_sphere3.obj");
-   ObjData triangleVolumes = loadObjFile("triangle_volumes.obj");
+   ObjData truck = loadObjFile("./Assets/truck.obj");
+   ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
+   ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
 
    struct Material objectMaterial = {
     .active = 1,
