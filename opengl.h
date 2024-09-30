@@ -11,7 +11,7 @@
 
 void renderMesh(GpuData* buffer,TransformComponent* transformComponent,Camera* camera,MaterialComponent* material);
 
-void setupMeshMaterial(GpuData* buffer);
+void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPath);
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
 GLuint setupTexture(TextureData textureData);
 

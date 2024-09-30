@@ -861,7 +861,7 @@ void hoverAndClickSystem(){
                     getRect.height = globals.entities[i].uiComponent->boundingBox.height;
                     getRect.width = globals.entities[i].uiComponent->boundingBox.width;
                     if(getRect.x >= globals.mouseXpos && getRect.x + getRect.width <= globals.mouseXpos && getRect.y >= globals.mouseYpos && getRect.y + getRect.height <= globals.mouseYpos){
-                        printf("mouse is within bounding box\n");
+                       // printf("mouse is within bounding box\n");
                     }
                     if(
                         globals.views.ui.isMousePointerWithin && 
@@ -870,14 +870,14 @@ void hoverAndClickSystem(){
                         // Left Click or just hover?
                         if(globals.mouseLeftButtonPressed){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                printf("clicked\n");
+                               // printf("clicked\n");
                             }
                           
                             globals.entities[i].uiComponent->clicked = 1;
                         } else {
                             
                              if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                printf("hovered\n");
+                              //  printf("hovered entity with id: %d\n", globals.entities[i].id);
                             }
                             globals.entities[i].uiComponent->hovered = 1;
                             globals.entities[i].uiComponent->clicked = 0;
@@ -886,10 +886,15 @@ void hoverAndClickSystem(){
                         // Hover effect
                         if(globals.entities[i].uiComponent->hovered == 1){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                               printf("hovered changes done\n");
+                               printf("hovered changes done on entity with id %d\n", globals.entities[i].id);
+                                // Appearance changes when hovered
+                               globals.entities[i].materialComponent->diffuseMapOpacity = 0.0f;
+                               
+
+       
+
+                     
                             }
-                             // Appearance changes when hovered
-                            globals.entities[i].materialComponent->diffuseMapOpacity = 0.0f;
            
                         }
 
@@ -898,7 +903,7 @@ void hoverAndClickSystem(){
                                 printf("clicked changes done\n");
                             }
                             // Appearance changes when clicked
-                            globals.entities[i].materialComponent->diffuseMapOpacity = 0.0f;
+                            globals.entities[i].materialComponent->diffuseMapOpacity = 1.0f;
                          
                             // Actions when clicked
                             if(globals.entities[i].uiComponent->onClick != NULL){
@@ -907,20 +912,20 @@ void hoverAndClickSystem(){
                         }
                     
                     } else {
-                        if(strlen(globals.entities[i].uiComponent->text) > 0){
+                         if(strlen(globals.entities[i].uiComponent->text) > 0){
                                 printf("no action,disable actions\n");
-                            }
-                        globals.entities[i].uiComponent->hovered = 0;
+                            } 
+                         globals.entities[i].uiComponent->hovered = 0;
                         globals.entities[i].uiComponent->clicked = 0;
-                        globals.entities[i].materialComponent->diffuseMapOpacity = 0.0f;
-                        globals.entities[i].materialComponent->ambient.r = 0.0f;
+                        globals.entities[i].materialComponent->diffuseMapOpacity =1.0f; 
+                       /*  globals.entities[i].materialComponent->ambient.r = 0.0f;
                         globals.entities[i].materialComponent->ambient.g = 0.0f;
                         globals.entities[i].materialComponent->ambient.b = 0.0f;
                         globals.entities[i].materialComponent->ambient.a = 1.0f;
                         globals.entities[i].materialComponent->diffuse.r = 0.0f;
                         globals.entities[i].materialComponent->diffuse.g = 0.0f;
                         globals.entities[i].materialComponent->diffuse.b = 0.0f;
-                        globals.entities[i].materialComponent->diffuse.a = 1.0f;
+                        globals.entities[i].materialComponent->diffuse.a = 1.0f; */
                     }
             }
         }
@@ -972,7 +977,6 @@ void debugSystem(){
     
     // Turn off debug draw calls, we only want one frame of drawcalls saved.
     if(globals.debugDrawCalls){
-        
         globals.debugDrawCalls = false;
     }
 }
@@ -1007,13 +1011,13 @@ void render(){
     glEnable(GL_DEPTH_TEST);
 
     // Set culling
-    if(globals.culling){
+     if(globals.culling){
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
         glFrontFace(GL_CCW);
     }else {
         glDisable(GL_CULL_FACE);
-    }
+    } 
 
     // Render without ui on wasm
     #ifdef __EMSCRIPTEN__
@@ -1062,7 +1066,8 @@ void render(){
                             }
                         }else {
                             if(globals.entities[i].tag != BOUNDING_BOX){
-                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera,globals.entities[i].materialComponent);
+                                //printf("rendering ui with no bb active %d \n", globals.entities[i].id);
+                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
                             }
                         }
                 }
@@ -1096,7 +1101,7 @@ void render(){
                     }
                 }
         }
-    }
+    } 
     
    
     #endif
@@ -1177,18 +1182,28 @@ void initScene(){
     .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
     .shininess = 4.0f,                           // used
     .diffuseMap = containerTwoMap,               // used
+    .diffuseMapOpacity = 1.0f,                  // used
     .specularMap = containerTwoSpecularMap,      // used
-    .diffuseMapOpacity = 1.0                     // used
+ };
+ struct Material uiMaterial = {
+    .active = 1,
+    .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
+    .diffuse = (Color){0.5f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
+    .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
+    .shininess = 4.0f,                           // NOT used
+    .diffuseMap = containerTwoMap,               // used
+    .diffuseMapOpacity = 1.0f,                    // used
+    .specularMap = containerTwoSpecularMap,      // NOT used
  };
    struct Material lightMaterial = {
     .active = 1,
-    .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // used
+    .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
     .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
     .specular = (Color){1.0f, 1.0f, 1.0f, 1.0f}, // used
-    .shininess = 512.0f,                         // NOT used
+    .shininess = 256.0f,                         // NOT used
     .diffuseMap = containerMap,                  // NOT used
+    .diffuseMapOpacity = 1.0f,                  // NOT used
     .specularMap = containerMap,                 // NOT used
-    .diffuseMapOpacity = 1.0                     // NOT used
  };
 
    
@@ -1196,8 +1211,8 @@ void initScene(){
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
  createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  //createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&truck);
- //createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&sphere);
- //createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&triangleVolumes);
+////createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&sphere);
+// createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&triangleVolumes);
  
   
    createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -1211,8 +1226,8 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
-  createRectangle(VIEWPORT_UI,objectMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createButton(VIEWPORT_UI,objectMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+  createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    
@@ -1346,6 +1361,9 @@ void createMesh(
             entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
             entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
             entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+            entity->meshComponent->vertices[vertexIndex].normal[0] = verts[i + 8];
+            entity->meshComponent->vertices[vertexIndex].normal[1] = verts[i + 9];
+            entity->meshComponent->vertices[vertexIndex].normal[2] = verts[i + 10];
             vertexIndex++;
         }
     }else if(vertexDataType == VERTS_COLOR_ONEUV){
@@ -1419,9 +1437,11 @@ void createMesh(
                 );
     
     if(entity->lightComponent->active == 1){
-        setupLightMaterial( entity->meshComponent->gpuData );
+        setupMaterial( entity->meshComponent->gpuData,"shaders/light_vertex.glsl", "shaders/light_fragment.glsl" );
+    }else if(entity->uiComponent->active == 1) {
+        setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
     }else {
-        setupMeshMaterial( entity->meshComponent->gpuData );
+        setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
     }
 }
 
@@ -1584,13 +1604,13 @@ void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale
 void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
-    // positions          // colors           // texture coords // normals
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,0.0f, // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,0.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,0.0f,  // top left  
-    };
-    // index data (counterclockwise)
+    // Positions          // Colors           // Texture Coords    // Normals
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
+};
+    //OBSOLETE index data (counterclockwise)
     GLuint indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3  // second triangle
@@ -1606,7 +1626,7 @@ void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rota
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
 
     // Bounding box, reuses the vertices from the rectangle
-    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
+   /*  Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
     GLuint bbIndices[] = {
         0, 1, 1,2, 2,3 ,3,0, 
     };
@@ -1616,7 +1636,7 @@ void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rota
         boundingBoxEntity->uiComponent->uiNeedsUpdate = 1;
 
     } 
-    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity); */
 }
 /**
  * @brief Create a button
@@ -1626,14 +1646,14 @@ void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rota
 */
 void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick){
     // vertex data
-    GLfloat vertices[] = {
-     // positions          // colors           // texture coords // normals
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,0.0f, // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,0.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,0.0f,  // top left  
-    };
-    // index data (counterclockwise)
+        GLfloat vertices[] = {
+    // Positions          // Colors           // Texture Coords    // Normals
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
+};
+    // OBSOLETE index data (counterclockwise)
     GLuint indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3  // second triangle
@@ -1644,14 +1664,14 @@ void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotatio
         entity->uiComponent->active = 1;
         entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
         entity->uiComponent->text = text;
-        entity->uiComponent->uiNeedsUpdate =1;
+        entity->uiComponent->uiNeedsUpdate = 1;
         entity->uiComponent->onClick = onClick;
     }
 
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
 
     // Bounding box, reuses the vertices from the rectangle
-    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
+ /*    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
     GLuint bbIndices[] = {
         0, 1, 1,2, 2,3 ,3,0, 
     };
@@ -1661,7 +1681,7 @@ void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotatio
         boundingBoxEntity->uiComponent->uiNeedsUpdate = 1;
 
     } 
-    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity);
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity); */
 }
 
 /**

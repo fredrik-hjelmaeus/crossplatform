@@ -4,9 +4,9 @@ precision mediump float;
 
 out vec4 FragColor;
 
-in vec3 diffuseColor; // diffuse base color from attribute data  (NOT USED ATM)
-in vec2 TexCoords; // texcoords
-in vec3 Normal; // normal
+//in vec3 diffuseColor; // diffuse base color from attribute data  (NOT USED ATM)
+in vec2 TexCoords; 
+in vec3 Normal; 
 in vec3 FragPos; 
 
 struct Light {
@@ -21,19 +21,15 @@ struct Material {
     sampler2D specular; // specularMap
     float shininess;
     float diffuseMapOpacity;
+    vec4 diffuseColor;
 };
 
-//uniform bool useDiffuseMap;
-uniform vec4 color; // diffuse base color from material (used atm) (alpha is not used)
 uniform Material material;
 uniform Light light;
 uniform vec3 viewPos;
 
 void main()
 {
-   
-   
-    
     // ambient
     vec3 ambient = light.ambient.xyz * texture(material.diffuse, TexCoords).rgb;
   	
@@ -42,7 +38,7 @@ void main()
     vec3 lightDir = normalize(light.position - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 textureColor = texture(material.diffuse, TexCoords).rgb;
-    vec3 blendedDiffuse = mix(color.xyz, textureColor, material.diffuseMapOpacity);
+    vec3 blendedDiffuse = mix(material.diffuseColor.xyz, textureColor, material.diffuseMapOpacity);
     vec3 diffuse = light.diffuse.xyz * diff * blendedDiffuse;
     
     // specular

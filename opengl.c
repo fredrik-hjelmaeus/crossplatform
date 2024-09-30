@@ -51,13 +51,13 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
 }
 
-void setupMeshMaterial(GpuData* buffer){
+void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPath){
      #ifdef __EMSCRIPTEN__
-        char* vertexShaderSource = readFile("shaders/wasm/mesh_vertex_wasm.glsl");
-        char* fragmentShaderSource = readFile("shaders/wasm/mesh_fragment_wasm.glsl");
+        char* vertexShaderSource = readFile("shaders/wasm/mesh_vertex_wasm.glsl"); // TODO: fix path
+        char* fragmentShaderSource = readFile("shaders/wasm/mesh_fragment_wasm.glsl"); //  TODO: fix path
     #else
-        char* vertexShaderSource = readFile("shaders/mesh_vertex.glsl");
-        char* fragmentShaderSource = readFile("shaders/mesh_fragment.glsl");
+        char* vertexShaderSource = readFile(vertexPath);
+        char* fragmentShaderSource = readFile(fragmentPath);
     #endif
 
     if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
@@ -121,75 +121,6 @@ void setupMeshMaterial(GpuData* buffer){
     }
 }
 
-void setupLightMaterial(GpuData* buffer){
-     #ifdef __EMSCRIPTEN__
-        char* vertexShaderSource = readFile("shaders/wasm/light_vertex_wasm.glsl");
-        char* fragmentShaderSource = readFile("shaders/wasm/light_fragment_wasm.glsl");
-    #else
-        char* vertexShaderSource = readFile("shaders/light_vertex.glsl");
-        char* fragmentShaderSource = readFile("shaders/light_fragment.glsl");
-    #endif
-
-    if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
-        printf("Error loading shader source\n");
-        return;
-    }
-    
-    printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
-
-    // Compile shaders
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    if(vertexShader == 0) {
-        printf("Error creating vertex shader\n");
-        return;
-    }
-    glShaderSource(vertexShader, 1, (const GLchar* const*)&vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // Check for shader compile errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s\n", infoLog);
-    }
-
-    // Fragment shader
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    if(fragmentShader == 0) {
-        printf("Error creating fragment shader\n");
-        return;
-    }
-    glShaderSource(fragmentShader, 1, (const GLchar* const*)&fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
- 
-    // Check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
-    }
-
-    // free memory of shader sources
-    free(vertexShaderSource);
-    free(fragmentShaderSource);
-
-    // Link shaders
-    buffer->shaderProgram = glCreateProgram();
-    glAttachShader(buffer->shaderProgram, vertexShader);
-    glAttachShader(buffer->shaderProgram, fragmentShader);
-    glLinkProgram(buffer->shaderProgram);
-
-    printf("Shader program: %d\n", buffer->shaderProgram);
-
-    // Check for linking errors
-    glGetProgramiv(buffer->shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(buffer->shaderProgram, 512, NULL, infoLog);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
-    }
-}
 
 /**
  * @brief Render a mesh
@@ -235,9 +166,6 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     // Set shader
     glUseProgram(buffer->shaderProgram);
 
-    // prin material->diffuseMapOpacity
-    printf("diffuseMapOpacity: %f\n", material->diffuseMapOpacity);
-
     // Assign diffuseMap to texture1 slot
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, material->diffuseMap);
@@ -251,9 +179,9 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     // Set diffuseMapOpacity uniform
     glUniform1f(glGetUniformLocation(buffer->shaderProgram, "material.diffuseMapOpacity"), material->diffuseMapOpacity);
 
-    // Set the color uniform
-    GLint colorLocation = glGetUniformLocation(buffer->shaderProgram, "color");
-    glUniform4f(colorLocation, material->diffuse.r, material->diffuse.g, material->diffuse.b, material->diffuse.a);
+    // Set the diffuseColor uniform
+    GLint diffuseColorLocation = glGetUniformLocation(buffer->shaderProgram, "material.diffuseColor");
+    glUniform4f(diffuseColorLocation, material->diffuse.r, material->diffuse.g, material->diffuse.b, material->diffuse.a);
 
     // Set the ambient uniform
     GLint ambientLocation = glGetUniformLocation(buffer->shaderProgram, "ambient");
