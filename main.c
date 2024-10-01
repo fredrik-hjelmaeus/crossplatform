@@ -50,7 +50,7 @@
 void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
 void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
 void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
-void createLight(Material material,vec3 position,vec3 scale,vec3 rotation);
+void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction);
 void onButtonClick();
 Camera* initCamera();
 TextureData loadTexture(char* path);
@@ -259,6 +259,15 @@ void initECS(){
     }
 
     globals.entities = entities;
+
+    if(1){
+        printf("lightComponent %zu\n",sizeof(LightComponent));
+        printf("transformComponent %zu\n",sizeof(TransformComponent));
+        printf("meshComponent %zu\n",sizeof(MeshComponent));
+        printf("materialComponent %zu\n",sizeof(MaterialComponent));
+        printf("groupComponent %zu\n",sizeof(GroupComponent));
+        printf("uiComponent %zu\n",sizeof(UIComponent));
+    }
 }
 
 Entity* addEntity(enum Tag tag){
@@ -832,6 +841,7 @@ void movementSystem(){
                     globals.entities[i].transformComponent->rotation[1] = radians;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                     float offset = 2.0 * sin(1.0 * globals.delta_time);
+                    globals.entities[i].lightComponent->direction[0] = offset;
                     //printf("offset %f\n", offset);
                     globals.entities[i].transformComponent->position[0] = offset;
                 }
@@ -886,24 +896,23 @@ void hoverAndClickSystem(){
                         // Hover effect
                         if(globals.entities[i].uiComponent->hovered == 1){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                               printf("hovered changes done on entity with id %d\n", globals.entities[i].id);
+                              // printf("hovered changes done on entity with id %d\n", globals.entities[i].id);
                                 // Appearance changes when hovered
-                               globals.entities[i].materialComponent->diffuseMapOpacity = 0.0f;
-                               
-
-       
-
-                     
+                               globals.entities[i].materialComponent->diffuseMapOpacity = 0.5f;
+                               globals.entities[i].materialComponent->diffuse.r = 0.0f;
+                               globals.entities[i].materialComponent->diffuse.g = 0.5f;
                             }
            
                         }
 
                         if(globals.entities[i].uiComponent->clicked == 1){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                printf("clicked changes done\n");
+                                //printf("clicked changes done\n");
                             }
                             // Appearance changes when clicked
-                            globals.entities[i].materialComponent->diffuseMapOpacity = 1.0f;
+                            globals.entities[i].materialComponent->diffuseMapOpacity = 0.5f;
+                            globals.entities[i].materialComponent->diffuse.r = 0.5f;
+                            globals.entities[i].materialComponent->diffuse.g = 0.0f;
                          
                             // Actions when clicked
                             if(globals.entities[i].uiComponent->onClick != NULL){
@@ -913,19 +922,13 @@ void hoverAndClickSystem(){
                     
                     } else {
                          if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                printf("no action,disable actions\n");
+                               // printf("no action,disable actions\n");
                             } 
                          globals.entities[i].uiComponent->hovered = 0;
                         globals.entities[i].uiComponent->clicked = 0;
                         globals.entities[i].materialComponent->diffuseMapOpacity =1.0f; 
-                       /*  globals.entities[i].materialComponent->ambient.r = 0.0f;
-                        globals.entities[i].materialComponent->ambient.g = 0.0f;
-                        globals.entities[i].materialComponent->ambient.b = 0.0f;
-                        globals.entities[i].materialComponent->ambient.a = 1.0f;
                         globals.entities[i].materialComponent->diffuse.r = 0.0f;
-                        globals.entities[i].materialComponent->diffuse.g = 0.0f;
-                        globals.entities[i].materialComponent->diffuse.b = 0.0f;
-                        globals.entities[i].materialComponent->diffuse.a = 1.0f; */
+                        globals.entities[i].materialComponent->diffuse.g= 0.0f;
                     }
             }
         }
@@ -979,6 +982,7 @@ void debugSystem(){
     if(globals.debugDrawCalls){
         globals.debugDrawCalls = false;
     }
+
 }
 
 void update(){
@@ -1172,6 +1176,10 @@ void initScene(){
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
    ObjData truck = loadObjFile("./Assets/truck.obj");
+  // ObjData teapot = loadObjFile("./Assets/teapot.obj");
+  // ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
+  // ObjData bunny = loadObjFile("./Assets/bunny2.obj");
+  // ObjData dragon = loadObjFile("./Assets/dragon.obj");
    ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
    ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
 
@@ -1208,14 +1216,20 @@ void initScene(){
 
    
 
-   // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented).
+   // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
  createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- //createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&truck);
-////createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&sphere);
-// createObject(VIEWPORT_MAIN,(Color){0.0f, 0.0f, 0.0f, 0.0f},containerTwoMap,containerTwoSpecularMap,&triangleVolumes);
+ //createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); // works but messy
+ //createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
+ //createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
+// createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  //obj support?
+// createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+// createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+
  
-  
-   createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f});
+   // lights
+   createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
+
+   // Primitives
    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
    createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
@@ -1455,7 +1469,7 @@ void createPoint(vec3 position){
  * Create a light source in the scene.
  * 
  */
-void createLight(Material material,vec3 position,vec3 scale,vec3 rotation){
+void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction){
     // vertex data
    // vertex data
     GLfloat vertices[] = {
@@ -1523,9 +1537,9 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation){
 
     Entity* entity = addEntity(MODEL);
     entity->lightComponent->active = 1;
-    entity->lightComponent->direction[0] = 0.0f;
-    entity->lightComponent->direction[1] = 0.0f;
-    entity->lightComponent->direction[2] = -1.0f;
+    entity->lightComponent->direction[0] = direction[0];
+    entity->lightComponent->direction[1] = direction[1];
+    entity->lightComponent->direction[2] = direction[2];
     entity->lightComponent->intensity = 1.0f;
     entity->lightComponent->diffuse = material.diffuse;
     entity->lightComponent->specular = material.specular;

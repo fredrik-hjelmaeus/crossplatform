@@ -91,7 +91,7 @@ ObjData loadObjFile(const char *filepath)
     char material[100];
     char group[100];
     char usemtl[100];
-  
+
     FILE* fp;
     char line[1024];
 

@@ -14,6 +14,7 @@ struct Light {
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
+    vec3 direction;
 };
 
 struct Material {
@@ -35,7 +36,8 @@ void main()
   	
     // diffuse 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(light.position - FragPos);
+    //vec3 lightDir = normalize(light.position - FragPos);
+    vec3 lightDir = normalize(-light.direction);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 textureColor = texture(material.diffuse, TexCoords).rgb;
     vec3 blendedDiffuse = mix(material.diffuseColor.xyz, textureColor, material.diffuseMapOpacity);

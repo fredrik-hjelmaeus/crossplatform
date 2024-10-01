@@ -213,6 +213,10 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         // Set the light position uniform
         GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "light.position");
         glUniform3f(lightPositionLocation, lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
+      
+        // Set the light direction uniform
+        GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "light.direction");
+        glUniform3f(lightDirLocation, lightEntity->lightComponent->direction[0], lightEntity->lightComponent->direction[1], lightEntity->lightComponent->direction[2]);
     }
 
     // Set viewPos uniform
