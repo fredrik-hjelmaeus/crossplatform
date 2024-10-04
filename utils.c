@@ -73,10 +73,10 @@ float deg2rad(float degrees) {
 ObjData loadObjFile(const char *filepath)
 {
     ObjData objData;
-    int MAX = 30000;
-    int vf[30000] = {0}; 
-    int tf[30000] = {0}; 
-    int vn[30000] = {0};
+    int MAX = 300000;
+    int vf[300000] = {0}; 
+    int tf[300000] = {0}; 
+    int vn[300000] = {0};
     float vArr[MAX];
     float tArr[MAX];
     float nArr[MAX];
@@ -102,7 +102,7 @@ ObjData loadObjFile(const char *filepath)
     }
     
     while (fgets(line, sizeof line, fp) != NULL){
-   
+     printf(TEXT_COLOR_ERROR "wat wat %s" TEXT_COLOR_RESET "\n", line);
         // comment
         if((int)line[0] == 35){
             continue;
@@ -120,6 +120,7 @@ ObjData loadObjFile(const char *filepath)
             }
             continue;
         }
+   
         // g, grouping, read in the groups
         if((int)line[0] == 103){
             for(int i = 2; i < strlen(line); i++){
@@ -180,34 +181,42 @@ ObjData loadObjFile(const char *filepath)
            vf[vfCount] = facetokenInt;
            vfCount++;
            facetoken = strtok(NULL, " /");
+           if(facetoken == NULL) continue;
            int facetokentInt = atoi(facetoken);
            tf[tfCount] = facetokentInt;
            tfCount++;
            facetoken = strtok(NULL, " /");
+           if(facetoken == NULL) continue;
            int facetokenvInt = atoi(facetoken);
            vn[vnCount] = facetokenvInt;
            vnCount++;
            facetoken = strtok(NULL, " /"); // v2
+           if(facetoken == NULL) continue;
            int facetokenInt2 = atoi(facetoken);
            vf[vfCount] = facetokenInt2;
            vfCount++;
            facetoken = strtok(NULL, " /");
+           if(facetoken == NULL) continue;
            int facetokentInt2 = atoi(facetoken);
            tf[tfCount] = facetokentInt2;
            tfCount++;
            facetoken = strtok(NULL, " /");
+           if(facetoken == NULL) continue;
            int facetokenv2Int = atoi(facetoken);
            vn[vnCount] = facetokenv2Int;
            vnCount++;
            facetoken = strtok(NULL, " /");
+           if(facetoken == NULL) continue;
            int facetokenInt3 = atoi(facetoken);
            vf[vfCount] = facetokenInt3;
            vfCount++;
            facetoken = strtok(NULL, " /");
+           if(facetoken == NULL) continue;
            int facetokentInt3 = atoi(facetoken);
            tf[tfCount] = facetokentInt3;
            tfCount++;
            facetoken = strtok(NULL, " /");
+           if(facetoken == NULL) continue;
            int facetokenv3Int = atoi(facetoken);
            vn[vnCount] = facetokenv3Int;
            vnCount++;
@@ -223,15 +232,15 @@ ObjData loadObjFile(const char *filepath)
        
 
      
-  //  printf("material: %s \n",material);
-  //  printf("faceline count: %d \n",faceLineCount);
-  //  printf("group: %s",group);
-  //  printf("usemtl: %s",usemtl);
-  //  printf("vIndex %d \n", vIndex);
-    //printf("vfCount %d \n", vfCount); 
-  //  printf("uvCount %d \n", uvCount);
-   // printf("normalCount %d \n", normalCount); 
-   // printf("vnCount %d \n", vnCount);
+    printf("material: %s \n",material);
+    printf("faceline count: %d \n",faceLineCount);
+    printf("group: %s",group);
+    printf("usemtl: %s",usemtl);
+    printf("vIndex %d \n", vIndex);
+  printf("vfCount %d \n", vfCount); 
+    printf("uvCount %d \n", uvCount);
+    printf("normalCount %d \n", normalCount); 
+    printf("vnCount %d \n", vnCount);
   
  objData.vertexData = malloc(vfCount * sizeof(Vertex));
    if(objData.vertexData == NULL){
@@ -257,9 +266,13 @@ ObjData loadObjFile(const char *filepath)
         // uv
        // printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
         // printf("\n");
-
-        objData.vertexData[i].texcoord[0] = tArr[(tf[i]-1)*2];
-        objData.vertexData[i].texcoord[1] = tArr[(tf[i]-1)*2+1];
+        if(uvCount == 0){
+            objData.vertexData[i].texcoord[0] = 0.0;
+            objData.vertexData[i].texcoord[1] = 0.0;
+        }else {
+            objData.vertexData[i].texcoord[0] = tArr[(tf[i]-1)*2];
+            objData.vertexData[i].texcoord[1] = tArr[(tf[i]-1)*2+1];
+        }
 
         // normals
         objData.vertexData[i].normal[0] = nArr[(vn[i]-1)*3];

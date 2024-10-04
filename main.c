@@ -1175,13 +1175,13 @@ void initScene(){
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
-   ObjData truck = loadObjFile("./Assets/truck.obj");
+  // ObjData truck = loadObjFile("./Assets/truck.obj");
   // ObjData teapot = loadObjFile("./Assets/teapot.obj");
   // ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
   // ObjData bunny = loadObjFile("./Assets/bunny2.obj");
-  // ObjData dragon = loadObjFile("./Assets/dragon.obj");
-   ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
-   ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
+   ObjData dragon = loadObjFile("./Assets/dragon.obj");
+  // ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
+  // ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
 
    struct Material objectMaterial = {
     .active = 1,
@@ -1217,10 +1217,10 @@ void initScene(){
    
 
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
- createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+// createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  //createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); // works but messy
  //createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
- //createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
+ createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
 // createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  //obj support?
 // createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
 // createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -1249,6 +1249,17 @@ void initScene(){
 }
 
 int main(int argc, char **argv) {
+
+/*     char line[] = "f 1/2/3 4/6 7/8/9";
+    char line2[] = "f 7//7 8//8 9//9";
+    char *facetoken = strtok(line, " /");
+    printf("facetoken init: %s\n", facetoken);
+    while (facetoken != NULL) {
+        facetoken = strtok(NULL, " /");
+        if (facetoken == NULL) break;
+        printf("facetoken: %s\n", facetoken);
+    }
+    return 0; */
     
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
@@ -1578,9 +1589,19 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
  * @param diffuse - color of the rectangle
 */
 void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
+    printf("should pass here \n");
    // vertex data
     int stride = 11;
+   printf("num of verts %i \n",obj->num_of_vertices);
+   //if(obj->num_of_vertices > 2000){
+        GLfloat *vertices = (GLfloat *)malloc((obj->num_of_vertices) * stride * sizeof(GLfloat));
+        if (vertices == NULL) {
+            fprintf(stderr, "Failed to allocate memory for vertices\n");
+            exit(EXIT_FAILURE);
+        }
+   /* }else {
     GLfloat vertices[(obj->num_of_vertices)*stride];
+   } */
     for(int i = 0; i < obj->num_of_vertices; i++){
             vertices[i * stride + 0] = obj->vertexData[i].position[0];
             vertices[i * stride + 1] = obj->vertexData[i].position[1];
@@ -1594,7 +1615,6 @@ void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale
             vertices[i * stride + 9] = obj->vertexData[i].normal[1];
             vertices[i * stride + 10] = obj->vertexData[i].normal[2];
     }  
-   
     // NOT USED
     GLuint indices[] = {
         0, 1, 2,  // first triangle
