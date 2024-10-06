@@ -237,6 +237,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
    if(buffer->numIndicies != 0) {
         glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);
     }else {
+        //printf("vertexCount %d\n", buffer->vertexCount);
         glDrawArrays(buffer->drawMode, 0, buffer->vertexCount);
    }
 

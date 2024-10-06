@@ -64,6 +64,17 @@ float deg2rad(float degrees) {
     return degrees * M_PI / 180.0;
 }
 
+void addToArray(char* token, int* arr, int arrCount) {
+    if(arrCount >= 300000){
+        printf("Error: Too many vertices in obj file. Max is 300000. Exiting..");
+        exit(1);
+    }
+    token = strtok(NULL, " /");
+    int tokenInt = atoi(token);
+    arr[arrCount] = tokenInt;
+    printf("facetoken %s \n",token);
+}
+
 // Support for up to 30000 vertices only!. No indicies created.
 // Collects vertices position(vArr),uv/texcoords(tArr) , vertex indices(vf) ,texture indices(tf).
 // Then uses these and creates a new vertex data 
@@ -102,7 +113,7 @@ ObjData loadObjFile(const char *filepath)
     }
     
     while (fgets(line, sizeof line, fp) != NULL){
-     printf(TEXT_COLOR_ERROR "wat wat %s" TEXT_COLOR_RESET "\n", line);
+     //printf(TEXT_COLOR_ERROR "line %s" TEXT_COLOR_RESET "\n", line);
         // comment
         if((int)line[0] == 35){
             continue;
@@ -140,6 +151,7 @@ ObjData loadObjFile(const char *filepath)
         }
         // v: v & space(32), read vertices
         if((int)line[0] == 118 && (int)line[1] == 32){
+            printf(TEXT_COLOR_ERROR "v %s" TEXT_COLOR_RESET "\n", line);
           sscanf(line, "v %f %f %f", &vArr[vIndex], &vArr[vIndex+1], &vArr[vIndex+2]);
           vIndex+=3;
           continue;
@@ -156,7 +168,6 @@ ObjData loadObjFile(const char *filepath)
         }
         // vn: v & n, read normals
         if((int)line[0] == 118 && (int)line[1] == 110){
-            // TODO: grab normals in an array
             char *token = strtok(line, " ");
             token = strtok(NULL, " ");
             nArr[normalCount] = strtof(token, NULL);
@@ -168,34 +179,35 @@ ObjData loadObjFile(const char *filepath)
             normalCount+=3;
             continue;
         }
-        // f: face indicies, ex: f 1/1/1 2/2/2 3/3/3 
+        // f: face indicies, 
+        // Can be : f 1/1/1 2/2/2 3/3/3
+        // or       f 1//1 2//2 3//3
+        // or       f 1//1 2//2 3//3 4//4  <- quad
         if((int)line[0] == 102){
            faceLineCount++;
            if(faceLineCount >= MAX || vfCount >= MAX || tfCount >= MAX){
-                printf("Error: Too many vertices in obj file. Max is 30000. Exiting..");
+                printf("Error: Too many vertices in obj file. Max is 300000. Exiting..");
                 exit(1);
            }
            char *facetoken = strtok(line, " /"); // f
-           facetoken = strtok(NULL, " /"); // v1
-           int facetokenInt = atoi(facetoken);
-           vf[vfCount] = facetokenInt;
+           addToArray(facetoken, vf, vfCount);
            vfCount++;
-           facetoken = strtok(NULL, " /");
-           if(facetoken == NULL) continue;
-           int facetokentInt = atoi(facetoken);
-           tf[tfCount] = facetokentInt;
+           // Check if // or / structure here:
+           // f 1//1 2//2 3//3
+           // f 1/1/1 2/2/2 3/3/3
+           addToArray(facetoken, tf, tfCount);
            tfCount++;
-           facetoken = strtok(NULL, " /");
+           facetoken = strtok(NULL, " /");  // vn1
            if(facetoken == NULL) continue;
            int facetokenvInt = atoi(facetoken);
            vn[vnCount] = facetokenvInt;
            vnCount++;
-           facetoken = strtok(NULL, " /"); // v2
+           facetoken = strtok(NULL, " /");  // v2
            if(facetoken == NULL) continue;
            int facetokenInt2 = atoi(facetoken);
            vf[vfCount] = facetokenInt2;
            vfCount++;
-           facetoken = strtok(NULL, " /");
+           facetoken = strtok(NULL, " /"); 
            if(facetoken == NULL) continue;
            int facetokentInt2 = atoi(facetoken);
            tf[tfCount] = facetokentInt2;
@@ -234,21 +246,23 @@ ObjData loadObjFile(const char *filepath)
      
     printf("material: %s \n",material);
     printf("faceline count: %d \n",faceLineCount);
-    printf("group: %s",group);
-    printf("usemtl: %s",usemtl);
+    printf("group: %s \n",group);
+    printf("usemtl: %s \n",usemtl);
     printf("vIndex %d \n", vIndex);
+    printf("vIndex / 3 %d \n", vIndex/3);
   printf("vfCount %d \n", vfCount); 
     printf("uvCount %d \n", uvCount);
     printf("normalCount %d \n", normalCount); 
     printf("vnCount %d \n", vnCount);
+    int num_of_vertex = vIndex/3;
   
- objData.vertexData = malloc(vfCount * sizeof(Vertex));
+ objData.vertexData = malloc(num_of_vertex * sizeof(Vertex));
    if(objData.vertexData == NULL){
     exit(1);
    }
  
 
-    for(int i = 0; i < vfCount; i+=1){
+    for(int i = 0; i < num_of_vertex; i+=1){
         //  printf("vertex %i \n",vf[i]);
         //printf("vertex %i \n",i);
 
@@ -282,7 +296,7 @@ ObjData loadObjFile(const char *filepath)
      //   printf("n %f %f %f \n",nArr[(vn[i]-1)*3],nArr[(vn[i]-1)*3+1],nArr[(vn[i]-1)*3+2]);
     }
 
-    objData.num_of_vertices = vfCount;
+    objData.num_of_vertices = num_of_vertex;
 
     return objData;
   

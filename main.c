@@ -1175,11 +1175,12 @@ void initScene(){
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
-  // ObjData truck = loadObjFile("./Assets/truck.obj");
+   //ObjData truck = loadObjFile("./Assets/truck.obj");
+   ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
   // ObjData teapot = loadObjFile("./Assets/teapot.obj");
-  // ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
-  // ObjData bunny = loadObjFile("./Assets/bunny2.obj");
-   ObjData dragon = loadObjFile("./Assets/dragon.obj");
+ //  ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
+ //  ObjData bunny = loadObjFile("./Assets/bunny2.obj");
+  // ObjData dragon = loadObjFile("./Assets/dragon.obj");
   // ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
   // ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
 
@@ -1217,11 +1218,12 @@ void initScene(){
    
 
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
+ createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
 // createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  //createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); // works but messy
  //createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
- createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
-// createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  //obj support?
+ //createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
+ //createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  //obj support?
 // createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
 // createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
 
@@ -1230,8 +1232,8 @@ void initScene(){
    createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
 
    // Primitives
-   createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  // createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  // createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1240,26 +1242,100 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
-  createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+ // createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ // createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    
 
 }
 
+bool isQuad(){}
+/* bool hasTextureValues(char* line){
+    char *first_slash = strchr(line, '/');
+    int valueAfterFirstSlash = (int)(*(first_slash+1));
+    bool hasTexture = valueAfterFirstSlash != 47;
+    return hasTexture;
+} */
+
 int main(int argc, char **argv) {
 
-/*     char line[] = "f 1/2/3 4/6 7/8/9";
-    char line2[] = "f 7//7 8//8 9//9";
-    char *facetoken = strtok(line, " /");
+   int num_line_face_tokens = 0;
+   int num_slashes = 0;
+   int spaceCount = 0;
+   char line[] = "f 1/2/3 4/5/6 7/8/9"; // 9
+   char line2[] = "f 7//7 8//8 9//9"; // 6
+   char line3[] = "f 7//7 8//8 9//9 10//10"; // 8
+   char line4[] = "f 7555555//55555557 83333333//833333333 222222229//222222229"; // 6
+    
+   bool isSlash = false;
+   bool hasTextureData = true;
+   char tempNumber[10];
+   int tempNumberIndex = 0;
+   char* linePtr = (line2+2); // skip f and space
+   while(*linePtr != '\0'){
+       // printf("linePtr--------: %c\n", *linePtr);
+       if(*linePtr == ' '){
+           spaceCount++;
+           tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
+           int num = atoi(tempNumber);
+           printf("space num: %d\n", num);
+           tempNumberIndex = 0;
+           isSlash = false;
+       }
+       else if(*linePtr == '/'){
+         num_slashes++;
+         if(tempNumberIndex > 0){
+            tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
+            int num = atoi(tempNumber);
+            tempNumberIndex = 0;
+            printf("slash num: %d\n", num);
+         }
+         if(isSlash){
+            printf("this is a double slash\n");
+            hasTextureData = false;
+         }
+         isSlash = true;
+       }
+       else{
+        tempNumber[tempNumberIndex] = *linePtr;
+        tempNumberIndex++;
+        isSlash = false;
+       }
+       linePtr++;
+   }
+   // Pick up the last number
+   if(tempNumberIndex > 0){
+         tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
+         int num = atoi(tempNumber);
+         printf("last num: %d\n", num);
+   }
+    printf("spaceCount: %d\n", spaceCount);
+    printf("num_slashes: %d\n", num_slashes);
+    if(hasTextureData){
+        printf("Vertexdata with texture(uv) data\n");
+    }else {
+        printf("Vertexdata without texture(uv) data\n");
+    }
+    /* char *test = strtok(line3, " ");
+    while(strtok(NULL, " ") != NULL){
+        vertexLineCount++;
+    }
+     // bool hasText = hasTextureValues(line2);
+   //printf("has texture values: %d\n", hasText);
+    
+    printf("test init: %s\n", test);
+    printf("test length: %d\n", strlen(test));
+    char *facetoken = strtok(line3, " /");
     printf("facetoken init: %s\n", facetoken);
     while (facetoken != NULL) {
         facetoken = strtok(NULL, " /");
         if (facetoken == NULL) break;
+        num_line_face_tokens++;
         printf("facetoken: %s\n", facetoken);
     }
-    return 0; */
+    printf("num_line_face_tokens: %d\n", num_line_face_tokens); */
+    return 0; 
     
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
@@ -1338,11 +1414,7 @@ void createMesh(
     entity->meshComponent->active = 1;
 
     // vertex data
-    entity->meshComponent->vertices = (Vertex*)malloc(num_of_vertex * sizeof(Vertex));
-     if (entity->meshComponent->vertices == NULL) {
-        printf("Failed to allocate memory for vertices\n");
-        exit(1);
-    }
+    entity->meshComponent->vertices = verts;
     
     int stride = 11;
     int vertexIndex = 0;
@@ -1397,14 +1469,18 @@ void createMesh(
             entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
             entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
             entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
-            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3]; 
+
+            entity->meshComponent->vertices[vertexIndex].color[0] = verts[i + 3];
             entity->meshComponent->vertices[vertexIndex].color[1] = verts[i + 4];
-            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5];
+            entity->meshComponent->vertices[vertexIndex].color[2] = verts[i + 5]; 
+
             entity->meshComponent->vertices[vertexIndex].texcoord[0] = verts[i + 6];
             entity->meshComponent->vertices[vertexIndex].texcoord[1] = verts[i + 7];
+
             entity->meshComponent->vertices[vertexIndex].normal[0] = verts[i + 8];
             entity->meshComponent->vertices[vertexIndex].normal[1] = verts[i + 9];
             entity->meshComponent->vertices[vertexIndex].normal[2] = verts[i + 10];
+
             vertexIndex++;
         }
     }else {
@@ -1589,32 +1665,10 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
  * @param diffuse - color of the rectangle
 */
 void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
-    printf("should pass here \n");
+    
    // vertex data
     int stride = 11;
-   printf("num of verts %i \n",obj->num_of_vertices);
-   //if(obj->num_of_vertices > 2000){
-        GLfloat *vertices = (GLfloat *)malloc((obj->num_of_vertices) * stride * sizeof(GLfloat));
-        if (vertices == NULL) {
-            fprintf(stderr, "Failed to allocate memory for vertices\n");
-            exit(EXIT_FAILURE);
-        }
-   /* }else {
-    GLfloat vertices[(obj->num_of_vertices)*stride];
-   } */
-    for(int i = 0; i < obj->num_of_vertices; i++){
-            vertices[i * stride + 0] = obj->vertexData[i].position[0];
-            vertices[i * stride + 1] = obj->vertexData[i].position[1];
-            vertices[i * stride + 2] = obj->vertexData[i].position[2];
-            vertices[i * stride + 3] = obj->vertexData[i].color[0];
-            vertices[i * stride + 4] = obj->vertexData[i].color[1];
-            vertices[i * stride + 5] = obj->vertexData[i].color[2];
-            vertices[i * stride + 6] = obj->vertexData[i].texcoord[0];
-            vertices[i * stride + 7] = obj->vertexData[i].texcoord[1];
-            vertices[i * stride + 8] = obj->vertexData[i].normal[0];
-            vertices[i * stride + 9] = obj->vertexData[i].normal[1];
-            vertices[i * stride + 10] = obj->vertexData[i].normal[2];
-    }  
+  
     // NOT USED
     GLuint indices[] = {
         0, 1, 2,  // first triangle
@@ -1626,7 +1680,7 @@ void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale
         entity->uiComponent->active = 1;
     }
 
-    createMesh(vertices,obj->num_of_vertices,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV,entity);
+    createMesh(obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV,entity);
 }
 
 /**
