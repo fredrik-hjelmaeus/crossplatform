@@ -51,6 +51,7 @@ void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rota
 void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
 void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
 void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction);
+void handleFaceLine(char* line5);
 void onButtonClick();
 Camera* initCamera();
 TextureData loadTexture(char* path);
@@ -1250,19 +1251,10 @@ void initScene(){
 
 }
 
-int main(int argc, char **argv) {
-
-
-
-   
+void handleFaceLine(char* line5){
    int num_slashes = 0;
    int spaceCount = 0;
-   char line[] = "f 1/2/3 4/5/6 7/8/9"; // 9
-   char line2[] = "f 7//7 8//8 9//9"; // 6
-   char line3[] = "f 7//7 8//8 9//9 10//10"; // 8
-   char line4[] = "f 7555555//55555557 83333333//833333333 222222229//222222229"; // 6
-   char line5[] = "f 1/2/3 4/5/6 7/8/9 3/3/3"; // 12
-
+  
    bool isSlash = false;
    bool hasTextureData = true;
    char tempNumber[10];
@@ -1271,7 +1263,7 @@ int main(int argc, char **argv) {
    int tokensArr[12] = {0};
    char* linePtr = (line5+2); // skip f and space
    while(*linePtr != '\0'){
-       //printf("linePtr--------: %c\n", *linePtr);
+       printf("linePtr--------: %c\n", *linePtr);
        printf("tknIndex-------: %d\n", tokenIndex);
        if(*linePtr == ' '){
            spaceCount++;
@@ -1391,6 +1383,35 @@ int main(int argc, char **argv) {
             printf("Triangle without texture(uv) data\n");
         }
     }
+
+    // Print out the vf,tf,vn data
+    for(int i = 0; i < vfCount; i++){
+        printf("vf: %d\n", vf[i]);
+    }
+    for(int i = 0; i < tfCount; i++){
+        printf("tf: %d\n", tf[i]);
+    }
+    for(int i = 0; i < vnCount; i++){
+        printf("vn: %d\n", vn[i]);
+    }
+    printf("vfCount: %d\n", vfCount);
+    printf("tfCount: %d\n", tfCount);
+    printf("vnCount: %d\n", vnCount);
+}
+
+int main(int argc, char **argv) {
+
+   char line[] = "f 1/2/3 4/5/6 7/8/9"; // 9
+   char line2[] = "f 7//7 8//8 9//9"; // 6
+   char line3[] = "f 7//7 8//8 9//9 10//10"; // 8
+   char line4[] = "f 7555555//55555557 83333333//833333333 222222229//222222229"; // 6
+   char line5[] = "f 1/2/3 4/5/6 7/8/9 3/3/3"; // 12
+
+   handleFaceLine(line);
+   handleFaceLine(line2);
+   handleFaceLine(line3);
+   handleFaceLine(line4);
+   handleFaceLine(line5);
    
     return 0; 
     
