@@ -1250,50 +1250,52 @@ void initScene(){
 
 }
 
-bool isQuad(){}
-/* bool hasTextureValues(char* line){
-    char *first_slash = strchr(line, '/');
-    int valueAfterFirstSlash = (int)(*(first_slash+1));
-    bool hasTexture = valueAfterFirstSlash != 47;
-    return hasTexture;
-} */
-
 int main(int argc, char **argv) {
 
-   int num_line_face_tokens = 0;
+
+
+   
    int num_slashes = 0;
    int spaceCount = 0;
    char line[] = "f 1/2/3 4/5/6 7/8/9"; // 9
    char line2[] = "f 7//7 8//8 9//9"; // 6
    char line3[] = "f 7//7 8//8 9//9 10//10"; // 8
    char line4[] = "f 7555555//55555557 83333333//833333333 222222229//222222229"; // 6
-    
+   char line5[] = "f 1/2/3 4/5/6 7/8/9 3/3/3"; // 12
+
    bool isSlash = false;
    bool hasTextureData = true;
    char tempNumber[10];
    int tempNumberIndex = 0;
-   char* linePtr = (line2+2); // skip f and space
+   int tokenIndex = 0;
+   int tokensArr[12] = {0};
+   char* linePtr = (line5+2); // skip f and space
    while(*linePtr != '\0'){
-       // printf("linePtr--------: %c\n", *linePtr);
+       //printf("linePtr--------: %c\n", *linePtr);
+       printf("tknIndex-------: %d\n", tokenIndex);
        if(*linePtr == ' '){
            spaceCount++;
            tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
            int num = atoi(tempNumber);
+           tokensArr[tokenIndex] = num;
+           tokenIndex++;
            printf("space num: %d\n", num);
            tempNumberIndex = 0;
            isSlash = false;
        }
        else if(*linePtr == '/'){
          num_slashes++;
-         if(tempNumberIndex > 0){
-            tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
-            int num = atoi(tempNumber);
-            tempNumberIndex = 0;
-            printf("slash num: %d\n", num);
-         }
          if(isSlash){
             printf("this is a double slash\n");
             hasTextureData = false;
+         }
+         if(tempNumberIndex > 0){
+            tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
+            int num = atoi(tempNumber);
+            tokensArr[tokenIndex] = num;
+            tokenIndex++;
+            tempNumberIndex = 0;
+            printf("slash num: %d\n", num);
          }
          isSlash = true;
        }
@@ -1308,33 +1310,88 @@ int main(int argc, char **argv) {
    if(tempNumberIndex > 0){
          tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
          int num = atoi(tempNumber);
+         tokensArr[tokenIndex] = num;
          printf("last num: %d\n", num);
    }
     printf("spaceCount: %d\n", spaceCount);
     printf("num_slashes: %d\n", num_slashes);
+
+     // if has texture and is triangle,the token count should be 9
+    // tokenIndex 0 , 3 , 6 is v
+    // tokenIndex 1 , 4 , 7 is vt
+    // tokenIndex 2 , 5 , 8 is vn
+   // if has texture and is quad, the token count should be 12
+    // tokenIndex 0 , 3 , 6 , 9 is v
+    // tokenIndex 1 , 4 , 7 , 10 is vt
+    // tokenIndex 2 , 5 , 8 , 11 is vn
+   // if has no texture and is triangle, the token count should be 6
+    // tokenIndex 0 , 2 , 4 is v
+    // tokenIndex 1 , 3 , 5 is vn
+   // if has no texture and is quad, the token count should be 8
+    // tokenIndex 0 , 2 , 4 , 6 is v
+    // tokenIndex 1 , 3 , 5 , 7 is vn
+   int vf[300000] = {0}; 
+   int tf[300000] = {0}; 
+   int vn[300000] = {0};
+
+   int vfCount = 0;
+   int tfCount = 0;
+   int vnCount = 0;
     if(hasTextureData){
-        printf("Vertexdata with texture(uv) data\n");
+            vf[vfCount] = tokensArr[0];
+            vfCount++;
+            tf[tfCount] = tokensArr[1];
+            tfCount++;
+            vn[vnCount] = tokensArr[2];
+            vnCount++;
+            vf[vfCount] = tokensArr[3];
+            vfCount++;
+            tf[tfCount] = tokensArr[4];
+            tfCount++;
+            vn[vnCount] = tokensArr[5];
+            vnCount++;
+            vf[vfCount] = tokensArr[6];
+            vfCount++;
+            tf[tfCount] = tokensArr[7];
+            tfCount++;
+            vn[vnCount] = tokensArr[8];
+            vnCount++;
+        if(spaceCount > 2){
+            printf("Quad with texture(uv) data\n");
+            vf[vfCount] = tokensArr[9];
+            vfCount++;
+            tf[tfCount] = tokensArr[10];
+            tfCount++;
+            vn[vnCount] = tokensArr[11];
+            vnCount++;
+        }else {
+            printf("Triangle with texture(uv) data\n");
+        }
     }else {
-        printf("Vertexdata without texture(uv) data\n");
+        vf[vfCount] = tokensArr[0];
+        vfCount++;
+        vn[vnCount] = tokensArr[1];
+        vnCount++;
+        vf[vfCount] = tokensArr[2];
+        vfCount++;
+        vn[vnCount] = tokensArr[3];
+        vnCount++;
+        vf[vfCount] = tokensArr[4];
+        vfCount++;
+        vn[vnCount] = tokensArr[5];
+        vnCount++;
+        if(spaceCount > 2){
+            vf[vfCount] = tokensArr[6];
+            vfCount++;
+            vn[vnCount] = tokensArr[7];
+            vnCount++;
+
+            printf("Quad without texture(uv) data\n");
+        }else {
+            printf("Triangle without texture(uv) data\n");
+        }
     }
-    /* char *test = strtok(line3, " ");
-    while(strtok(NULL, " ") != NULL){
-        vertexLineCount++;
-    }
-     // bool hasText = hasTextureValues(line2);
-   //printf("has texture values: %d\n", hasText);
-    
-    printf("test init: %s\n", test);
-    printf("test length: %d\n", strlen(test));
-    char *facetoken = strtok(line3, " /");
-    printf("facetoken init: %s\n", facetoken);
-    while (facetoken != NULL) {
-        facetoken = strtok(NULL, " /");
-        if (facetoken == NULL) break;
-        num_line_face_tokens++;
-        printf("facetoken: %s\n", facetoken);
-    }
-    printf("num_line_face_tokens: %d\n", num_line_face_tokens); */
+   
     return 0; 
     
     // Initialize the random number generator
