@@ -12,10 +12,21 @@
 #define TEXT_COLOR_WARNING   "\x1b[33m"
 #define TEXT_COLOR_RESET     "\x1b[0m"
 
+#define TEXT_COLOR_YELLOW "\033[1;33m"
+#define TEXT_COLOR_BLUE "\033[1;34m"
+#define TEXT_COLOR_GREEN "\033[1;32m"
+#define TEXT_COLOR_RED "\033[1;31m"
+#define TEXT_COLOR_CYAN "\033[1;36m"
+#define TEXT_COLOR_MAGENTA "\033[1;35m"
+#define TEXT_COLOR_ORANGE "\033[1;33m"
+
+
 char* readFile(const char *filename);
 int randInt(int rmin, int rmax);
 float randFloat(float rmin, float rmax);
 unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
+int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
+void runTests();
 
 // Utility macros
 #define CHECK_SDL_ERROR(test, message) \

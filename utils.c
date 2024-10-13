@@ -75,6 +75,195 @@ void addToArray(char* token, int* arr, int arrCount) {
     printf("facetoken %s \n",token);
 }
 
+int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
+   //printf("line: %s\n", line);
+   int vertexCount = 3;
+   int num_slashes = 0;
+   int spaceCount = 0;
+  
+   bool isSlash = false;
+   bool hasTextureData = true;
+   char tempNumber[10];
+   int tempNumberIndex = 0;
+   int tokenIndex = 0;
+   int tokensArr[12] = {0};
+   char* linePtr = (line+2); // skip f and space
+   while(*linePtr != '\0'){
+
+       //printf("linePtr--------: %c\n", *linePtr);
+       //printf("tknIndex-------: %d\n", tokenIndex);
+    
+       if(*linePtr == ' '){
+           spaceCount++;
+           tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
+           int num = atoi(tempNumber);
+           tokensArr[tokenIndex] = num;
+           tokenIndex++;
+           //printf("space num: %d\n", num);
+           tempNumberIndex = 0;
+           isSlash = false;
+       }
+       else if(*linePtr == '/'){
+         num_slashes++;
+         if(isSlash){
+            //printf("this is a double slash\n");
+            hasTextureData = false;
+         }
+         if(tempNumberIndex > 0){
+            tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
+            int num = atoi(tempNumber);
+            tokensArr[tokenIndex] = num;
+            tokenIndex++;
+            tempNumberIndex = 0;
+           // printf("slash num: %d\n", num);
+         }
+         isSlash = true;
+       }
+       else{
+        tempNumber[tempNumberIndex] = *linePtr;
+        tempNumberIndex++;
+        isSlash = false;
+       }
+       linePtr++;
+   }
+   // Pick up the last number
+   if(tempNumberIndex > 0){
+         tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
+         int num = atoi(tempNumber);
+         tokensArr[tokenIndex] = num;
+        // printf("last num: %d\n", num);
+   }
+    //printf("spaceCount: %d\n", spaceCount);
+   // printf("num_slashes: %d\n", num_slashes);
+
+     // if has texture and is triangle,the token count should be 9
+    // tokenIndex 0 , 3 , 6 is v
+    // tokenIndex 1 , 4 , 7 is vt
+    // tokenIndex 2 , 5 , 8 is vn
+   // if has texture and is quad, the token count should be 12
+    // tokenIndex 0 , 3 , 6 , 9 is v
+    // tokenIndex 1 , 4 , 7 , 10 is vt
+    // tokenIndex 2 , 5 , 8 , 11 is vn
+   // if has no texture and is triangle, the token count should be 6
+    // tokenIndex 0 , 2 , 4 is v
+    // tokenIndex 1 , 3 , 5 is vn
+   // if has no texture and is quad, the token count should be 8
+    // tokenIndex 0 , 2 , 4 , 6 is v
+    // tokenIndex 1 , 3 , 5 , 7 is vn
+    if(hasTextureData){
+            vf[*vfCount] = tokensArr[0];
+            (*vfCount)++;
+            tf[*tfCount] = tokensArr[1];
+            (*tfCount)++;
+            vn[*vnCount] = tokensArr[2];
+            (*vnCount)++;
+            vf[*vfCount] = tokensArr[3];
+            (*vfCount)++;
+            tf[*tfCount] = tokensArr[4];
+            (*tfCount)++;
+            vn[*vnCount] = tokensArr[5];
+            (*vnCount)++;
+            vf[*vfCount] = tokensArr[6];
+            (*vfCount)++;
+            tf[*tfCount] = tokensArr[7];
+            (*tfCount)++;
+            vn[*vnCount] = tokensArr[8];
+            (*vnCount)++;
+        if(spaceCount > 2){
+            vertexCount = 4;
+           // printf("Quad with texture(uv) data\n");
+            vf[*vfCount] = tokensArr[9];
+            (*vfCount)++;
+            tf[*tfCount] = tokensArr[10];
+            (*tfCount)++;
+            vn[*vnCount] = tokensArr[11];
+            (*vnCount)++;
+        }else {
+          //  printf("Triangle with texture(uv) data\n");
+        }
+    }else {
+        vf[*vfCount] = tokensArr[0];
+        (*vfCount)++;
+        vn[*vnCount] = tokensArr[1];
+        (*vnCount)++;
+        vf[*vfCount] = tokensArr[2];
+        (*vfCount)++;
+        vn[*vnCount] = tokensArr[3];
+        (*vnCount)++;
+        vf[*vfCount] = tokensArr[4];
+        (*vfCount)++;
+        vn[*vnCount] = tokensArr[5];
+        (*vnCount)++;
+        if(spaceCount > 2){
+            vertexCount = 4;
+            vf[*vfCount] = tokensArr[6];
+            (*vfCount)++;
+            vn[*vnCount] = tokensArr[7];
+            (*vnCount)++;
+
+            //printf("Quad without texture(uv) data\n");
+
+        }else {
+           // printf("Triangle without texture(uv) data\n");
+        }
+    }
+
+    // Print out the vf,tf,vn data
+    /* for(int i = 0; i < *vfCount; i++){
+        printf("vf: %d\n", vf[i]);
+    }
+    for(int i = 0; i < *tfCount; i++){
+        printf("tf: %d\n", tf[i]);
+    }
+    for(int i = 0; i < *vnCount; i++){
+        printf("vn: %d\n", vn[i]);
+    } 
+    printf("vfCount: %d\n", *vfCount);
+    printf("tfCount: %d\n", *tfCount);
+    printf("vnCount: %d\n", *vnCount); */
+
+
+    (*faceLineCount)++;
+    return vertexCount;
+}
+
+/**
+ * Run tests.
+ * Atm no expect/asserts, just printouts you manually have to check.
+ */
+void runTests()
+{
+   char line[] =  "f 1/2/3 4/5/6 7/8/9"; // 9
+   char line2[] = "f 7//7 8//8 9//9"; // 6
+   char line3[] = "f 7//7 8//8 9//9 10//10"; // 8
+   char line4[] = "f 7555555//55555557 83333333//833333333 222222229//222222229"; // 6
+   char line5[] = "f 1/2/3 4/5/6 7/8/9 3/3/3"; // 12
+
+   int vf[300000] = {0}; 
+   int tf[300000] = {0}; 
+   int vn[300000] = {0};
+  
+   FaceLine faceLineList[300000] = {};
+   int faceLineCount = 0;
+   
+   int vfCount = 0;
+   int tfCount = 0;
+   int vnCount = 0; 
+
+   faceLineList[0].vertexCount = handleFaceLine(line,  vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   faceLineList[1].vertexCount = handleFaceLine(line2, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   faceLineList[2].vertexCount = handleFaceLine(line3, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   faceLineList[3].vertexCount = handleFaceLine(line4, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   faceLineList[4].vertexCount = handleFaceLine(line5, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   
+   // Print the faceLineList data
+    for(int i = 0; i < 5; i++){
+         printf("faceLineList[%d].vertexCount: %d\n", i, faceLineList[i].vertexCount);
+    }
+   // Exit program after tests
+   exit(0);
+}
+
 // Support for up to 30000 vertices only!. No indicies created.
 // Collects vertices position(vArr),uv/texcoords(tArr) , vertex indices(vf) ,texture indices(tf).
 // Then uses these and creates a new vertex data 
@@ -98,6 +287,7 @@ ObjData loadObjFile(const char *filepath)
     int vfCount = 0;
     int tfCount = 0;
     int vnCount = 0;
+    FaceLine faceLineList[5000] = {};
     int faceLineCount = 0;
     char material[100];
     char group[100];
@@ -151,7 +341,7 @@ ObjData loadObjFile(const char *filepath)
         }
         // v: v & space(32), read vertices
         if((int)line[0] == 118 && (int)line[1] == 32){
-            printf(TEXT_COLOR_ERROR "v %s" TEXT_COLOR_RESET "\n", line);
+            //printf(TEXT_COLOR_ERROR "v %s" TEXT_COLOR_RESET "\n", line);
           sscanf(line, "v %f %f %f", &vArr[vIndex], &vArr[vIndex+1], &vArr[vIndex+2]);
           vIndex+=3;
           continue;
@@ -184,18 +374,18 @@ ObjData loadObjFile(const char *filepath)
         // or       f 1//1 2//2 3//3
         // or       f 1//1 2//2 3//3 4//4  <- quad
         if((int)line[0] == 102){
-           faceLineCount++;
-           if(faceLineCount >= MAX || vfCount >= MAX || tfCount >= MAX){
+           faceLineList[faceLineCount].vertexCount = handleFaceLine(line, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+           if(faceLineCount >= 5000 || vfCount >= MAX || tfCount >= MAX){
                 printf("Error: Too many vertices in obj file. Max is 300000. Exiting..");
                 exit(1);
            }
-           char *facetoken = strtok(line, " /"); // f
-           addToArray(facetoken, vf, vfCount);
-           vfCount++;
+           //char *facetoken = strtok(line, " /"); // f
+           //addToArray(facetoken, vf, vfCount);
+           //vfCount++;
            // Check if // or / structure here:
            // f 1//1 2//2 3//3
            // f 1/1/1 2/2/2 3/3/3
-           addToArray(facetoken, tf, tfCount);
+          /*  addToArray(facetoken, tf, tfCount);
            tfCount++;
            facetoken = strtok(NULL, " /");  // vn1
            if(facetoken == NULL) continue;
@@ -232,68 +422,76 @@ ObjData loadObjFile(const char *filepath)
            int facetokenv3Int = atoi(facetoken);
            vn[vnCount] = facetokenv3Int;
            vnCount++;
-           continue;
+           continue; */
         }
   
     }
 
-   
-       fclose(fp);
+    fclose(fp);
         
-
-       
-
-     
-    printf("material: %s \n",material);
+    //printf("material: %s \n",material);
     printf("faceline count: %d \n",faceLineCount);
-    printf("group: %s \n",group);
-    printf("usemtl: %s \n",usemtl);
-    printf("vIndex %d \n", vIndex);
-    printf("vIndex / 3 %d \n", vIndex/3);
-  printf("vfCount %d \n", vfCount); 
-    printf("uvCount %d \n", uvCount);
-    printf("normalCount %d \n", normalCount); 
-    printf("vnCount %d \n", vnCount);
-    int num_of_vertex = vIndex/3;
+    //printf("group: %s \n",group);
+    //printf("usemtl: %s \n",usemtl);
+  //  printf("vIndex %d \n", vIndex);
+    printf("num_of_vertex %d \n", vfCount);
+   // printf("vfCount %d \n", vfCount); 
+   // printf("uvCount %d \n", uvCount);
+   // printf("normalCount %d \n", normalCount); 
+   // printf("vnCount %d \n", vnCount);
+    int num_of_vertex = vfCount;
   
- objData.vertexData = malloc(num_of_vertex * sizeof(Vertex));
+   objData.vertexData = malloc(num_of_vertex * sizeof(Vertex));
    if(objData.vertexData == NULL){
     exit(1);
    }
- 
 
-    for(int i = 0; i < num_of_vertex; i+=1){
-        //  printf("vertex %i \n",vf[i]);
-        //printf("vertex %i \n",i);
+    int vertexIndex = 0;
+    for(int j = 0; j < faceLineCount; j+=1){
 
-        // x y z
-        //printf("v %f %f %f ",vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
-        objData.vertexData[i].position[0] = vArr[(vf[i]-1)*3];
-        objData.vertexData[i].position[1] = vArr[(vf[i]-1)*3+1];
-        objData.vertexData[i].position[2] = vArr[(vf[i]-1)*3+2];
+       // printf("faceline: "  "%d"  "\n", j);
+        for(int i = 0; i < faceLineList[j].vertexCount; i++){
+            // x y z
+          //  printf("f " TEXT_COLOR_YELLOW "%f %f %f " ,vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
+            objData.vertexData[vertexIndex].position[0] = vArr[(vf[vertexIndex]-1)*3];
+            objData.vertexData[vertexIndex].position[1] = vArr[(vf[vertexIndex]-1)*3+1];
+            objData.vertexData[vertexIndex].position[2] = vArr[(vf[vertexIndex]-1)*3+2];
+           // printf("f " TEXT_COLOR_YELLOW "%f %f %f " ,objData.vertexData[vertexIndex].position[0],objData.vertexData[vertexIndex].position[1],objData.vertexData[vertexIndex].position[2]);
 
-        // color, default to black atm
-        objData.vertexData[i].color[0] = 1.0; 
-        objData.vertexData[i].color[1] = 1.0;
-        objData.vertexData[i].color[2] = 1.0;
+            // color, default to black atm
+            objData.vertexData[vertexIndex].color[0] = 1.0; 
+            objData.vertexData[vertexIndex].color[1] = 1.0;
+            objData.vertexData[vertexIndex].color[2] = 1.0;
+            //printf(TEXT_COLOR_BLUE " %f %f %f ",objData.vertexData[i].color[0],objData.vertexData[i].color[1],objData.vertexData[i].color[2]);
 
-        // uv
-       // printf("t %f %f \n",tArr[(tf[i]-1)*2],tArr[(tf[i]-1)*2+1]);
-        // printf("\n");
-        if(uvCount == 0){
-            objData.vertexData[i].texcoord[0] = 0.0;
-            objData.vertexData[i].texcoord[1] = 0.0;
-        }else {
-            objData.vertexData[i].texcoord[0] = tArr[(tf[i]-1)*2];
-            objData.vertexData[i].texcoord[1] = tArr[(tf[i]-1)*2+1];
+            // uv
+            
+            // printf("\n");
+            if(uvCount == 0){
+                objData.vertexData[vertexIndex].texcoord[0] = 0.0;
+                objData.vertexData[vertexIndex].texcoord[1] = 0.0;
+            }else {
+                objData.vertexData[vertexIndex].texcoord[0] = tArr[(tf[vertexIndex]-1)*2];
+                objData.vertexData[vertexIndex].texcoord[1] = tArr[(tf[vertexIndex]-1)*2+1];
+               // printf(TEXT_COLOR_MAGENTA" %f %f ",objData.vertexData[vertexIndex].texcoord[0],objData.vertexData[vertexIndex].texcoord[1]);
+            }
+
+
+            // normals
+            if(vnCount == 0){
+                objData.vertexData[vertexIndex].normal[0] = 0.0;
+                objData.vertexData[vertexIndex].normal[1] = 0.0;
+                objData.vertexData[vertexIndex].normal[2] = 0.0;
+            }else {
+                objData.vertexData[vertexIndex].normal[0] = nArr[(vn[vertexIndex]-1)*3];
+                objData.vertexData[vertexIndex].normal[1] = nArr[(vn[vertexIndex]-1)*3+1];
+                objData.vertexData[vertexIndex].normal[2] = nArr[(vn[vertexIndex]-1)*3+2];
+                // print normals
+               // printf(TEXT_COLOR_CYAN" %f %f %f \n" TEXT_COLOR_RESET,objData.vertexData[vertexIndex].normal[0],objData.vertexData[vertexIndex].normal[1],objData.vertexData[vertexIndex].normal[2]);
+            }
+            vertexIndex++;
+           // printf("vertexIndex %d\n", vertexIndex);
         }
-
-        // normals
-        objData.vertexData[i].normal[0] = nArr[(vn[i]-1)*3];
-        objData.vertexData[i].normal[1] = nArr[(vn[i]-1)*3+1];
-        objData.vertexData[i].normal[2] = nArr[(vn[i]-1)*3+2];
-        // print normals
-     //   printf("n %f %f %f \n",nArr[(vn[i]-1)*3],nArr[(vn[i]-1)*3+1],nArr[(vn[i]-1)*3+2]);
     }
 
     objData.num_of_vertices = num_of_vertex;

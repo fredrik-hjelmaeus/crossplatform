@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 // macOS:
 // build setup with .sh-file
 // renderers:
@@ -21,11 +22,11 @@
 // Qt
 // Raylib
 
-#include <stdio.h>
+#include "opengl_types.h"
 #include "types.h"
 #include "globals.h"
 #include "utils.h"
-#include <time.h>
+#include "linmath.h"
 #include "opengl.h"
 
 // Stb
@@ -51,7 +52,6 @@ void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rota
 void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
 void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
 void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction);
-void handleFaceLine(char* line5);
 void onButtonClick();
 Camera* initCamera();
 TextureData loadTexture(char* path);
@@ -1176,14 +1176,15 @@ void initScene(){
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
-   //ObjData truck = loadObjFile("./Assets/truck.obj");
-   ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
+   ObjData truck = loadObjFile("./Assets/truck.obj");
+   //ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
   // ObjData teapot = loadObjFile("./Assets/teapot.obj");
  //  ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
  //  ObjData bunny = loadObjFile("./Assets/bunny2.obj");
   // ObjData dragon = loadObjFile("./Assets/dragon.obj");
   // ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
-  // ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
+   //ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
+   //ObjData plane = loadObjFile("./Assets/plane.obj");
 
    struct Material objectMaterial = {
     .active = 1,
@@ -1219,14 +1220,15 @@ void initScene(){
    
 
    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
- createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-// createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  //createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); // works but messy
  //createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
  //createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
  //createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  //obj support?
-// createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-// createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //createObject(VIEWPORT_MAIN,objectMaterial,&plane,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
 
  
    // lights
@@ -1251,169 +1253,11 @@ void initScene(){
 
 }
 
-void handleFaceLine(char* line5){
-   int num_slashes = 0;
-   int spaceCount = 0;
-  
-   bool isSlash = false;
-   bool hasTextureData = true;
-   char tempNumber[10];
-   int tempNumberIndex = 0;
-   int tokenIndex = 0;
-   int tokensArr[12] = {0};
-   char* linePtr = (line5+2); // skip f and space
-   while(*linePtr != '\0'){
-       printf("linePtr--------: %c\n", *linePtr);
-       printf("tknIndex-------: %d\n", tokenIndex);
-       if(*linePtr == ' '){
-           spaceCount++;
-           tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
-           int num = atoi(tempNumber);
-           tokensArr[tokenIndex] = num;
-           tokenIndex++;
-           printf("space num: %d\n", num);
-           tempNumberIndex = 0;
-           isSlash = false;
-       }
-       else if(*linePtr == '/'){
-         num_slashes++;
-         if(isSlash){
-            printf("this is a double slash\n");
-            hasTextureData = false;
-         }
-         if(tempNumberIndex > 0){
-            tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
-            int num = atoi(tempNumber);
-            tokensArr[tokenIndex] = num;
-            tokenIndex++;
-            tempNumberIndex = 0;
-            printf("slash num: %d\n", num);
-         }
-         isSlash = true;
-       }
-       else{
-        tempNumber[tempNumberIndex] = *linePtr;
-        tempNumberIndex++;
-        isSlash = false;
-       }
-       linePtr++;
-   }
-   // Pick up the last number
-   if(tempNumberIndex > 0){
-         tempNumber[tempNumberIndex] = '\0'; // Null-terminate the string
-         int num = atoi(tempNumber);
-         tokensArr[tokenIndex] = num;
-         printf("last num: %d\n", num);
-   }
-    printf("spaceCount: %d\n", spaceCount);
-    printf("num_slashes: %d\n", num_slashes);
 
-     // if has texture and is triangle,the token count should be 9
-    // tokenIndex 0 , 3 , 6 is v
-    // tokenIndex 1 , 4 , 7 is vt
-    // tokenIndex 2 , 5 , 8 is vn
-   // if has texture and is quad, the token count should be 12
-    // tokenIndex 0 , 3 , 6 , 9 is v
-    // tokenIndex 1 , 4 , 7 , 10 is vt
-    // tokenIndex 2 , 5 , 8 , 11 is vn
-   // if has no texture and is triangle, the token count should be 6
-    // tokenIndex 0 , 2 , 4 is v
-    // tokenIndex 1 , 3 , 5 is vn
-   // if has no texture and is quad, the token count should be 8
-    // tokenIndex 0 , 2 , 4 , 6 is v
-    // tokenIndex 1 , 3 , 5 , 7 is vn
-   int vf[300000] = {0}; 
-   int tf[300000] = {0}; 
-   int vn[300000] = {0};
-
-   int vfCount = 0;
-   int tfCount = 0;
-   int vnCount = 0;
-    if(hasTextureData){
-            vf[vfCount] = tokensArr[0];
-            vfCount++;
-            tf[tfCount] = tokensArr[1];
-            tfCount++;
-            vn[vnCount] = tokensArr[2];
-            vnCount++;
-            vf[vfCount] = tokensArr[3];
-            vfCount++;
-            tf[tfCount] = tokensArr[4];
-            tfCount++;
-            vn[vnCount] = tokensArr[5];
-            vnCount++;
-            vf[vfCount] = tokensArr[6];
-            vfCount++;
-            tf[tfCount] = tokensArr[7];
-            tfCount++;
-            vn[vnCount] = tokensArr[8];
-            vnCount++;
-        if(spaceCount > 2){
-            printf("Quad with texture(uv) data\n");
-            vf[vfCount] = tokensArr[9];
-            vfCount++;
-            tf[tfCount] = tokensArr[10];
-            tfCount++;
-            vn[vnCount] = tokensArr[11];
-            vnCount++;
-        }else {
-            printf("Triangle with texture(uv) data\n");
-        }
-    }else {
-        vf[vfCount] = tokensArr[0];
-        vfCount++;
-        vn[vnCount] = tokensArr[1];
-        vnCount++;
-        vf[vfCount] = tokensArr[2];
-        vfCount++;
-        vn[vnCount] = tokensArr[3];
-        vnCount++;
-        vf[vfCount] = tokensArr[4];
-        vfCount++;
-        vn[vnCount] = tokensArr[5];
-        vnCount++;
-        if(spaceCount > 2){
-            vf[vfCount] = tokensArr[6];
-            vfCount++;
-            vn[vnCount] = tokensArr[7];
-            vnCount++;
-
-            printf("Quad without texture(uv) data\n");
-        }else {
-            printf("Triangle without texture(uv) data\n");
-        }
-    }
-
-    // Print out the vf,tf,vn data
-    for(int i = 0; i < vfCount; i++){
-        printf("vf: %d\n", vf[i]);
-    }
-    for(int i = 0; i < tfCount; i++){
-        printf("tf: %d\n", tf[i]);
-    }
-    for(int i = 0; i < vnCount; i++){
-        printf("vn: %d\n", vn[i]);
-    }
-    printf("vfCount: %d\n", vfCount);
-    printf("tfCount: %d\n", tfCount);
-    printf("vnCount: %d\n", vnCount);
-}
 
 int main(int argc, char **argv) {
 
-   char line[] = "f 1/2/3 4/5/6 7/8/9"; // 9
-   char line2[] = "f 7//7 8//8 9//9"; // 6
-   char line3[] = "f 7//7 8//8 9//9 10//10"; // 8
-   char line4[] = "f 7555555//55555557 83333333//833333333 222222229//222222229"; // 6
-   char line5[] = "f 1/2/3 4/5/6 7/8/9 3/3/3"; // 12
-
-   handleFaceLine(line);
-   handleFaceLine(line2);
-   handleFaceLine(line3);
-   handleFaceLine(line4);
-   handleFaceLine(line5);
-   
-    return 0; 
+    //runTests();
     
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
