@@ -75,8 +75,8 @@ float deg2rad(float degrees) {
     printf("facetoken %s \n",token);
 } */
 
-int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
- //  printf("line: %s\n", line);
+void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
+   
    int vertexCount = 3;
    int num_slashes = 0;
    int spaceCount = 0;
@@ -171,7 +171,7 @@ int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfC
             (*vnCount)++;
         if(spaceCount > 2){
            // printf("Quad with texture(uv) data\n");
-            vertexCount = 9;
+          //  vertexCount = 9;
             
             //First triangle: v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
             //Second triangle: v1/vt1/vn1 v3/vt3/vn3 v4/vt4/vn4
@@ -217,7 +217,7 @@ int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfC
         (*vnCount)++;
         if(spaceCount > 2){
             
-            vertexCount = 6;
+          //  vertexCount = 6;
             
             //First triangle: v1//vn1 v2//vn2 v3//vn3
             //Second triangle: v1//vn1 v3//vn3 v4//vn4
@@ -261,7 +261,7 @@ int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfC
 
 
     (*faceLineCount)++;
-    return vertexCount;
+   // return vertexCount;
 }
 
 /**
@@ -280,23 +280,18 @@ void runTests()
    int tf[300000] = {0}; 
    int vn[300000] = {0};
   
-   FaceLine faceLineList[300000] = {};
    int faceLineCount = 0;
    
    int vfCount = 0;
    int tfCount = 0;
    int vnCount = 0; 
 
-   faceLineList[0].vertexCount = handleFaceLine(line,  vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   faceLineList[1].vertexCount = handleFaceLine(line2, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   faceLineList[2].vertexCount = handleFaceLine(line3, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   faceLineList[3].vertexCount = handleFaceLine(line4, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   faceLineList[4].vertexCount = handleFaceLine(line5, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   
-   // Print the faceLineList data
-    for(int i = 0; i < 5; i++){
-         printf("faceLineList[%d].vertexCount: %d\n", i, faceLineList[i].vertexCount);
-    }
+   handleFaceLine(line,  vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   handleFaceLine(line2, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   handleFaceLine(line3, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   handleFaceLine(line4, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   handleFaceLine(line5, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+
    // Exit program after tests
    exit(0);
 }
@@ -309,57 +304,67 @@ void runTests()
 // obj specification: https://paulbourke.net/dataformats/obj/
 ObjData loadObjFile(const char *filepath)
 {
+    #define OBJDATA_MAX 300001
+   // #define FACELINELIST_MAX 150000
+    
     ObjData objData;
-    const int MAX = 3000000;
-   // int vf[300000] = {0}; 
-    int tf[300000] = {0}; 
-    int vn[300000] = {0};
-    float vArr[300000] = {0.0f};
-    float tArr[300000]=  {0.0f};
-    float nArr[300000]=  {0.0f}; 
+   
 
-     int* vf = (int*)malloc(MAX * sizeof(int));
+
+    int* vf = (int*)malloc(OBJDATA_MAX * sizeof(int));
     if (vf == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
         exit(1);
     }
-   /* int* tf = (int*)malloc(MAX * sizeof(int));
+    int* tf = (int*)malloc(OBJDATA_MAX * sizeof(int));
     if (tf == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
+        free(vf);
         exit(1);
     }
-    int* vn = (int*)malloc(MAX * sizeof(int));
+    int* vn = (int*)malloc(OBJDATA_MAX * sizeof(int));
     if (vn == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
+        free(vf);
+        free(tf);
         exit(1);
-    }
-    float* vArr = (float*)malloc(MAX * sizeof(float));
+    }  
+   float* vArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
     if (vArr == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
+        free(vf);
+        free(tf);
+        free(vn);
         exit(1);
     }
-    float* tArr = (float*)malloc(MAX * sizeof(float));
+   float* tArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
     if (tArr == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
+        free(vf);
+        free(tf);
+        free(vn);
+        free(vArr);
         exit(1);
     }
-    float* nArr = (float*)malloc(MAX * sizeof(float));
+  
+    float* nArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
     if (nArr == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
+        free(vf);
+        free(tf);
+        free(vn);
+        free(vArr);
+        free(tArr);
         exit(1);
-    } */
+    } 
 
-/*     objData.vertexData = malloc(MAX * sizeof(Vertex));
-    if(objData.vertexData == NULL){
-    printf("Failed to allocate memory for objData.vertexData\n");
-    exit(1);
-    } */
+
 
     int vIndex = 0;
     int uvCount = 0;
@@ -367,7 +372,11 @@ ObjData loadObjFile(const char *filepath)
     int vfCount = 0;
     int tfCount = 0;
     int vnCount = 0;
-    FaceLine faceLineList[5000] = {};
+/*     FaceLine* faceLineList = (FaceLine*)malloc(FACELINELIST_MAX * sizeof(FaceLine));
+    if (faceLineList == NULL) {
+        fprintf(stderr, "faceLineList memory allocation failed\n");
+        exit(1);
+    } */
     int faceLineCount = 0;
     char material[100];
     char group[100];
@@ -421,7 +430,7 @@ ObjData loadObjFile(const char *filepath)
         }
         // v: v & space(32), read vertices
         if((int)line[0] == 118 && (int)line[1] == 32){
-            //printf(TEXT_COLOR_ERROR "v %s" TEXT_COLOR_RESET "\n", line);
+          //  printf(TEXT_COLOR_ERROR "v %s" TEXT_COLOR_RESET "\n", line);
           sscanf(line, "v %f %f %f", &vArr[vIndex], &vArr[vIndex+1], &vArr[vIndex+2]);
           vIndex+=3;
           continue;
@@ -454,61 +463,13 @@ ObjData loadObjFile(const char *filepath)
         // or       f 1//1 2//2 3//3
         // or       f 1//1 2//2 3//3 4//4  <- quad
         if((int)line[0] == 102){
-           faceLineList[faceLineCount].vertexCount = handleFaceLine(line, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-           if(vfCount >= MAX || tfCount >= MAX){
-                printf("Error: Too many vertices in obj file. Max is 300000. Exiting..");
+           handleFaceLine(line, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+           if(vfCount >= OBJDATA_MAX || tfCount >= OBJDATA_MAX){
+                printf("Error: Too many vertices in obj file. OBJDATA_MAX exceeded. Exiting..");
                 printf("vfCount: %d\n", vfCount);
                 printf("tfCount: %d\n", tfCount);
                 exit(1);
            }
-           if(faceLineCount >= 500000){
-                printf("Error: Too many face lines in obj file. Max is 500000. Exiting..");
-                exit(1);
-           }
-           //char *facetoken = strtok(line, " /"); // f
-           //addToArray(facetoken, vf, vfCount);
-           //vfCount++;
-           // Check if // or / structure here:
-           // f 1//1 2//2 3//3
-           // f 1/1/1 2/2/2 3/3/3
-          /*  addToArray(facetoken, tf, tfCount);
-           tfCount++;
-           facetoken = strtok(NULL, " /");  // vn1
-           if(facetoken == NULL) continue;
-           int facetokenvInt = atoi(facetoken);
-           vn[vnCount] = facetokenvInt;
-           vnCount++;
-           facetoken = strtok(NULL, " /");  // v2
-           if(facetoken == NULL) continue;
-           int facetokenInt2 = atoi(facetoken);
-           vf[vfCount] = facetokenInt2;
-           vfCount++;
-           facetoken = strtok(NULL, " /"); 
-           if(facetoken == NULL) continue;
-           int facetokentInt2 = atoi(facetoken);
-           tf[tfCount] = facetokentInt2;
-           tfCount++;
-           facetoken = strtok(NULL, " /");
-           if(facetoken == NULL) continue;
-           int facetokenv2Int = atoi(facetoken);
-           vn[vnCount] = facetokenv2Int;
-           vnCount++;
-           facetoken = strtok(NULL, " /");
-           if(facetoken == NULL) continue;
-           int facetokenInt3 = atoi(facetoken);
-           vf[vfCount] = facetokenInt3;
-           vfCount++;
-           facetoken = strtok(NULL, " /");
-           if(facetoken == NULL) continue;
-           int facetokentInt3 = atoi(facetoken);
-           tf[tfCount] = facetokentInt3;
-           tfCount++;
-           facetoken = strtok(NULL, " /");
-           if(facetoken == NULL) continue;
-           int facetokenv3Int = atoi(facetoken);
-           vn[vnCount] = facetokenv3Int;
-           vnCount++;
-           continue; */
         }
   
     }
@@ -527,7 +488,7 @@ ObjData loadObjFile(const char *filepath)
    // printf("vnCount %d \n", vnCount);
     int num_of_vertex = vfCount;
   
-   objData.vertexData = malloc(num_of_vertex * 2 * sizeof(Vertex));
+   objData.vertexData = malloc(num_of_vertex * sizeof(Vertex));
    if(objData.vertexData == NULL){
     printf("Failed to allocate memory for objData.vertexData\n");
     exit(1);
@@ -538,7 +499,7 @@ ObjData loadObjFile(const char *filepath)
 
       //  printf("faceline: "  "%d"  " of %d \n", j,faceLineCount);
    //   printf("faceline vertex count %d\n", faceLineList[j].vertexCount);
-        for(int i = 0; i < faceLineList[j].vertexCount; i++){
+        for(int i = 0; i < 3; i++){
     /*        if(vArr[(vf[vertexIndex]-1)*3] > 1000.0){
                 printf("vArr out of bounds %f\n", vArr[(vf[vertexIndex]-1)*3]);
                 exit(1);
@@ -588,12 +549,12 @@ ObjData loadObjFile(const char *filepath)
     }
 
     objData.num_of_vertices = num_of_vertex;
-     free(vf);
- /*  free(tf);
-    free(vn);
+    free(vf);
+    free(tf);
+    free(vn); 
     free(vArr);
     free(tArr);
-    free(nArr);  */
+    free(nArr);   
     return objData;
 }
 

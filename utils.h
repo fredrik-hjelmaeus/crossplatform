@@ -25,7 +25,7 @@ char* readFile(const char *filename);
 int randInt(int rmin, int rmax);
 float randFloat(float rmin, float rmax);
 unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
-int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
+void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
 void runTests();
 
 // Utility macros
@@ -56,5 +56,3 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
 void captureFramebuffer(int width, int height, int drawCallsCounter);
 #endif // End of the UTILS_H definition
-
-
