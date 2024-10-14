@@ -43,12 +43,7 @@ void runTests();
 
 
 float deg2rad(float degrees);
-/* typedef struct ObjFile {
-    Vertex* vertices;
-    size_t vertexCount;
-    unsigned int* indices;
-    size_t indexCount;
-} ObjFile; */
+
 ObjData loadObjFile(const char* filepath);
 
 int isPointInsideRect(Rectangle rect, vec2 point);

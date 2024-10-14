@@ -133,13 +133,6 @@ typedef enum {
 
 typedef void (*ButtonCallback)();
 
-/**
- * Used in the obj-parser to store the face data.
- */
-typedef struct FaceLine {
-        int vertexCount; // 3 or 4
-} FaceLine;
-
 // ECS
 
 enum Tag {

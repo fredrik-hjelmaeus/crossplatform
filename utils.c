@@ -304,13 +304,13 @@ void runTests()
 // obj specification: https://paulbourke.net/dataformats/obj/
 ObjData loadObjFile(const char *filepath)
 {
+    // How many vertices can we store in the obj file
     #define OBJDATA_MAX 300001
-   // #define FACELINELIST_MAX 150000
-    
     ObjData objData;
-   
 
 
+    // Allocate memory for the vertex data
+    // TODO: refactor this to an Asset memory arena
     int* vf = (int*)malloc(OBJDATA_MAX * sizeof(int));
     if (vf == NULL) {
         // Handle memory allocation failure
@@ -351,7 +351,6 @@ ObjData loadObjFile(const char *filepath)
         free(vArr);
         exit(1);
     }
-  
     float* nArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
     if (nArr == NULL) {
         // Handle memory allocation failure
@@ -362,9 +361,7 @@ ObjData loadObjFile(const char *filepath)
         free(vArr);
         free(tArr);
         exit(1);
-    } 
-
-
+    }
 
     int vIndex = 0;
     int uvCount = 0;
@@ -372,11 +369,7 @@ ObjData loadObjFile(const char *filepath)
     int vfCount = 0;
     int tfCount = 0;
     int vnCount = 0;
-/*     FaceLine* faceLineList = (FaceLine*)malloc(FACELINELIST_MAX * sizeof(FaceLine));
-    if (faceLineList == NULL) {
-        fprintf(stderr, "faceLineList memory allocation failed\n");
-        exit(1);
-    } */
+
     int faceLineCount = 0;
     char material[100];
     char group[100];
@@ -497,37 +490,28 @@ ObjData loadObjFile(const char *filepath)
     int vertexIndex = 0;
     for(int j = 0; j < faceLineCount; j+=1){
 
-      //  printf("faceline: "  "%d"  " of %d \n", j,faceLineCount);
-   //   printf("faceline vertex count %d\n", faceLineList[j].vertexCount);
         for(int i = 0; i < 3; i++){
-    /*        if(vArr[(vf[vertexIndex]-1)*3] > 1000.0){
-                printf("vArr out of bounds %f\n", vArr[(vf[vertexIndex]-1)*3]);
-                exit(1);
-           } */
-           //printf("(vf[vertexIndex]-1)*3 %d\n", (vf[vertexIndex]-1)*3);
+  
             // x y z
-            //printf("f " TEXT_COLOR_YELLOW "%f %f %f " ,vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
             objData.vertexData[vertexIndex].position[0] = vArr[(vf[vertexIndex]-1)*3];
             objData.vertexData[vertexIndex].position[1] = vArr[(vf[vertexIndex]-1)*3+1];
             objData.vertexData[vertexIndex].position[2] = vArr[(vf[vertexIndex]-1)*3+2];
-           // printf("f " TEXT_COLOR_YELLOW "%f %f %f " ,objData.vertexData[vertexIndex].position[0],objData.vertexData[vertexIndex].position[1],objData.vertexData[vertexIndex].position[2]);
+           
 
             // color, default to black atm
             objData.vertexData[vertexIndex].color[0] = 1.0; 
             objData.vertexData[vertexIndex].color[1] = 1.0;
             objData.vertexData[vertexIndex].color[2] = 1.0;
-            //printf(TEXT_COLOR_BLUE " %f %f %f ",objData.vertexData[i].color[0],objData.vertexData[i].color[1],objData.vertexData[i].color[2]);
-
-            // uv
+           
             
-            // printf("\n");
+            // uv
             if(uvCount == 0){
                 objData.vertexData[vertexIndex].texcoord[0] = 0.0;
                 objData.vertexData[vertexIndex].texcoord[1] = 0.0;
             }else {
                 objData.vertexData[vertexIndex].texcoord[0] = tArr[(tf[vertexIndex]-1)*2];
                 objData.vertexData[vertexIndex].texcoord[1] = tArr[(tf[vertexIndex]-1)*2+1];
-               // printf(TEXT_COLOR_MAGENTA" %f %f ",objData.vertexData[vertexIndex].texcoord[0],objData.vertexData[vertexIndex].texcoord[1]);
+            
             }
 
 
@@ -540,11 +524,11 @@ ObjData loadObjFile(const char *filepath)
                 objData.vertexData[vertexIndex].normal[0] = nArr[(vn[vertexIndex]-1)*3];
                 objData.vertexData[vertexIndex].normal[1] = nArr[(vn[vertexIndex]-1)*3+1];
                 objData.vertexData[vertexIndex].normal[2] = nArr[(vn[vertexIndex]-1)*3+2];
-                // print normals
-                //printf(TEXT_COLOR_CYAN" %f %f %f \n" TEXT_COLOR_RESET,objData.vertexData[vertexIndex].normal[0],objData.vertexData[vertexIndex].normal[1],objData.vertexData[vertexIndex].normal[2]);
+            
+                
             }
             vertexIndex++;
-         //   printf("vertexIndex %d\n", vertexIndex);
+         
         }
     }
 
