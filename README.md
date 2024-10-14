@@ -11,6 +11,8 @@ Dependencies:
 -stdlib.h
 -freetype
 
+Below a list of things needed to be setup for development. However note that this is incomplete as of now.
+
 ### Develop on macOS (^Catalina) native OpenGL
 
 - git clone this repo

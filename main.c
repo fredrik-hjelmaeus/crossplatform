@@ -22,6 +22,12 @@
 // Qt
 // Raylib
 
+#ifdef DEV_MODE
+    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }
+    #else  // Tell compiler to do nothing in release mode
+    #define ASSERT(Expression, message) ((void)0)
+#endif
+
 #include "opengl_types.h"
 #include "types.h"
 #include "globals.h"
@@ -40,11 +46,7 @@
 #include <emscripten.h>
 #endif
 
-#ifdef DEV_MODE
-    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }
-    #else  // Tell compiler to do nothing in release mode
-    #define ASSERT(Expression, message) ((void)0)
-#endif
+
 
 
 // Prototypes
@@ -1176,15 +1178,16 @@ void initScene(){
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
-   ObjData truck = loadObjFile("./Assets/truck.obj");
-   //ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
-  // ObjData teapot = loadObjFile("./Assets/teapot.obj");
- //  ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
- //  ObjData bunny = loadObjFile("./Assets/bunny2.obj");
-  // ObjData dragon = loadObjFile("./Assets/dragon.obj");
-  // ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
-   //ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
-   //ObjData plane = loadObjFile("./Assets/plane.obj");
+   /* ObjData truck = loadObjFile("./Assets/truck.obj");
+   ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
+   ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
+   ObjData bunny = loadObjFile("./Assets/bunny2.obj");
+   ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
+   ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
+   ObjData plane = loadObjFile("./Assets/plane.obj"); */ 
+ //  ObjData teapot = loadObjFile("./Assets/teapot.obj");
+
+   ObjData dragon = loadObjFile("./Assets/dragon.obj");
 
    struct Material objectMaterial = {
     .active = 1,
@@ -1206,7 +1209,7 @@ void initScene(){
     .diffuseMapOpacity = 1.0f,                    // used
     .specularMap = containerTwoSpecularMap,      // NOT used
  };
-   struct Material lightMaterial = {
+ struct Material lightMaterial = {
     .active = 1,
     .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
     .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
@@ -1219,24 +1222,25 @@ void initScene(){
 
    
 
-   // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
- //createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- //createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); // works but messy
- //createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
- //createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
- //createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  //obj support?
- //createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- //createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- //createObject(VIEWPORT_MAIN,objectMaterial,&plane,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
+ /* createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+ createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&plane,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   */
+//createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); // works but messy
+ 
+ createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); //obj support?
 
  
    // lights
    createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
 
    // Primitives
-  // createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  // createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1245,8 +1249,8 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
- // createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
- // createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+  createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    

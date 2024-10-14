@@ -64,7 +64,7 @@ float deg2rad(float degrees) {
     return degrees * M_PI / 180.0;
 }
 
-void addToArray(char* token, int* arr, int arrCount) {
+/* void addToArray(char* token, int* arr, int arrCount) {
     if(arrCount >= 300000){
         printf("Error: Too many vertices in obj file. Max is 300000. Exiting..");
         exit(1);
@@ -73,10 +73,10 @@ void addToArray(char* token, int* arr, int arrCount) {
     int tokenInt = atoi(token);
     arr[arrCount] = tokenInt;
     printf("facetoken %s \n",token);
-}
+} */
 
 int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
-   //printf("line: %s\n", line);
+ //  printf("line: %s\n", line);
    int vertexCount = 3;
    int num_slashes = 0;
    int spaceCount = 0;
@@ -170,8 +170,29 @@ int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfC
             vn[*vnCount] = tokensArr[8];
             (*vnCount)++;
         if(spaceCount > 2){
-            vertexCount = 4;
            // printf("Quad with texture(uv) data\n");
+            vertexCount = 9;
+            
+            //First triangle: v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
+            //Second triangle: v1/vt1/vn1 v3/vt3/vn3 v4/vt4/vn4
+
+            // First vertex
+            vf[*vfCount] = tokensArr[0];
+            (*vfCount)++;
+            tf[*tfCount] = tokensArr[1];
+            (*tfCount)++;
+            vn[*vnCount] = tokensArr[2];
+            (*vnCount)++;
+
+            // Second vertex
+            vf[*vfCount] = tokensArr[6];
+            (*vfCount)++;
+            tf[*tfCount] = tokensArr[7];
+            (*tfCount)++;
+            vn[*vnCount] = tokensArr[8];
+            (*vnCount)++;
+
+            // Third vertex
             vf[*vfCount] = tokensArr[9];
             (*vfCount)++;
             tf[*tfCount] = tokensArr[10];
@@ -195,7 +216,23 @@ int handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfC
         vn[*vnCount] = tokensArr[5];
         (*vnCount)++;
         if(spaceCount > 2){
-            vertexCount = 4;
+            
+            vertexCount = 6;
+            
+            //First triangle: v1//vn1 v2//vn2 v3//vn3
+            //Second triangle: v1//vn1 v3//vn3 v4//vn4
+
+            // First vertex
+            vf[*vfCount] = tokensArr[0];
+            (*vfCount)++;
+            vn[*vnCount] = tokensArr[1];
+            (*vnCount)++;
+            // Second vertex
+            vf[*vfCount] = tokensArr[4];
+            (*vfCount)++;
+            vn[*vnCount] = tokensArr[5];
+            (*vnCount)++;
+            // Third vertex
             vf[*vfCount] = tokensArr[6];
             (*vfCount)++;
             vn[*vnCount] = tokensArr[7];
@@ -273,13 +310,56 @@ void runTests()
 ObjData loadObjFile(const char *filepath)
 {
     ObjData objData;
-    int MAX = 300000;
-    int vf[300000] = {0}; 
+    const int MAX = 3000000;
+   // int vf[300000] = {0}; 
     int tf[300000] = {0}; 
     int vn[300000] = {0};
-    float vArr[MAX];
-    float tArr[MAX];
-    float nArr[MAX];
+    float vArr[300000] = {0.0f};
+    float tArr[300000]=  {0.0f};
+    float nArr[300000]=  {0.0f}; 
+
+     int* vf = (int*)malloc(MAX * sizeof(int));
+    if (vf == NULL) {
+        // Handle memory allocation failure
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+   /* int* tf = (int*)malloc(MAX * sizeof(int));
+    if (tf == NULL) {
+        // Handle memory allocation failure
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    int* vn = (int*)malloc(MAX * sizeof(int));
+    if (vn == NULL) {
+        // Handle memory allocation failure
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    float* vArr = (float*)malloc(MAX * sizeof(float));
+    if (vArr == NULL) {
+        // Handle memory allocation failure
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    float* tArr = (float*)malloc(MAX * sizeof(float));
+    if (tArr == NULL) {
+        // Handle memory allocation failure
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    float* nArr = (float*)malloc(MAX * sizeof(float));
+    if (nArr == NULL) {
+        // Handle memory allocation failure
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    } */
+
+/*     objData.vertexData = malloc(MAX * sizeof(Vertex));
+    if(objData.vertexData == NULL){
+    printf("Failed to allocate memory for objData.vertexData\n");
+    exit(1);
+    } */
 
     int vIndex = 0;
     int uvCount = 0;
@@ -375,8 +455,14 @@ ObjData loadObjFile(const char *filepath)
         // or       f 1//1 2//2 3//3 4//4  <- quad
         if((int)line[0] == 102){
            faceLineList[faceLineCount].vertexCount = handleFaceLine(line, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-           if(faceLineCount >= 5000 || vfCount >= MAX || tfCount >= MAX){
+           if(vfCount >= MAX || tfCount >= MAX){
                 printf("Error: Too many vertices in obj file. Max is 300000. Exiting..");
+                printf("vfCount: %d\n", vfCount);
+                printf("tfCount: %d\n", tfCount);
+                exit(1);
+           }
+           if(faceLineCount >= 500000){
+                printf("Error: Too many face lines in obj file. Max is 500000. Exiting..");
                 exit(1);
            }
            //char *facetoken = strtok(line, " /"); // f
@@ -441,18 +527,25 @@ ObjData loadObjFile(const char *filepath)
    // printf("vnCount %d \n", vnCount);
     int num_of_vertex = vfCount;
   
-   objData.vertexData = malloc(num_of_vertex * sizeof(Vertex));
+   objData.vertexData = malloc(num_of_vertex * 2 * sizeof(Vertex));
    if(objData.vertexData == NULL){
+    printf("Failed to allocate memory for objData.vertexData\n");
     exit(1);
    }
 
     int vertexIndex = 0;
     for(int j = 0; j < faceLineCount; j+=1){
 
-       // printf("faceline: "  "%d"  "\n", j);
+      //  printf("faceline: "  "%d"  " of %d \n", j,faceLineCount);
+   //   printf("faceline vertex count %d\n", faceLineList[j].vertexCount);
         for(int i = 0; i < faceLineList[j].vertexCount; i++){
+    /*        if(vArr[(vf[vertexIndex]-1)*3] > 1000.0){
+                printf("vArr out of bounds %f\n", vArr[(vf[vertexIndex]-1)*3]);
+                exit(1);
+           } */
+           //printf("(vf[vertexIndex]-1)*3 %d\n", (vf[vertexIndex]-1)*3);
             // x y z
-          //  printf("f " TEXT_COLOR_YELLOW "%f %f %f " ,vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
+            //printf("f " TEXT_COLOR_YELLOW "%f %f %f " ,vArr[(vf[i]-1)*3],vArr[(vf[i]-1)*3+1],vArr[(vf[i]-1)*3+2]);
             objData.vertexData[vertexIndex].position[0] = vArr[(vf[vertexIndex]-1)*3];
             objData.vertexData[vertexIndex].position[1] = vArr[(vf[vertexIndex]-1)*3+1];
             objData.vertexData[vertexIndex].position[2] = vArr[(vf[vertexIndex]-1)*3+2];
@@ -487,18 +580,21 @@ ObjData loadObjFile(const char *filepath)
                 objData.vertexData[vertexIndex].normal[1] = nArr[(vn[vertexIndex]-1)*3+1];
                 objData.vertexData[vertexIndex].normal[2] = nArr[(vn[vertexIndex]-1)*3+2];
                 // print normals
-               // printf(TEXT_COLOR_CYAN" %f %f %f \n" TEXT_COLOR_RESET,objData.vertexData[vertexIndex].normal[0],objData.vertexData[vertexIndex].normal[1],objData.vertexData[vertexIndex].normal[2]);
+                //printf(TEXT_COLOR_CYAN" %f %f %f \n" TEXT_COLOR_RESET,objData.vertexData[vertexIndex].normal[0],objData.vertexData[vertexIndex].normal[1],objData.vertexData[vertexIndex].normal[2]);
             }
             vertexIndex++;
-           // printf("vertexIndex %d\n", vertexIndex);
+         //   printf("vertexIndex %d\n", vertexIndex);
         }
     }
 
     objData.num_of_vertices = num_of_vertex;
-
+     free(vf);
+ /*  free(tf);
+    free(vn);
+    free(vArr);
+    free(tArr);
+    free(nArr);  */
     return objData;
-  
-   
 }
 
 // Function to convert an integer to a string and append ".png"
