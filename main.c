@@ -95,10 +95,6 @@ struct Globals globals = {
     .assetArena=NULL
 };
 
-
-
-
-
 // Window dimensions
 static const int width = 800;  // If these change, the views defaults should be changed aswell.
 static const int height = 600; // If these change, the views defaults should be changed aswell.
@@ -1188,13 +1184,13 @@ void initScene(){
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
    ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
    ObjData bunny = loadObjFile("./Assets/bunny2.obj");
-  ObjData truck = loadObjFile("./Assets/truck.obj");
-    ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
+   ObjData truck = loadObjFile("./Assets/truck.obj");
+   ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
    ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
    ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
    ObjData plane = loadObjFile("./Assets/plane.obj"); 
    ObjData teapot = loadObjFile("./Assets/teapot.obj");
- ObjData dragon = loadObjFile("./Assets/dragon.obj"); 
+   ObjData dragon = loadObjFile("./Assets/dragon.obj"); 
  
    struct Material objectMaterial = {
     .active = 1,
@@ -1234,7 +1230,7 @@ void initScene(){
  createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
  createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&plane,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 

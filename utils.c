@@ -123,8 +123,7 @@ void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tf
          tokensArr[tokenIndex] = num;
         // printf("last num: %d\n", num);
    }
-    //printf("spaceCount: %d\n", spaceCount);
-   // printf("num_slashes: %d\n", num_slashes);
+
 
      // if has texture and is triangle,the token count should be 9
     // tokenIndex 0 , 3 , 6 is v
@@ -160,8 +159,8 @@ void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tf
             vn[*vnCount] = tokensArr[8];
             (*vnCount)++;
         if(spaceCount > 2){
+
            // printf("Quad with texture(uv) data\n");
-          //  vertexCount = 9;
             
             //First triangle: v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
             //Second triangle: v1/vt1/vn1 v3/vt3/vn3 v4/vt4/vn4
@@ -206,9 +205,7 @@ void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tf
         vn[*vnCount] = tokensArr[5];
         (*vnCount)++;
         if(spaceCount > 2){
-            
-          //  vertexCount = 6;
-            
+        
             //First triangle: v1//vn1 v2//vn2 v3//vn3
             //Second triangle: v1//vn1 v3//vn3 v4//vn4
 
@@ -235,23 +232,7 @@ void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tf
         }
     }
 
-    // Print out the vf,tf,vn data
-    /* for(int i = 0; i < *vfCount; i++){
-        printf("vf: %d\n", vf[i]);
-    }
-    for(int i = 0; i < *tfCount; i++){
-        printf("tf: %d\n", tf[i]);
-    }
-    for(int i = 0; i < *vnCount; i++){
-        printf("vn: %d\n", vn[i]);
-    } 
-    printf("vfCount: %d\n", *vfCount);
-    printf("tfCount: %d\n", *tfCount);
-    printf("vnCount: %d\n", *vnCount); */
-
-
     (*faceLineCount)++;
-   // return vertexCount;
 }
 
 /**
@@ -328,66 +309,14 @@ ObjData loadObjFile(const char *filepath)
     // How many vertices can we store in the obj file
     #define OBJDATA_MAX 300001
     
-
     // Allocate memory for the vertex data parsing
-    // TODO: refactor this to an Asset memory arena
-  /*   int* vf = (int*)malloc(OBJDATA_MAX * sizeof(int));
-    if (vf == NULL) {
-        // Handle memory allocation failure
-        fprintf(stderr, "Memory allocation failed\n");
-        exit(1);
-    }
-    int* tf = (int*)malloc(OBJDATA_MAX * sizeof(int));
-    if (tf == NULL) {
-        // Handle memory allocation failure
-        fprintf(stderr, "Memory allocation failed\n");
-        free(vf);
-        exit(1);
-    }
-    int* vn = (int*)malloc(OBJDATA_MAX * sizeof(int));
-    if (vn == NULL) {
-        // Handle memory allocation failure
-        fprintf(stderr, "Memory allocation failed\n");
-        free(vf);
-        free(tf);
-        exit(1);
-    }  */ 
- /*   float* vArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
-    if (vArr == NULL) {
-        // Handle memory allocation failure
-        fprintf(stderr, "Memory allocation failed\n");
-        free(vf);
-        free(tf);
-        free(vn);
-        exit(1);
-    }
-  float* tArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
-     if (tArr == NULL) {
-        // Handle memory allocation failure
-        fprintf(stderr, "Memory allocation failed\n");
-        free(vf);
-        free(tf);
-        free(vn);
-        free(vArr);
-        exit(1);
-    } */
-  //  float* nArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
     int* vf = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
     int* tf = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
     int* vn = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
     float* vArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
     float* tArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
     float* nArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
-   /*  if (nArr == NULL) {
-        // Handle memory allocation failure
-        fprintf(stderr, "Memory allocation failed\n");
-        free(vf);
-        free(tf);
-        free(vn);
-        free(vArr);
-        free(tArr);
-        exit(1);
-    }  */
+
 
     int vIndex = 0;
     int uvCount = 0;
@@ -526,20 +455,18 @@ ObjData loadObjFile(const char *filepath)
     //printf("group: %s \n",group);
     //printf("usemtl: %s \n",usemtl);
   //  printf("vIndex %d \n", vIndex);
-
     //printf("num_of_vertex %d \n", vfCount);
     //printf("vfCount %d \n", vfCount); 
    // printf("uvCount %d \n", uvCount);
    // printf("normalCount %d \n", normalCount); 
    //printf("vnCount %d \n", vnCount);
+
     int num_of_vertex = vfCount;
    
     ObjData objData;
-  // printf("just before\n");
+  
     
     objData.vertexData = (Vertex*)arenaAlloc(&globals.assetArena, num_of_vertex * sizeof(Vertex));
-    
-   
 
     int objectIndex = 0;
     int vertexIndex = 0;
@@ -592,12 +519,6 @@ ObjData loadObjFile(const char *filepath)
     }
 
     objData.num_of_vertices = num_of_vertex;
-   // free(vf);
-   // free(tf);
-   // free(vn); 
-  //  free(vArr);
-   // free(tArr);
-    //free(nArr);   
     return objData;
 }
 
