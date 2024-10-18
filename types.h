@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "opengl_types.h"
 #include <ft2build.h>
+
 #include FT_FREETYPE_H
 
 typedef struct Color {
@@ -13,6 +14,12 @@ typedef struct Color {
     GLfloat  b;
     GLfloat  a;
 } Color;
+
+typedef struct Arena {
+    size_t size;  // Total size of the memory block
+    size_t used;  // Amount of memory already used
+    void* base;   // Pointer to the base of the memory block
+} Arena;
 
 typedef enum {
     SPLIT_DEFAULT = 0,
@@ -119,10 +126,21 @@ typedef struct GpuData {
 } GpuData;
 
 // Data we get from obj-loader/parser.
+// Child struct in ObjGroup.
 typedef struct ObjData {
+   // char* name;
+    // material? 
     Vertex* vertexData;
     int num_of_vertices;
 } ObjData;
+
+// Data we get from obj-loader/parser. 
+// Parent struct for ObjData.
+typedef struct ObjGroup {
+    char* name;
+    int objectCount;
+    ObjData* objData;
+} ObjGroup;
 
 // Used to instruct createMesh what type of data struct to setup.
 typedef enum {

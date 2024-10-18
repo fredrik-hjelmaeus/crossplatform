@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "globals.h"
 
 char* readFile(const char *filename) {
 
@@ -39,8 +40,6 @@ char* readFile(const char *filename) {
     return buffer;
 }
 
-
-
 // Get a random number from 0 to 255
 int randInt(int rmin, int rmax) {
     return rand() % rmax + rmin;
@@ -64,16 +63,7 @@ float deg2rad(float degrees) {
     return degrees * M_PI / 180.0;
 }
 
-/* void addToArray(char* token, int* arr, int arrCount) {
-    if(arrCount >= 300000){
-        printf("Error: Too many vertices in obj file. Max is 300000. Exiting..");
-        exit(1);
-    }
-    token = strtok(NULL, " /");
-    int tokenInt = atoi(token);
-    arr[arrCount] = tokenInt;
-    printf("facetoken %s \n",token);
-} */
+
 
 void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
    
@@ -296,6 +286,37 @@ void runTests()
    exit(0);
 }
 
+typedef struct ObjObject {
+    char name[100];
+    int start;
+    int end;
+} ObjObject;
+
+void initMemoryArena(Arena* arena, size_t size) {
+    arena->size = size;
+    arena->base = malloc(size);
+    if (arena->base == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);  // Exit or handle the error as appropriate
+    }
+    arena->used = 0;
+}
+
+void* arenaAlloc(Arena* arena, size_t size) {
+    // Debug output
+    printf("size i want to allocate: %zu \n",size);
+    printf("used size: %zu \n",arena->used);
+    printf("arena size: %zu \n",arena->size);
+    if (arena->used + size > arena->size) {
+        fprintf(stderr, "Arena out of memory\n");
+        exit(1);
+    }
+    void* ptr = (char*)arena->base + arena->used;
+    arena->used += size;
+    
+    return ptr;
+}
+
 // Support for up to 30000 vertices only!. No indicies created.
 // Collects vertices position(vArr),uv/texcoords(tArr) , vertex indices(vf) ,texture indices(tf).
 // Then uses these and creates a new vertex data 
@@ -306,12 +327,11 @@ ObjData loadObjFile(const char *filepath)
 {
     // How many vertices can we store in the obj file
     #define OBJDATA_MAX 300001
-    ObjData objData;
+    
 
-
-    // Allocate memory for the vertex data
+    // Allocate memory for the vertex data parsing
     // TODO: refactor this to an Asset memory arena
-    int* vf = (int*)malloc(OBJDATA_MAX * sizeof(int));
+  /*   int* vf = (int*)malloc(OBJDATA_MAX * sizeof(int));
     if (vf == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
@@ -331,8 +351,8 @@ ObjData loadObjFile(const char *filepath)
         free(vf);
         free(tf);
         exit(1);
-    }  
-   float* vArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
+    }  */ 
+ /*   float* vArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
     if (vArr == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
@@ -341,8 +361,8 @@ ObjData loadObjFile(const char *filepath)
         free(vn);
         exit(1);
     }
-   float* tArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
-    if (tArr == NULL) {
+  float* tArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
+     if (tArr == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
         free(vf);
@@ -350,9 +370,15 @@ ObjData loadObjFile(const char *filepath)
         free(vn);
         free(vArr);
         exit(1);
-    }
-    float* nArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
-    if (nArr == NULL) {
+    } */
+  //  float* nArr = (float*)malloc(OBJDATA_MAX * sizeof(float));
+    int* vf = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
+    int* tf = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
+    int* vn = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
+    float* vArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
+    float* tArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
+    float* nArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
+   /*  if (nArr == NULL) {
         // Handle memory allocation failure
         fprintf(stderr, "Memory allocation failed\n");
         free(vf);
@@ -361,7 +387,7 @@ ObjData loadObjFile(const char *filepath)
         free(vArr);
         free(tArr);
         exit(1);
-    }
+    }  */
 
     int vIndex = 0;
     int uvCount = 0;
@@ -369,11 +395,13 @@ ObjData loadObjFile(const char *filepath)
     int vfCount = 0;
     int tfCount = 0;
     int vnCount = 0;
+    int objectCount = 0;
 
     int faceLineCount = 0;
     char material[100];
     char group[100];
     char usemtl[100];
+    ObjObject objects[100];
 
     FILE* fp;
     char line[1024];
@@ -385,7 +413,7 @@ ObjData loadObjFile(const char *filepath)
     }
     
     while (fgets(line, sizeof line, fp) != NULL){
-     //printf(TEXT_COLOR_ERROR "line %s" TEXT_COLOR_RESET "\n", line);
+    // printf(TEXT_COLOR_ERROR "line %s" TEXT_COLOR_RESET "\n", line);
         // comment
         if((int)line[0] == 35){
             continue;
@@ -403,7 +431,29 @@ ObjData loadObjFile(const char *filepath)
             }
             continue;
         }
-   
+        // o, object
+        if((int)line[0] == 111){
+            printf(TEXT_COLOR_BLUE "object: %s" TEXT_COLOR_RESET "\n", line);
+            int lineLength = strlen(line);
+            if(lineLength >= 100){
+                printf("Error: Object name too long. Exiting..");
+                exit(1);
+            }
+            ObjObject obj;
+            for(int i = 2; i < lineLength; i++){
+                obj.name[i-2] = line[i];
+            }
+            obj.start = faceLineCount;
+            if(objectCount > 0){
+                objects[objectCount-1].end = faceLineCount;
+            }
+            objects[objectCount] = obj;
+            objectCount++;
+            if(objectCount >= 100){
+                printf("Error: Too many objects. Exiting..");
+                exit(1);
+            }
+        }
         // g, grouping, read in the groups
         if((int)line[0] == 103){
             for(int i = 2; i < strlen(line); i++){
@@ -469,26 +519,35 @@ ObjData loadObjFile(const char *filepath)
 
     fclose(fp);
         
-    //printf("material: %s \n",material);
-    printf("faceline count: %d \n",faceLineCount);
+    
+    
+    //printf("faceline count: %d \n",faceLineCount);
+    //printf("objectCount: %d \n",objectCount);
     //printf("group: %s \n",group);
     //printf("usemtl: %s \n",usemtl);
   //  printf("vIndex %d \n", vIndex);
-    printf("num_of_vertex %d \n", vfCount);
-   // printf("vfCount %d \n", vfCount); 
+
+    //printf("num_of_vertex %d \n", vfCount);
+    //printf("vfCount %d \n", vfCount); 
    // printf("uvCount %d \n", uvCount);
    // printf("normalCount %d \n", normalCount); 
-   // printf("vnCount %d \n", vnCount);
+   //printf("vnCount %d \n", vnCount);
     int num_of_vertex = vfCount;
-  
-   objData.vertexData = malloc(num_of_vertex * sizeof(Vertex));
-   if(objData.vertexData == NULL){
-    printf("Failed to allocate memory for objData.vertexData\n");
-    exit(1);
-   }
+   
+    ObjData objData;
+  // printf("just before\n");
+    
+    objData.vertexData = (Vertex*)arenaAlloc(&globals.assetArena, num_of_vertex * sizeof(Vertex));
+    
+   
 
+    int objectIndex = 0;
     int vertexIndex = 0;
     for(int j = 0; j < faceLineCount; j+=1){
+        
+      /*   if(objectCount > 0){
+            objects[objectIndex] = objData;
+        } */
 
         for(int i = 0; i < 3; i++){
   
@@ -533,12 +592,12 @@ ObjData loadObjFile(const char *filepath)
     }
 
     objData.num_of_vertices = num_of_vertex;
-    free(vf);
-    free(tf);
-    free(vn); 
-    free(vArr);
-    free(tArr);
-    free(nArr);   
+   // free(vf);
+   // free(tf);
+   // free(vn); 
+  //  free(vArr);
+   // free(tArr);
+    //free(nArr);   
     return objData;
 }
 

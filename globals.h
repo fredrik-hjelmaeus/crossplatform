@@ -28,10 +28,17 @@ struct Globals {
     bool culling;
     int drawCallsCounter;
     bool debugDrawCalls;
+    Arena* assetArena;
 };
 
 extern struct Globals globals;
 extern Camera uiCamera;
 extern Camera mainCamera;
+
+#define ASSET_MEMORY_SIZE 5000000
+
+// Macro to allocate memory from the arena and cast it to the appropriate type
+// Use this to get memory
+//#define GET_MEMORY(ARENA,TYPE,COUNT) ((TYPE*)arenaAlloc(&ARENA,sizeof(TYPE) * (COUNT)))
 
 #endif 

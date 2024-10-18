@@ -31,6 +31,7 @@
 #include "opengl_types.h"
 #include "types.h"
 #include "globals.h"
+//#include "arena.h"
 #include "utils.h"
 #include "linmath.h"
 #include "opengl.h"
@@ -57,7 +58,9 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
 void onButtonClick();
 Camera* initCamera();
 TextureData loadTexture(char* path);
+
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 //------------------------------------------------------
 // Global variables / Initialization
 //------------------------------------------------------
@@ -88,8 +91,13 @@ struct Globals globals = {
     .unitScale=100.0f,
     .culling=false,
     .drawCallsCounter=0,
-    .debugDrawCalls=false
+    .debugDrawCalls=false,
+    .assetArena=NULL
 };
+
+
+
+
 
 // Window dimensions
 static const int width = 800;  // If these change, the views defaults should be changed aswell.
@@ -1178,17 +1186,16 @@ void initScene(){
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
-   ObjData truck = loadObjFile("./Assets/truck.obj");
-   ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
    ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
    ObjData bunny = loadObjFile("./Assets/bunny2.obj");
+  ObjData truck = loadObjFile("./Assets/truck.obj");
+    ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
    ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
    ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
    ObjData plane = loadObjFile("./Assets/plane.obj"); 
    ObjData teapot = loadObjFile("./Assets/teapot.obj");
-
-   ObjData dragon = loadObjFile("./Assets/dragon.obj");
-
+ ObjData dragon = loadObjFile("./Assets/dragon.obj"); 
+ 
    struct Material objectMaterial = {
     .active = 1,
     .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
@@ -1223,23 +1230,23 @@ void initScene(){
    
 
  // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
- createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
- createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+ createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&plane,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
  createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
- createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+ createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
 
  
    // lights
    createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
 
    // Primitives
-   createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   //createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   //createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1256,10 +1263,11 @@ void initScene(){
 
 }
 
-
-
 int main(int argc, char **argv) {
 
+    // Initialize Memory Arenas
+    initMemoryArena(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex)); 
+        
     //runTests();
     
     // Initialize the random number generator
