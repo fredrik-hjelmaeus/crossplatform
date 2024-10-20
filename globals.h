@@ -41,4 +41,10 @@ extern Camera mainCamera;
 // Use this to get memory
 //#define GET_MEMORY(ARENA,TYPE,COUNT) ((TYPE*)arenaAlloc(&ARENA,sizeof(TYPE) * (COUNT)))
 
+#ifdef DEV_MODE
+    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }
+    #else  // Tell compiler to do nothing in release mode
+    #define ASSERT(Expression, message) ((void)0)
+#endif
+
 #endif 

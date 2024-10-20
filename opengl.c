@@ -48,7 +48,7 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
     // Unbind VAO/vertex array
     glBindVertexArray(0);
-
+    
 }
 
 void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPath){
@@ -156,7 +156,7 @@ void initializeShaderProgram(ShaderProgram* shaderProgram, const char* vertexPat
 }
  */
 void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material) {
-
+ 
     // Check if camera is NULL
     if (camera == NULL) {
         fprintf(stderr, "Error: camera is NULL\n");
@@ -165,7 +165,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
      
     // Set shader
     glUseProgram(buffer->shaderProgram);
-
+ 
     // Assign diffuseMap to texture1 slot
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, material->diffuseMap);
@@ -232,7 +232,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &camera->view[0][0]);
 
     glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &camera->projection[0][0]);
-       
+      
     glBindVertexArray(buffer->VAO);
    if(buffer->numIndicies != 0) {
         glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);

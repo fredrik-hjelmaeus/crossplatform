@@ -64,7 +64,11 @@ float deg2rad(float degrees) {
 }
 
 
-
+/**
+ * Parses faceline in loadObj.
+ * example: "f 1/2/3 4/5/6 7/8/9";
+ * If the line is a quad, it will be split into two triangles and add one additional faceLineCount.
+ */
 void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
    
    int vertexCount = 3;
@@ -298,16 +302,19 @@ void* arenaAlloc(Arena* arena, size_t size) {
     return ptr;
 }
 
-// Support for up to 30000 vertices only!. No indicies created.
-// Collects vertices position(vArr),uv/texcoords(tArr) , vertex indices(vf) ,texture indices(tf).
+// Limit set to 100 o objects !. No indicies created.
+// Collects vertices position(vArr),uv/texcoords(tArr) , vertex indices(vf) ,texture indices(tf), normal indices(vn) ,material and object.
 // Then uses these and creates a new vertex data 
-// line looking like this: x, y ,z, u ,v
-// Number of lines is based on the number f-lines in obj. And every f line has 3 vertex. So 3 * f-lines is the new vertex data.
+// final attribute looking like this: x, y ,z, u ,v, nx, ny, nz
+// We convert quad to two triangles (handleLineFace) and add one to faceLineCount.
+// Support to handle facelines with and without texture data. Example: f 1/2/3 4/5/6 7/8/9 or f 7//7 8//8 9//9
 // obj specification: https://paulbourke.net/dataformats/obj/
-ObjData loadObjFile(const char *filepath)
+ObjGroup loadObjFile(const char *filepath)
 {
     // How many vertices can we store in the obj file
     #define OBJDATA_MAX 300001
+
+    #define MAX_NUM_OBJECTS = 100
     
     // Allocate memory for the vertex data parsing
     int* vf = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
@@ -317,6 +324,18 @@ ObjData loadObjFile(const char *filepath)
     float* tArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
     float* nArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
 
+    // An obj can have multiple objects. Every object gets placed in objData. All objData gets placed in a objGroup.
+    // This objGroup is what is returned.
+    ObjGroup objGroup;
+    objGroup.name = (char*)arenaAlloc(&globals.assetArena, 100 * sizeof(char)); // TODO: unneccessary?
+    objGroup.name = filepath;
+       
+    objGroup.objectCount = 0;
+   // ObjData objData;
+  //  objGroup.objData = objData;
+    
+    
+   // int objectCount = 0;
 
     int vIndex = 0;
     int uvCount = 0;
@@ -324,13 +343,16 @@ ObjData loadObjFile(const char *filepath)
     int vfCount = 0;
     int tfCount = 0;
     int vnCount = 0;
-    int objectCount = 0;
 
     int faceLineCount = 0;
+
+    // Keeps track of where objects faceLineCount.
+    int faceLineCountStart[100];// = {0};// 100 is max num of object
+    int faceLineCountEnd[100];// = {0};   // 100 is max num of object
     char material[100];
     char group[100];
     char usemtl[100];
-    ObjObject objects[100];
+    
 
     FILE* fp;
     char line[1024];
@@ -362,23 +384,47 @@ ObjData loadObjFile(const char *filepath)
         }
         // o, object
         if((int)line[0] == 111){
-            printf(TEXT_COLOR_BLUE "object: %s" TEXT_COLOR_RESET "\n", line);
+           // printf(TEXT_COLOR_BLUE "new object: %s" TEXT_COLOR_RESET , line);
             int lineLength = strlen(line);
             if(lineLength >= 100){
                 printf("Error: Object name too long. Exiting..");
                 exit(1);
             }
-            ObjObject obj;
-            for(int i = 2; i < lineLength; i++){
-                obj.name[i-2] = line[i];
+           
+            //ObjData newObjData;
+            //newObjData.material = (char*)arenaAlloc(&globals.assetArena, 100 * sizeof(char));
+           // newObjData.material = "default";
+
+            //objGroup.objData[objectCount] = newObjData;
+
+            // Object name
+           objGroup.objData[objGroup.objectCount].name = (char*)arenaAlloc(&globals.assetArena, lineLength * sizeof(char));
+           for(int i = 0; i < lineLength; i++){
+                objGroup.objData[objGroup.objectCount].name[i] = line[i];
+            }  
+            objGroup.objData[objGroup.objectCount].name[lineLength-1] = '\0'; // Null terminate the string
+            //printf("object name %s \n", objGroup.objData[objectCount].name);
+            
+           // printf("faceLineCount %d \n", faceLineCount);
+          //  printf("objectCount %d \n", objectCount);
+            faceLineCountStart[objGroup.objectCount] = faceLineCount; //0,2
+            if(objGroup.objectCount > 0){
+                ASSERT(faceLineCount > 0, "Error: faceLineCount is 0 or less");
+                ASSERT(faceLineCount < 100000, "Error: faceLineCount is too large");
+                int pi = (int)(objGroup.objectCount-1);
+                faceLineCountEnd[pi] = faceLineCount; // {0: 2}, 
+                int num_faceLineCountCurrentObject = (int)faceLineCountEnd[pi] - (int)faceLineCountStart[pi];
+                objGroup.objData[pi].num_of_vertices =  (num_faceLineCountCurrentObject * 3);
+              //  printf("pi %d \n", pi);
+                printf("object name %s \n", objGroup.objData[pi].name);
+                
+                printf("faceLineCountStart[objectCount-1] %d \n", faceLineCountStart[pi]);
+                printf("faceLineCountEnd[objectCount-1] %d \n", faceLineCountEnd[pi]);
+                printf("num of vertices: %d \n \n", objGroup.objData[pi].num_of_vertices);
+               
             }
-            obj.start = faceLineCount;
-            if(objectCount > 0){
-                objects[objectCount-1].end = faceLineCount;
-            }
-            objects[objectCount] = obj;
-            objectCount++;
-            if(objectCount >= 100){
+            objGroup.objectCount++;
+            if(objGroup.objectCount > 100){
                 printf("Error: Too many objects. Exiting..");
                 exit(1);
             }
@@ -393,10 +439,13 @@ ObjData loadObjFile(const char *filepath)
         // u, check for usemtl
         if((int)line[0] == 117){
             if(strncmp(line, "usemtl", 6) == 0){
-                for(int j = 7; j < strlen(line); j++){
+                printf("ignoring material%s \n",line);
+             //   objGroup.objData[objectCount].material = (char*)arenaAlloc(&globals.assetArena, 100 * sizeof(char));
+             //   objGroup.objData[objectCount].material = strdup(usemtl);
+             /*    for(int j = 7; j < strlen(line); j++){
                     usemtl[j-7] = line[j];
-                }
-                usemtl[strlen(line)-7] = '\0'; // Null terminate usemtl
+                } */
+               // usemtl[strlen(line)-7] = '\0'; // Null terminate usemtl
             }
             continue;
         }
@@ -426,7 +475,6 @@ ObjData loadObjFile(const char *filepath)
             nArr[normalCount+1] = strtof(token, NULL);
             token = strtok(NULL, " ");
             nArr[normalCount+2] = strtof(token, NULL);
-            //vnCount+=3;
             normalCount+=3;
             continue;
         }
@@ -446,10 +494,16 @@ ObjData loadObjFile(const char *filepath)
   
     }
 
+    // Input Last object
+    //printf("objectCount %d \n", objectCount);
+    printf("last object name %s \n", objGroup.objData[objGroup.objectCount-1].name);
+    faceLineCountEnd[objGroup.objectCount-1] = faceLineCount;
+    objGroup.objData[objGroup.objectCount-1].num_of_vertices = (faceLineCountEnd[objGroup.objectCount-1] - faceLineCountStart[objGroup.objectCount-1]) * 3;
+    
+    printf("last object num of vertices: %d \n \n", objGroup.objData[objGroup.objectCount-1].num_of_vertices); 
+
     fclose(fp);
         
-    
-    
     //printf("faceline count: %d \n",faceLineCount);
     //printf("objectCount: %d \n",objectCount);
     //printf("group: %s \n",group);
@@ -461,65 +515,92 @@ ObjData loadObjFile(const char *filepath)
    // printf("normalCount %d \n", normalCount); 
    //printf("vnCount %d \n", vnCount);
 
-    int num_of_vertex = vfCount;
-   
-    ObjData objData;
-  
-    
-    objData.vertexData = (Vertex*)arenaAlloc(&globals.assetArena, num_of_vertex * sizeof(Vertex));
+  // objGroup.objectCount = objectCount;
+ //  printf("objectCount %d \n", objGroup.objectCount);
+   printf("--------------------\n");
+   //faceLineCountEnd[0] = 2;
+  // faceLineCountEnd[1] = 4;
 
+/*    for(int i = 0; i < objectCount; i++){
+   printf("faceLineCountStart %d , ", faceLineCountStart[i]);
+   printf("faceLineCountEnd %d \n", faceLineCountEnd[i]);
+  
+    ASSERT(faceLineCountEnd[i] > 0, "Error: faceLineCountEnd is 0 or less");
+    ASSERT(faceLineCountEnd[i] < 5000, "Error: faceLineCountEnd is too large");
+   } */
+   
     int objectIndex = 0;
     int vertexIndex = 0;
-    for(int j = 0; j < faceLineCount; j+=1){
-        
-      /*   if(objectCount > 0){
-            objects[objectIndex] = objData;
-        } */
+   // for(int j = 0; j < faceLineCount; j+=1){
+      //  printf("j %d \n", j);
+      //  printf("faceLineCountEnd[objectIndex] %d \n", faceLineCountEnd[objectIndex]);
 
+        // Start on a new object 
+       // if(faceLineCountEnd[objectIndex] >= j){ // wrong here?!?!?! <---
+         //   objectIndex++;
+            //if(objectIndex >= objGroup.objectCount){
+              //  printf("objectIndex %d \n", objectIndex);
+              //  printf("objectCount %d \n", objGroup.objectCount);
+               // printf("Error: objectIndex exceeded objectCount. Exiting..\n");
+              //  break;
+                //exit(1);
+           // }
+            //printf("size of one vertex %d \n", sizeof(Vertex));
+          //  printf("object name %s \n", objGroup.objData[objectIndex].name);
+          //  printf("vertex count %d \n", objGroup.objData[objectIndex].num_of_vertices);
+          //  printf("objectIndex %d \n \n", objectIndex);
+           // ASSERT(objGroup.objData[objectIndex].num_of_vertices > 0, "Error: num_of_vertices is 0");
+          //  ASSERT(objGroup.objData[objectIndex].num_of_vertices < 100000, "Error: num_of_vertices is too large");
+            
+         //   size_t memorySizeToAllocate = objGroup.objData[objectIndex].num_of_vertices * sizeof(Vertex);
+           // printf("memorySizeToAllocate %zu \n", memorySizeToAllocate);
+            // Allocate memory
+          //  objGroup.objData[objectIndex].vertexData = (Vertex*)arenaAlloc(&globals.assetArena, memorySizeToAllocate);
+           
+      //  }
+        objGroup.objData[0].num_of_vertices = (faceLineCount * 3);
+        objGroup.objData[0].vertexData = (Vertex*)arenaAlloc(&globals.assetArena, (faceLineCount * 3) * sizeof(Vertex));
+        for(int j = 0; j < faceLineCount; j+=1){
         for(int i = 0; i < 3; i++){
   
             // x y z
-            objData.vertexData[vertexIndex].position[0] = vArr[(vf[vertexIndex]-1)*3];
-            objData.vertexData[vertexIndex].position[1] = vArr[(vf[vertexIndex]-1)*3+1];
-            objData.vertexData[vertexIndex].position[2] = vArr[(vf[vertexIndex]-1)*3+2];
+            objGroup.objData[0].vertexData[vertexIndex].position[0] = vArr[(vf[vertexIndex]-1)*3];
+            objGroup.objData[0].vertexData[vertexIndex].position[1] = vArr[(vf[vertexIndex]-1)*3+1];
+            objGroup.objData[0].vertexData[vertexIndex].position[2] = vArr[(vf[vertexIndex]-1)*3+2];
            
-
             // color, default to black atm
-            objData.vertexData[vertexIndex].color[0] = 1.0; 
-            objData.vertexData[vertexIndex].color[1] = 1.0;
-            objData.vertexData[vertexIndex].color[2] = 1.0;
+            objGroup.objData[0].vertexData[vertexIndex].color[0] = 1.0; 
+            objGroup.objData[0].vertexData[vertexIndex].color[1] = 1.0;
+            objGroup.objData[0].vertexData[vertexIndex].color[2] = 1.0;
            
-            
             // uv
             if(uvCount == 0){
-                objData.vertexData[vertexIndex].texcoord[0] = 0.0;
-                objData.vertexData[vertexIndex].texcoord[1] = 0.0;
+                objGroup.objData[0].vertexData[vertexIndex].texcoord[0] = 0.0;
+                objGroup.objData[0].vertexData[vertexIndex].texcoord[1] = 0.0;
             }else {
-                objData.vertexData[vertexIndex].texcoord[0] = tArr[(tf[vertexIndex]-1)*2];
-                objData.vertexData[vertexIndex].texcoord[1] = tArr[(tf[vertexIndex]-1)*2+1];
-            
+                objGroup.objData[0].vertexData[vertexIndex].texcoord[0] = tArr[(tf[vertexIndex]-1)*2];
+                objGroup.objData[0].vertexData[vertexIndex].texcoord[1] = tArr[(tf[vertexIndex]-1)*2+1];
             }
-
 
             // normals
             if(vnCount == 0){
-                objData.vertexData[vertexIndex].normal[0] = 0.0;
-                objData.vertexData[vertexIndex].normal[1] = 0.0;
-                objData.vertexData[vertexIndex].normal[2] = 0.0;
+                objGroup.objData[0].vertexData[vertexIndex].normal[0] = 0.0;
+                objGroup.objData[0].vertexData[vertexIndex].normal[1] = 0.0;
+                objGroup.objData[0].vertexData[vertexIndex].normal[2] = 0.0;
             }else {
-                objData.vertexData[vertexIndex].normal[0] = nArr[(vn[vertexIndex]-1)*3];
-                objData.vertexData[vertexIndex].normal[1] = nArr[(vn[vertexIndex]-1)*3+1];
-                objData.vertexData[vertexIndex].normal[2] = nArr[(vn[vertexIndex]-1)*3+2];
-            
-                
+                objGroup.objData[0].vertexData[vertexIndex].normal[0] = nArr[(vn[vertexIndex]-1)*3];
+                objGroup.objData[0].vertexData[vertexIndex].normal[1] = nArr[(vn[vertexIndex]-1)*3+1];
+                objGroup.objData[0].vertexData[vertexIndex].normal[2] = nArr[(vn[vertexIndex]-1)*3+2]; 
             }
             vertexIndex++;
          
         }
-    }
-
-    objData.num_of_vertices = num_of_vertex;
-    return objData;
+        }
+//    }
+ // for(int i = 0; i < objData.objectCount; i++){
+       // printf("object name in cornell_box: %s\n", objGroup.objData[0].name);
+  //  } 
+    return objGroup;
 }
 
 // Function to convert an integer to a string and append ".png"

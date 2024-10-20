@@ -22,11 +22,7 @@
 // Qt
 // Raylib
 
-#ifdef DEV_MODE
-    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }
-    #else  // Tell compiler to do nothing in release mode
-    #define ASSERT(Expression, message) ((void)0)
-#endif
+
 
 #include "opengl_types.h"
 #include "types.h"
@@ -1113,7 +1109,7 @@ void render(){
                 }
         }
     } 
-    
+   
    
     #endif
 
@@ -1182,15 +1178,27 @@ void initScene(){
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
-   ObjData cornell_box = loadObjFile("./Assets/cornell_box.obj");
-   ObjData bunny = loadObjFile("./Assets/bunny2.obj");
+   ObjGroup cornell_box = loadObjFile("./Assets/cornell_box.obj");
+  // loadObjFile("./Assets/cornell_box.obj");
+   // print all but vertexData in obj group:
+    //printf("cornell_box vert count: %s\n", &cornell_box.name);
+        
+    for(int i = 0; i < cornell_box.objectCount; i++){
+        printf("object name in cornell_box: %s\n", cornell_box.objData[i].name);
+    }  
+
+
+   // print object count in obj group:
+  //  printf("cornell_box object count: %d\n", cornell_box.objectCount);
+  //  printf("last object name in cornell_box: %s\n", cornell_box.objData[7].name);
+ /*   ObjData bunny = loadObjFile("./Assets/bunny2.obj");
    ObjData truck = loadObjFile("./Assets/truck.obj");
    ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
    ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
    ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
    ObjData plane = loadObjFile("./Assets/plane.obj"); 
    ObjData teapot = loadObjFile("./Assets/teapot.obj");
-   ObjData dragon = loadObjFile("./Assets/dragon.obj"); 
+   ObjData dragon = loadObjFile("./Assets/dragon.obj");  */
  
    struct Material objectMaterial = {
     .active = 1,
@@ -1226,19 +1234,19 @@ void initScene(){
    
 
  // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
- createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
- createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+ createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box.objData[0],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+ /* createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
  createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&plane,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
- createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+ createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */ 
 
  
    // lights
-   createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
+ createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
 
    // Primitives
    //createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -1251,8 +1259,8 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
-  createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+  //createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  //createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    
@@ -1339,6 +1347,9 @@ void createMesh(
     VertexDataType vertexDataType,
     Entity* entity
     ){
+
+printf("creating mesh\n");
+printf("num of vertex %d\n", num_of_vertex);
     
     entity->meshComponent->active = 1;
 
@@ -1458,7 +1469,7 @@ void createMesh(
     entity->materialComponent->diffuseMapOpacity = material->diffuseMapOpacity;
     entity->materialComponent->specularMap = material->specularMap;
     entity->meshComponent->gpuData->drawMode = drawMode;
-
+    
     setupMesh(  entity->meshComponent->vertices, 
                 entity->meshComponent->vertexCount, 
                 entity->meshComponent->indices, 
@@ -1473,6 +1484,7 @@ void createMesh(
     }else {
         setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
     }
+    
 }
 
 void createPoint(vec3 position){
@@ -1608,7 +1620,8 @@ void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale
     if(ui == 1){
         entity->uiComponent->active = 1;
     }
-
+   // printf("creating mesh for object with name %s\n", obj->name);
+    //printf("NUM of vertices %d\n", obj->num_of_vertices);
     createMesh(obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV,entity);
 }
 

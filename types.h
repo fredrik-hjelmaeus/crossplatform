@@ -128,8 +128,8 @@ typedef struct GpuData {
 // Data we get from obj-loader/parser.
 // Child struct in ObjGroup.
 typedef struct ObjData {
-   // char* name;
-    // material? 
+    char* name;
+   // char* material;
     Vertex* vertexData;
     int num_of_vertices;
 } ObjData;
@@ -139,7 +139,7 @@ typedef struct ObjData {
 typedef struct ObjGroup {
     char* name;
     int objectCount;
-    ObjData* objData;
+    ObjData objData[10];
 } ObjGroup;
 
 // Used to instruct createMesh what type of data struct to setup.
