@@ -1181,37 +1181,27 @@ void initScene(){
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
    
-   ObjGroup* cornell_box = loadObjFile("./Assets/cornell_box.obj");
-  // loadObjFile("./Assets/cornell_box.obj");
-   // print all but vertexData in obj group:
-    printf("cornell_box vert count: %s\n", cornell_box->name);
-    printf("BINGO objectCount: %d\n", cornell_box->objectCount);
+ObjGroup* cornell_box = loadObjFile("./Assets/cornell_box.obj");
+
+
     
         
-/*    for(int i = 0; i < cornell_box->objectCount; i++){
-        printf("object index cornell_box: %d\n", i);
-        printf("object name in cornell_box: %s\n", cornell_box->objData[i].name);
-        printf("object vertex number in cornell_box: %d\n", cornell_box->objData[i].num_of_vertices);
-        for(int j = 0; j < cornell_box->objData[i].num_of_vertices; j++){
-            printf("vertex %d x: %f\n", j, cornell_box->objData[i].vertexData[j].position[0]);
-            printf("vertex %d y: %f\n", j, cornell_box->objData[i].vertexData[j].position[1]);
-            printf("vertex %d z: %f\n", j, cornell_box->objData[i].vertexData[j].position[2]);
-            printf("\n");
-        }
-    }     */
 
 
-   // print object count in obj group:
-  //  printf("cornell_box object count: %d\n", cornell_box.objectCount);
-  //  printf("last object name in cornell_box: %s\n", cornell_box.objData[7].name);
- /*   ObjData bunny = loadObjFile("./Assets/bunny2.obj");
-   ObjData truck = loadObjFile("./Assets/truck.obj");
-   ObjData objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
-   ObjData sphere = loadObjFile("./Assets/blender_sphere3.obj");
-   ObjData triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
-   ObjData plane = loadObjFile("./Assets/plane.obj"); 
-   ObjData teapot = loadObjFile("./Assets/teapot.obj");
-   ObjData dragon = loadObjFile("./Assets/dragon.obj");  */
+
+  
+  
+  
+   ObjGroup* bunny = loadObjFile("./Assets/bunny2.obj");
+    ObjGroup* truck = loadObjFile("./Assets/truck.obj");
+    ObjGroup* plane = loadObjFile("./Assets/plane.obj"); 
+   
+   ObjGroup* objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
+   ObjGroup* sphere = loadObjFile("./Assets/blender_sphere3.obj");
+   ObjGroup* triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
+   
+   ObjGroup* teapot = loadObjFile("./Assets/teapot.obj");
+   ObjGroup* dragon = loadObjFile("./Assets/dragon.obj");  
  
    struct Material objectMaterial = {
     .active = 1,
@@ -1247,7 +1237,7 @@ void initScene(){
    
 
  // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[0],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+ createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[0],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
  createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[1],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
 createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[2],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
  createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[3],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
@@ -1255,27 +1245,27 @@ createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[4],(vec3){2.0f, 
   createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[5],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
 createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[6],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[7],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-  
+
  
  
  
+ createObject(VIEWPORT_MAIN,objectMaterial,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createObject(VIEWPORT_MAIN,objectMaterial,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+ createObject(VIEWPORT_MAIN,objectMaterial,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  
- /* createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
- createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&sphere,(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes,(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&plane,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&teapot,(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
- createObject(VIEWPORT_MAIN,objectMaterial,&dragon,(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */ 
+ createObject(VIEWPORT_MAIN,objectMaterial,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
+ createObject(VIEWPORT_MAIN,objectMaterial,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
 
  
    // lights
  createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
 
    // Primitives
-   //createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   //createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1284,8 +1274,8 @@ createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[6],(vec3){2.0f, 
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
-  //createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  //createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+ createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
    
@@ -1373,8 +1363,8 @@ void createMesh(
     Entity* entity
     ){
 
-printf("creating mesh\n");
-printf("num of vertex %d\n", num_of_vertex);
+//printf("creating mesh\n");
+//printf("num of vertex %d\n", num_of_vertex);
     
     entity->meshComponent->active = 1;
 
