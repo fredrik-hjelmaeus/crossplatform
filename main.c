@@ -21,13 +21,9 @@
 #include <SDL2/SDL.h>
 // Qt
 // Raylib
-
-
-
 #include "opengl_types.h"
 #include "types.h"
 #include "globals.h"
-//#include "arena.h"
 #include "utils.h"
 #include "linmath.h"
 #include "opengl.h"
@@ -1181,29 +1177,17 @@ void initScene(){
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
    
-ObjGroup* cornell_box = loadObjFile("./Assets/cornell_box.obj");
-
-
-    
-        
-
-
-
-  
-  
-  
-   ObjGroup* bunny = loadObjFile("./Assets/bunny2.obj");
+    ObjGroup* cornell_box = loadObjFile("./Assets/cornell_box.obj");  
+    ObjGroup* bunny = loadObjFile("./Assets/bunny2.obj");
     ObjGroup* truck = loadObjFile("./Assets/truck.obj");
     ObjGroup* plane = loadObjFile("./Assets/plane.obj"); 
-   
-   ObjGroup* objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
-   ObjGroup* sphere = loadObjFile("./Assets/blender_sphere3.obj");
-   ObjGroup* triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
-   
-   ObjGroup* teapot = loadObjFile("./Assets/teapot.obj");
-   ObjGroup* dragon = loadObjFile("./Assets/dragon.obj");  
+    ObjGroup* objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
+    ObjGroup* sphere = loadObjFile("./Assets/blender_sphere3.obj");
+    ObjGroup* triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
+    ObjGroup* teapot = loadObjFile("./Assets/teapot.obj");
+    ObjGroup* dragon = loadObjFile("./Assets/dragon.obj");
  
-   struct Material objectMaterial = {
+    struct Material objectMaterial = {
     .active = 1,
     .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
     .diffuse = (Color){1.0f, 0.0f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
@@ -1212,60 +1196,54 @@ ObjGroup* cornell_box = loadObjFile("./Assets/cornell_box.obj");
     .diffuseMap = containerTwoMap,               // used
     .diffuseMapOpacity = 1.0f,                  // used
     .specularMap = containerTwoSpecularMap,      // used
- };
- struct Material uiMaterial = {
-    .active = 1,
-    .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
-    .diffuse = (Color){0.5f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
-    .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
-    .shininess = 4.0f,                           // NOT used
-    .diffuseMap = containerTwoMap,               // used
-    .diffuseMapOpacity = 1.0f,                    // used
-    .specularMap = containerTwoSpecularMap,      // NOT used
- };
- struct Material lightMaterial = {
-    .active = 1,
-    .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
-    .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
-    .specular = (Color){1.0f, 1.0f, 1.0f, 1.0f}, // used
-    .shininess = 256.0f,                         // NOT used
-    .diffuseMap = containerMap,                  // NOT used
-    .diffuseMapOpacity = 1.0f,                  // NOT used
-    .specularMap = containerMap,                 // NOT used
- };
+    };
+    struct Material uiMaterial = {
+        .active = 1,
+        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
+        .diffuse = (Color){0.5f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
+        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
+        .shininess = 4.0f,                           // NOT used
+        .diffuseMap = containerTwoMap,               // used
+        .diffuseMapOpacity = 1.0f,                    // used
+        .specularMap = containerTwoSpecularMap,      // NOT used
+    };
+    struct Material lightMaterial = {
+        .active = 1,
+        .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
+        .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
+        .specular = (Color){1.0f, 1.0f, 1.0f, 1.0f}, // used
+        .shininess = 256.0f,                         // NOT used
+        .diffuseMap = containerMap,                  // NOT used
+        .diffuseMapOpacity = 1.0f,                  // NOT used
+        .specularMap = containerMap,                 // NOT used
+    };
 
    
-
- // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
- createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[0],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
- createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[1],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[2],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
- createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[3],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[4],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-  createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[5],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[6],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-  createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[7],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-
- 
- 
- 
- createObject(VIEWPORT_MAIN,objectMaterial,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createObject(VIEWPORT_MAIN,objectMaterial,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
- createObject(VIEWPORT_MAIN,objectMaterial,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
- 
- createObject(VIEWPORT_MAIN,objectMaterial,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
- createObject(VIEWPORT_MAIN,objectMaterial,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
+    createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[0],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[1],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[2],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[3],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[4],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[5],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[6],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[7],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(VIEWPORT_MAIN,objectMaterial,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    createObject(VIEWPORT_MAIN,objectMaterial,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(VIEWPORT_MAIN,objectMaterial,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(VIEWPORT_MAIN,objectMaterial,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(VIEWPORT_MAIN,objectMaterial,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(VIEWPORT_MAIN,objectMaterial,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,objectMaterial,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
 
  
-   // lights
- createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
+    // lights
+    createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
 
-   // Primitives
-   createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    // Primitives
+    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
