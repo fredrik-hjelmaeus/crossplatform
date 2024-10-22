@@ -44,7 +44,7 @@ void runTests();
 
 float deg2rad(float degrees);
 
-ObjGroup loadObjFile(const char* filepath);
+ObjGroup* loadObjFile(const char* filepath);
 
 int isPointInsideRect(Rectangle rect, vec2 point);
 Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);

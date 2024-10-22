@@ -139,7 +139,7 @@ typedef struct ObjData {
 typedef struct ObjGroup {
     char* name;
     int objectCount;
-    ObjData objData[10];
+    ObjData* objData;
 } ObjGroup;
 
 // Used to instruct createMesh what type of data struct to setup.

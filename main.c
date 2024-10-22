@@ -1162,6 +1162,8 @@ void emscriptenLoop() {
 }
 #endif
 
+
+
 /**
  * @brief Initialize the scene
  * Create the 3d and ui scene objects
@@ -1178,14 +1180,25 @@ void initScene(){
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
-   ObjGroup cornell_box = loadObjFile("./Assets/cornell_box.obj");
+   
+   ObjGroup* cornell_box = loadObjFile("./Assets/cornell_box.obj");
   // loadObjFile("./Assets/cornell_box.obj");
    // print all but vertexData in obj group:
-    //printf("cornell_box vert count: %s\n", &cornell_box.name);
+    printf("cornell_box vert count: %s\n", cornell_box->name);
+    printf("BINGO objectCount: %d\n", cornell_box->objectCount);
+    
         
-    for(int i = 0; i < cornell_box.objectCount; i++){
-        printf("object name in cornell_box: %s\n", cornell_box.objData[i].name);
-    }  
+/*    for(int i = 0; i < cornell_box->objectCount; i++){
+        printf("object index cornell_box: %d\n", i);
+        printf("object name in cornell_box: %s\n", cornell_box->objData[i].name);
+        printf("object vertex number in cornell_box: %d\n", cornell_box->objData[i].num_of_vertices);
+        for(int j = 0; j < cornell_box->objData[i].num_of_vertices; j++){
+            printf("vertex %d x: %f\n", j, cornell_box->objData[i].vertexData[j].position[0]);
+            printf("vertex %d y: %f\n", j, cornell_box->objData[i].vertexData[j].position[1]);
+            printf("vertex %d z: %f\n", j, cornell_box->objData[i].vertexData[j].position[2]);
+            printf("\n");
+        }
+    }     */
 
 
    // print object count in obj group:
@@ -1234,7 +1247,19 @@ void initScene(){
    
 
  // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
- createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box.objData[0],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[0],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+ createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[1],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[2],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+ createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[3],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[4],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+  createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[5],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[6],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+  createObject(VIEWPORT_MAIN,objectMaterial,&cornell_box->objData[7],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+  
+ 
+ 
+ 
+ 
  /* createObject(VIEWPORT_MAIN,objectMaterial,&bunny,(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
  createObject(VIEWPORT_MAIN,objectMaterial,&truck,(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  createObject(VIEWPORT_MAIN,objectMaterial,&objExample,(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
