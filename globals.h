@@ -28,7 +28,9 @@ struct Globals {
     bool culling;
     int drawCallsCounter;
     bool debugDrawCalls;
-    Arena* assetArena;
+    Arena assetArena;
+    Material* materials;
+    int materialsCount;
 };
 
 extern struct Globals globals;
