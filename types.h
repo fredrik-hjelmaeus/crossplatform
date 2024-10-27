@@ -105,6 +105,7 @@ typedef struct Texture {
 
 typedef struct Material {
     bool active;
+    char* name;
     Color ambient;
     Color diffuse;
     Color specular;

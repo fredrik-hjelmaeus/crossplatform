@@ -295,9 +295,9 @@ void initMemoryArena(Arena* arena, size_t size) {
 
 void* arenaAlloc(Arena* arena, size_t size) {
     // Debug output
-   // printf("size i want to allocate: %zu \n",size);
-   // printf("used size: %zu \n",arena->used);
-    //printf("arena size: %zu \n",arena->size);
+    printf("size i want to allocate: %zu \n",size);
+    printf("used size: %zu \n",arena->used);
+    printf("arena size: %zu \n",arena->size);
     if (arena->used + size > arena->size) {
         fprintf(stderr, "Arena out of memory\n");
         exit(1);
@@ -307,6 +307,150 @@ void* arenaAlloc(Arena* arena, size_t size) {
     
     return ptr;
 }
+// Not evaluated yet, do this before using
+void resetArena(Arena* arena) {
+    arena->used = 0;
+}
+// Not evaluated yet, do this before using 
+void freeArena(Arena* arena) {
+    free(arena->base);
+    arena->base = NULL;
+    arena->used = 0;
+}
+/**
+ * Parse .mtl file.
+ * spec: https://en.wikipedia.org/wiki/Wavefront_.obj_file
+ * https://paulbourke.net/dataformats/mtl/
+ */
+void parseObjMaterial(const char *filepath){
+    
+    // Temporary allocate new materials on the stack. 
+    // We will copy them to the assetArena after we 
+    // know how many materials we have and before this fn ends.
+    Material materials[100]; 
+    int materialIndex = -1; // for every material
+    
+    // Check if .mtl file with same name exists, if so load&parse it.
+    char* dest = (char*)arenaAlloc(&globals.assetArena, 99 * sizeof(char));
+    char* dot = (char*)arenaAlloc(&globals.assetArena, 99 * sizeof(char));
+    strcpy(dot, "."); // Initialize dot with a period
+    char *filepath_copy = strcpy(dest,filepath);
+    dest = strtok(dest, ".");
+    dest = strcat(dot, dest);
+    dest = strcat(dest, ".mtl");
+    printf("dest: %s\n", dest);
+    
+    // Open .mtl file
+    FILE* mtlfp;
+    char mtlLine[1024];
+
+    mtlfp = fopen(dest, "r");
+    if(mtlfp == NULL) {
+        printf(TEXT_COLOR_ERROR "Error opening file %s" TEXT_COLOR_RESET "\n", dest);
+        exit(1);
+    }
+
+    // Parse .mtl file
+    while (fgets(mtlLine, sizeof mtlLine, mtlfp) != NULL){
+    // printf(TEXT_COLOR_ERROR "mtl line %s" TEXT_COLOR_RESET "\n", line);
+        // comment
+        if((int)mtlLine[0] == 35){
+            continue;
+        }
+        // newline
+        if((int)mtlLine[0] == 10){
+            continue;
+        }
+        //newmtl, new material
+        if(strncmp(mtlLine, "newmtl", 6) == 0){
+           materialIndex++;
+           materials[materialIndex].active = true;
+           materials[materialIndex].name = (char*)arenaAlloc(&globals.assetArena, 98);
+           materials[materialIndex].name = mtlLine;           
+           printf("new material %s \n",materials[materialIndex].name);
+        }
+        //Ka, ambient color
+        //Kd, diffuse color
+        //Ks, specular color
+        //Ns, shininess/specular exponent
+        //d,  dissolve(transparency) & Tr, transparency
+        //     # some implementations use 'd'
+        //d 0.9
+        //     # others use 'Tr' (inverted: Tr = 1 - d)
+        //Tr 0.1
+        //     Transparent materials can additionally have a 
+        //     Transmission Filter Color, specified with "Tf".
+        //     # Transmission Filter Color (using R G B)
+        //     Transparent materials can additionally have a Transmission Filter Color, specified with "Tf".
+        //Tf 1.0 0.5 0.5 
+        //     # Transmission Filter Color (using CIEXYZ) - y and z values are optional and assumed to be equal to x if omitted
+        //Tf xyz 1.0 0.5 0.5 
+        //     # Transmission Filter Color from spectral curve file (not commonly used)
+        //     Tf spectral <filename>.rfl <optional factor>
+        //     A material can also have an optical density for its surface. 
+        //     This is also known as index of refraction. (IOR)
+        //Ni 1.45000
+        //     # Illumination model (see below) https://en.wikipedia.org/wiki/List_of_common_shading_algorithms
+        //illum 2  (0-10), 2 is Color on and Ambient on.
+                // 0. Color on and Ambient off
+                    /* 
+                    1. Color on and Ambient on
+                    2. Highlight on
+                    3. Reflection on and Ray trace on
+                    4. Transparency: Glass on, Reflection: Ray trace on
+                    5. Reflection: Fresnel on and Ray trace on
+                    6. Transparency: Refraction on, Reflection: Fresnel off and Ray trace on
+                    7. Transparency: Refraction on, Reflection: Fresnel on and Ray trace on
+                    8. Reflection on and Ray trace off
+                    9. Transparency: Glass on, Reflection: Ray trace off
+                    10. Casts shadows onto invisible surfaces */
+        //map_Ka   lemur.tga  can have optional params: map_Ka -o 1 1 1 ambient.tga
+        //map_Kd   lemur.tga
+        //map_Ks   lemur.tga
+        //map_Ns   lemur_spec.tga
+        //map_d    lemur_alpha.tga (alpha)
+        //          # some implementations use 'map_bump' instead of 'bump' below
+        //map_bump  lemur_bump.tga
+        //bump      # bump map (which by default uses luminance channel of the image)
+        //disp      lemur_disp.tga
+        //          # stencil decal texture (defaults to 'matte' channel of the image)
+        //decal     lemur_stencil.tga
+        //          # spherical reflection map
+        //refl      -type sphere clouds.tga
+        //          TEXTURES CAN HAVE OPTIONS, 
+        //          SEE Texture options here: https://en.wikipedia.org/wiki/Wavefront_.obj_file
+        //        Physically-based rendering (PBR) parameters
+        /*          The creators of the online 3D editing and modeling tool, 
+                    Clara.io, proposed extending the MTL format to enable specifying physically-based rendering 
+                    (PBR) maps and parameters. This extension has been subsequently adopted by Blender and TinyObjLoader. 
+                    The extension PBR maps and parameters are */
+        //Pr/map_Pr  #roughness
+        //Pm/map_Pm  #metallic
+        //Ps/map_Ps  #sheen
+        //Pc         #clearcoat thickness
+        //Pcr        #clearcoat roughness
+        //Ke/map_Ke  #emissive
+        //aniso      #anisotropy
+        //anisor     #anisotropy rotation
+        //norm       #normal map (RGB components represent XYZ components of the surface normal)
+        //           RMA
+        //map_RMA
+        //map_ORM
+
+      
+        // v: v & space(32), read vertices
+       /*  if((int)mtlLine[0] == 118 && (int)mtlLine[1] == 32){
+          //  printf(TEXT_COLOR_ERROR "v %s" TEXT_COLOR_RESET "\n", line);
+          sscanf(mtlLine, "v %f %f %f", &KaArr[mIndex], &KaArr[mIndex+1], &KaArr[mIndex+2]);
+          mIndex+=3;
+          continue;
+        } */
+       
+    
+    }
+    fclose(mtlfp);
+    
+}
 
 // Limit set to 100 o objects !. No indicies created.
 // Collects vertices position(vArr),uv/texcoords(tArr) , vertex indices(vf) ,texture indices(tf), normal indices(vn) ,material and object.
@@ -314,7 +458,9 @@ void* arenaAlloc(Arena* arena, size_t size) {
 // final attribute looking like this: x, y ,z, u ,v, nx, ny, nz
 // We convert quad to two triangles (handleLineFace) and add one to faceLineCount.
 // Support to handle facelines with and without texture data. Example: f 1/2/3 4/5/6 7/8/9 or f 7//7 8//8 9//9
-// obj specification: https://paulbourke.net/dataformats/obj/
+// obj specification: https://paulbourke.net/dataformats/obj/ 
+// mtl specification: https://paulbourke.net/dataformats/mtl/
+// & https://en.wikipedia.org/wiki/Wavefront_.obj_file
 ObjGroup* loadObjFile(const char *filepath)
 {
     // How many vertices can we store in the obj file
@@ -353,6 +499,11 @@ ObjGroup* loadObjFile(const char *filepath)
     char material[100];
     char group[100];
     char usemtl[100];
+
+
+    
+    parseObjMaterial(filepath);
+    
     
 
     FILE* fp;
@@ -600,6 +751,8 @@ float absValue(float value) {
 
 
 // DEBUG
+
+
 
 /**
  * Function to capture the framebuffer and save it to a png file.
