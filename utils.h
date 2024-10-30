@@ -27,6 +27,8 @@ float randFloat(float rmin, float rmax);
 unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
 void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
 void runTests();
+void initMemoryArena(Arena* arena, size_t size);
+TextureData loadTexture(char* path);
 
 // Utility macros
 #define CHECK_SDL_ERROR(test, message) \

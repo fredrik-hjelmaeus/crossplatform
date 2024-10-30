@@ -8,6 +8,7 @@
 
 #include FT_FREETYPE_H
 
+
 typedef struct Color {
     GLfloat  r;
     GLfloat  g;

@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "globals.h"
+#include <ctype.h>
 
 char* readFile(const char *filename) {
 
@@ -71,7 +72,6 @@ float deg2rad(float degrees) {
  */
 void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
    
-   int vertexCount = 3;
    int num_slashes = 0;
    int spaceCount = 0;
   
@@ -295,9 +295,9 @@ void initMemoryArena(Arena* arena, size_t size) {
 
 void* arenaAlloc(Arena* arena, size_t size) {
     // Debug output
-    printf("size i want to allocate: %zu \n",size);
+  /*   printf("size i want to allocate: %zu \n",size);
     printf("used size: %zu \n",arena->used);
-    printf("arena size: %zu \n",arena->size);
+    printf("arena size: %zu \n",arena->size); */
     if (arena->used + size > arena->size) {
         fprintf(stderr, "Arena out of memory\n");
         exit(1);
@@ -317,6 +317,43 @@ void freeArena(Arena* arena) {
     arena->base = NULL;
     arena->used = 0;
 }
+
+/**
+ * Analyse filepath and make it work on different platforms.
+ * For ex. on Linux, convert to \\ to to /, add /mnt/ , & change D: to d  ,
+ * Input:  D:\\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
+ * result: /mnt/d/OneDrive/viz/texturer/Renderingking texturepack V3/old bricks.jpg
+ */
+char* handleFilePath(const char* filepath){
+    char* newPath = (char*)arenaAlloc(&globals.assetArena, (strlen(filepath) + 1) * sizeof(char));
+    if(isupper(filepath[0]) && filepath[1] == ':'){
+        strcpy(newPath,"/mnt/");
+        char* lower = tolower(filepath[0]);
+        newPath[5] = lower;
+        int index = 5;
+       
+        index++;
+       for(int i = 2; i < strlen(filepath); i++){
+           // printf("char: %c\n", filepath[i]);
+            if(filepath[i] == '\\'){
+                newPath[index++] = '/';
+                i++;
+                continue;
+            }
+            newPath[index++] = filepath[i];
+        } 
+   
+        newPath[index] = '\0'; // Null-terminate the new path
+        //printf("newpath %s \n ",newPath);
+    }else{
+        printf(TEXT_COLOR_ERROR "handleFilePath failed %s" TEXT_COLOR_RESET "\n", filepath);
+        exit(1);
+    }
+
+    return newPath;
+}
+
+
 /**
  * Parse .mtl file.
  * spec: https://en.wikipedia.org/wiki/Wavefront_.obj_file
@@ -352,7 +389,7 @@ void parseObjMaterial(const char *filepath){
 
     // Parse .mtl file
     while (fgets(mtlLine, sizeof mtlLine, mtlfp) != NULL){
-    // printf(TEXT_COLOR_ERROR "mtl line %s" TEXT_COLOR_RESET "\n", line);
+    // printf(TEXT_COLOR_ERROR "mtl line %s" TEXT_COLOR_RESET "\n", mtlLine);
         // comment
         if((int)mtlLine[0] == 35){
             continue;
@@ -363,17 +400,41 @@ void parseObjMaterial(const char *filepath){
         }
         //newmtl, new material
         if(strncmp(mtlLine, "newmtl", 6) == 0){
+           char* token = strtok(mtlLine, " ");
+           token = strtok(NULL, " ");
            materialIndex++;
            materials[materialIndex].active = true;
-           materials[materialIndex].name = (char*)arenaAlloc(&globals.assetArena, 98);
-           materials[materialIndex].name = mtlLine;           
+           materials[materialIndex].name = (char*)arenaAlloc(&globals.assetArena, (strlen(token) + 1) * sizeof(char));
+           strcpy(materials[materialIndex].name, token);
+              
            printf("new material %s \n",materials[materialIndex].name);
         }
         //Ka, ambient color
+        if(strncmp(mtlLine, "Ka", 2) == 0){
+            sscanf(mtlLine, "Ka %f %f %f", &materials[materialIndex].ambient.r, &materials[materialIndex].ambient.g, &materials[materialIndex].ambient.b);
+            printf("ambient color %f %f %f \n",materials[materialIndex].ambient.r, materials[materialIndex].ambient.g, materials[materialIndex].ambient.b);
+        }
         //Kd, diffuse color
+        if(strncmp(mtlLine, "Kd", 2) == 0){
+            sscanf(mtlLine, "Kd %f %f %f", &materials[materialIndex].diffuse.r, &materials[materialIndex].diffuse.g, &materials[materialIndex].diffuse.b);
+            printf("diffuse color %f %f %f \n",materials[materialIndex].diffuse.r, materials[materialIndex].diffuse.g, materials[materialIndex].diffuse.b);
+        }
         //Ks, specular color
+        if(strncmp(mtlLine, "Ks", 2) == 0){
+            sscanf(mtlLine, "Ks %f %f %f", &materials[materialIndex].specular.r, &materials[materialIndex].specular.g, &materials[materialIndex].specular.b);
+            printf("specular color %f %f %f \n",materials[materialIndex].specular.r, materials[materialIndex].specular.g, materials[materialIndex].specular.b);
+        }
+        //Ke, emissive color
+      /*   if(strncmp(mtlLine, "Ke", 2) == 0){
+            sscanf(mtlLine, "Ke %f %f %f", &materials[materialIndex].emissive.r, &materials[materialIndex].emissive.g, &materials[materialIndex].emissive.b);
+            printf("emissive color %f %f %f \n",materials[materialIndex].emissive.r, materials[materialIndex].emissive.g, materials[materialIndex].emissive.b);
+        } */
         //Ns, shininess/specular exponent
         //d,  dissolve(transparency) & Tr, transparency
+       /*  if(strncmp(mtlLine, "d", 1) == 0){
+            sscanf(mtlLine, "d %f", &materials[materialIndex].transparency);
+            printf("transparency %f \n",materials[materialIndex].transparency);
+        } */
         //     # some implementations use 'd'
         //d 0.9
         //     # others use 'Tr' (inverted: Tr = 1 - d)
@@ -390,10 +451,14 @@ void parseObjMaterial(const char *filepath){
         //     A material can also have an optical density for its surface. 
         //     This is also known as index of refraction. (IOR)
         //Ni 1.45000
+       /*  if(strncmp(mtlLine, "Ni", 2) == 0){
+            sscanf(mtlLine, "Ni %f", &materials[materialIndex].ior);
+            printf("optical density(ior) %f \n",materials[materialIndex].ior);
+        } */
         //     # Illumination model (see below) https://en.wikipedia.org/wiki/List_of_common_shading_algorithms
         //illum 2  (0-10), 2 is Color on and Ambient on.
-                // 0. Color on and Ambient off
                     /* 
+                    0. Color on and Ambient off
                     1. Color on and Ambient on
                     2. Highlight on
                     3. Reflection on and Ray trace on
@@ -405,7 +470,38 @@ void parseObjMaterial(const char *filepath){
                     9. Transparency: Glass on, Reflection: Ray trace off
                     10. Casts shadows onto invisible surfaces */
         //map_Ka   lemur.tga  can have optional params: map_Ka -o 1 1 1 ambient.tga
+        //  The options and their arguments are inserted between the 
+        //  keyword and the "filename". 
+        //  map_Ka -options args filename
+        if(strncmp(mtlLine, "map_Ka", 6) == 0){
+            char* token = strtok(mtlLine, " ");
+            token = strtok(NULL, "");
+            // null terminate token
+            token[strlen(token) - 1] = '\0';
+            printf("loading texture %s \n", token);
+
+            char* filepath = handleFilePath(token);
+            // /mnt/ d D: \\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
+            // D:\\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
+            TextureData texture = loadTexture(filepath);
+            GLuint ambientMap = setupTexture(texture);
+             materials[materialIndex].diffuseMap = ambientMap;
+        }
         //map_Kd   lemur.tga
+        if(strncmp(mtlLine, "map_Kd", 6) == 0){
+            char* token = strtok(mtlLine, " ");
+            token = strtok(NULL, "");
+            // null terminate token
+            token[strlen(token) - 1] = '\0';
+            printf("loading texture %s \n", token);
+
+            char* filepath = handleFilePath(token);
+            // /mnt/ d D: \\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
+            // D:\\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
+            TextureData texture = loadTexture(filepath);
+            GLuint diffuseMap = setupTexture(texture);
+            materials[materialIndex].diffuseMap = diffuseMap;
+        }
         //map_Ks   lemur.tga
         //map_Ns   lemur_spec.tga
         //map_d    lemur_alpha.tga (alpha)
@@ -776,4 +872,19 @@ void captureFramebuffer(int width, int height, int drawCallsCounter) {
     stbi_write_png(filename, width, height, 3, pixels, width * 3);
 
     free(pixels);
+}
+
+/**
+ * @brief Load a texture
+ * Load a texture from file
+*/
+TextureData loadTexture(char* path) {
+    int width, height, nrChannels;
+    unsigned char *data = loadImage(path, &width, &height, &nrChannels); 
+    if(data == NULL) {
+        printf(TEXT_COLOR_ERROR "Failed to load texture\n" TEXT_COLOR_RESET);
+        exit(1);
+    }
+    TextureData textureData = {data, width, height, nrChannels};
+    return textureData;
 }

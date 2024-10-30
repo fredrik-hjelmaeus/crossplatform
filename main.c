@@ -48,8 +48,9 @@ void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation)
 void createObject(int ui,Material material,ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
 void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction);
 void onButtonClick();
+void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick);
 Camera* initCamera();
-TextureData loadTexture(char* path);
+
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -84,7 +85,7 @@ struct Globals globals = {
     .culling=false,
     .drawCallsCounter=0,
     .debugDrawCalls=false,
-    .assetArena=NULL,
+    //.assetArena=NULL,
     .materials=NULL,
     .materialsCount=0
 };
@@ -1172,12 +1173,15 @@ void initScene(){
 
    // Assets
    initFont();
+   TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
    TextureData containerTextureData = loadTexture("./Assets/container.jpg");
    GLuint containerMap = setupTexture(containerTextureData);
    TextureData containerTwoTextureData = loadTexture("./Assets/container2.png");
    GLuint containerTwoMap = setupTexture(containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
+
+   
    
     /* ObjGroup* cornell_box = loadObjFile("./Assets/cornell_box.obj");  
     ObjGroup* bunny = loadObjFile("./Assets/bunny2.obj");
@@ -1267,6 +1271,12 @@ void initScene(){
 
 int main(int argc, char **argv) {
 
+    if(PLATFORM == "UNKNOWN") {
+        printf("Platform is unknown, please set PLATFORM in the makefile\n");
+        return 1;
+    }
+    printf("Platform is %s\n", PLATFORM);
+
     // Initialize Memory Arenas
     initMemoryArena(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex)); 
         
@@ -1346,9 +1356,6 @@ void createMesh(
     Entity* entity
     ){
 
-//printf("creating mesh\n");
-//printf("num of vertex %d\n", num_of_vertex);
-    
     entity->meshComponent->active = 1;
 
     // vertex data
@@ -1840,20 +1847,7 @@ void onButtonClick() {
 // -----------------------------------------------------
 // ASSETS
 // -----------------------------------------------------
-/**
- * @brief Load a texture
- * Load a texture from file
-*/
-TextureData loadTexture(char* path) {
-    int width, height, nrChannels;
-    unsigned char *data = loadImage(path, &width, &height, &nrChannels); 
-    if(data == NULL) {
-        printf(TEXT_COLOR_ERROR "Failed to load texture\n" TEXT_COLOR_RESET);
-        exit(1);
-    }
-    TextureData textureData = {data, width, height, nrChannels};
-    return textureData;
-}
+
 
 
     

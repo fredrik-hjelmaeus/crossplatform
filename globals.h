@@ -3,6 +3,18 @@
 
 #include <SDL2/SDL.h>
 
+#if defined(__linux__)
+    #define PLATFORM "Linux"
+#elif defined(_WIN32)
+    #define PLATFORM "Windows"
+#elif defined(__APPLE__)
+    #define PLATFORM "macOS"
+#elif defined(__EMSCRIPTEN__)
+    #define PLATFORM "WebAssembly"
+#else
+    #define PLATFORM "Unknown"
+#endif
+
 struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
