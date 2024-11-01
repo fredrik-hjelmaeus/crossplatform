@@ -1183,16 +1183,16 @@ void initScene(){
 
    
    
-    /* ObjGroup* cornell_box = loadObjFile("./Assets/cornell_box.obj");  
-    ObjGroup* bunny = loadObjFile("./Assets/bunny2.obj");
-    ObjGroup* truck = loadObjFile("./Assets/truck.obj");
-    ObjGroup* plane = loadObjFile("./Assets/plane.obj"); 
-    ObjGroup* objExample = loadObjFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
-    ObjGroup* sphere = loadObjFile("./Assets/blender_sphere3.obj");
-    ObjGroup* triangleVolumes = loadObjFile("./Assets/triangle_volumes.obj");
-    ObjGroup* teapot = loadObjFile("./Assets/teapot.obj");
-    ObjGroup* dragon = loadObjFile("./Assets/dragon.obj"); */
-    ObjGroup* textured_objects = loadObjFile("./Assets/textured_objects.obj");
+    /* ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
+    ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
+    ObjGroup* truck = obj_loadFile("./Assets/truck.obj");
+    ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
+    ObjGroup* objExample = obj_loadFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
+    ObjGroup* sphere = obj_loadFile("./Assets/blender_sphere3.obj");
+    ObjGroup* triangleVolumes = obj_loadFile("./Assets/triangle_volumes.obj");
+    ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");
+    ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj"); */
+    ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
  
     struct Material objectMaterial = {
     .active = 1,
@@ -1262,10 +1262,28 @@ void initScene(){
    // TODO: implement rotation, it is atm not affecting. 
  
  createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+ createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
-   
+    for(int i = 0; i < globals.materialsCount; i++){
+        printf("name %s \n",globals.materials[i].name);
+        printf("shininess %f \n",globals.materials[i].shininess);
+        printf("ambient.r %f \n",globals.materials[i].ambient.r);
+        printf("ambient.g %f \n",globals.materials[i].ambient.g);
+        printf("ambient.b %f \n",globals.materials[i].ambient.b);
+        printf("diffuse.r %f \n",globals.materials[i].diffuse.r);
+        printf("diffuse.g %f \n",globals.materials[i].diffuse.g);
+        printf("diffuse.b %f \n",globals.materials[i].diffuse.b);
+        printf("specular.r %f \n",globals.materials[i].specular.r);
+        printf("specular.g %f \n",globals.materials[i].specular.g);
+        printf("specular.b %f \n",globals.materials[i].specular.b);
+        printf("ior/Ni %f \n",globals.materials[i].ior);
+        printf("alpha %f \n",globals.materials[i].alpha); 
+        printf("diffuseMap %d \n",globals.materials[i].diffuseMap);
+        printf("ambientMap %d \n",globals.materials[i].ambientMap);
+        printf("specularMap %d \n",globals.materials[i].specularMap);
+        printf("shininessMap %d \n",globals.materials[i].shininessMap);
+   } 
 
 }
 
@@ -1278,9 +1296,9 @@ int main(int argc, char **argv) {
     printf("Platform is %s\n", PLATFORM);
 
     // Initialize Memory Arenas
-    initMemoryArena(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex)); 
+    arena_initMemory(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex)); 
         
-    //runTests();
+    //obj_runTests();
     
     // Initialize the random number generator
     srand((unsigned int)time(NULL));

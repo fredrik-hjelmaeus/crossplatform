@@ -22,13 +22,21 @@
 
 
 char* readFile(const char *filename);
+unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
+TextureData loadTexture(char* path);
 int randInt(int rmin, int rmax);
 float randFloat(float rmin, float rmax);
-unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
-void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
-void runTests();
-void initMemoryArena(Arena* arena, size_t size);
-TextureData loadTexture(char* path);
+int isPointInsideRect(Rectangle rect, vec2 point);
+Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
+void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
+void captureFramebuffer(int width, int height, int drawCallsCounter);
+float deg2rad(float degrees);
+
+// Memory
+void arena_initMemory(Arena* arena, size_t size);
+void* arena_Alloc(Arena* arena, size_t size);
+void arena_reset(Arena* arena); // Not evaluated/used yet, do this before using.
+void arena_free(Arena* arena);  // Not evaluated/used yet, do this before using.
 
 // Utility macros
 #define CHECK_SDL_ERROR(test, message) \
@@ -44,12 +52,15 @@ TextureData loadTexture(char* path);
 #endif
 
 
-float deg2rad(float degrees);
 
-ObjGroup* loadObjFile(const char* filepath);
 
-int isPointInsideRect(Rectangle rect, vec2 point);
-Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
-void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
-void captureFramebuffer(int width, int height, int drawCallsCounter);
+// Parse obj files
+void obj_runTests();
+void obj_handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
+char* obj_handleFilePath(const char* filepath);
+ObjGroup* obj_loadFile(const char* filepath);
+void obj_parseMaterial(const char* filepath);
+bool obj_processTextureMap(char* mtlLine,const char* mapType,GLuint* map);
+
+
 #endif // End of the UTILS_H definition

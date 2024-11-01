@@ -70,7 +70,7 @@ float deg2rad(float degrees) {
  * example: "f 1/2/3 4/5/6 7/8/9";
  * If the line is a quad, it will be split into two triangles and add one additional faceLineCount.
  */
-void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
+void obj_handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
    
    int num_slashes = 0;
    int spaceCount = 0;
@@ -249,7 +249,7 @@ void handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tf
  * Run tests.
  * Atm no expect/asserts, just printouts you manually have to check.
  */
-void runTests()
+void obj_runTests()
 {
    char line[] =  "f 1/2/3 4/5/6 7/8/9"; // 9
    char line2[] = "f 7//7 8//8 9//9"; // 6
@@ -267,11 +267,11 @@ void runTests()
    int tfCount = 0;
    int vnCount = 0; 
 
-   handleFaceLine(line,  vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   handleFaceLine(line2, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   handleFaceLine(line3, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   handleFaceLine(line4, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
-   handleFaceLine(line5, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   obj_handleFaceLine(line,  vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   obj_handleFaceLine(line2, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   obj_handleFaceLine(line3, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   obj_handleFaceLine(line4, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+   obj_handleFaceLine(line5, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
 
    // Exit program after tests
    exit(0);
@@ -283,7 +283,7 @@ typedef struct ObjObject {
     int end;
 } ObjObject;
 
-void initMemoryArena(Arena* arena, size_t size) {
+void arena_initMemory(Arena* arena, size_t size) {
     arena->size = size;
     arena->base = malloc(size);
     if (arena->base == NULL) {
@@ -293,7 +293,7 @@ void initMemoryArena(Arena* arena, size_t size) {
     arena->used = 0;
 }
 
-void* arenaAlloc(Arena* arena, size_t size) {
+void* arena_Alloc(Arena* arena, size_t size) {
     // Debug output
   /*   printf("size i want to allocate: %zu \n",size);
     printf("used size: %zu \n",arena->used);
@@ -308,11 +308,11 @@ void* arenaAlloc(Arena* arena, size_t size) {
     return ptr;
 }
 // Not evaluated yet, do this before using
-void resetArena(Arena* arena) {
+void arena_reset(Arena* arena) {
     arena->used = 0;
 }
 // Not evaluated yet, do this before using 
-void freeArena(Arena* arena) {
+void arena_free(Arena* arena) {
     free(arena->base);
     arena->base = NULL;
     arena->used = 0;
@@ -324,8 +324,8 @@ void freeArena(Arena* arena) {
  * Input:  D:\\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
  * result: /mnt/d/OneDrive/viz/texturer/Renderingking texturepack V3/old bricks.jpg
  */
-char* handleFilePath(const char* filepath){
-    char* newPath = (char*)arenaAlloc(&globals.assetArena, (strlen(filepath) + 1) * sizeof(char));
+char* obj_handleFilePath(const char* filepath){
+    char* newPath = (char*)arena_Alloc(&globals.assetArena, (strlen(filepath) + 1) * sizeof(char));
     if(isupper(filepath[0]) && filepath[1] == ':'){
         strcpy(newPath,"/mnt/");
         char* lower = tolower(filepath[0]);
@@ -334,7 +334,7 @@ char* handleFilePath(const char* filepath){
        
         index++;
        for(int i = 2; i < strlen(filepath); i++){
-           // printf("char: %c\n", filepath[i]);
+           
             if(filepath[i] == '\\'){
                 newPath[index++] = '/';
                 i++;
@@ -344,7 +344,7 @@ char* handleFilePath(const char* filepath){
         } 
    
         newPath[index] = '\0'; // Null-terminate the new path
-        //printf("newpath %s \n ",newPath);
+        
     }else{
         printf(TEXT_COLOR_ERROR "handleFilePath failed %s" TEXT_COLOR_RESET "\n", filepath);
         exit(1);
@@ -353,29 +353,48 @@ char* handleFilePath(const char* filepath){
     return newPath;
 }
 
+bool obj_processTextureMap(char* mtlLine,const char* mapType,GLuint* map){
+    
+    if(strncmp(mtlLine, mapType, strlen(mapType)) == 0){
+            char* token = strtok(mtlLine, " ");
+            token = strtok(NULL, "");
+            // null terminate token
+            token[strlen(token) - 1] = '\0';
+            //printf("loading texture %s \n", token);
+
+            char* filepath = obj_handleFilePath(token);
+            TextureData texture = loadTexture(filepath);
+            
+            *map = setupTexture(texture);
+            //printf("mapType %s ID: %d \n",mapType,map);
+            return true;
+    }
+
+    return false;  
+}
 
 /**
  * Parse .mtl file.
  * spec: https://en.wikipedia.org/wiki/Wavefront_.obj_file
  * https://paulbourke.net/dataformats/mtl/
  */
-void parseObjMaterial(const char *filepath){
+void obj_parseMaterial(const char *filepath){
     
     // Temporary allocate new materials on the stack. 
     // We will copy them to the assetArena after we 
     // know how many materials we have and before this fn ends.
-    Material materials[100]; 
+    Material materials[100] = {0};
     int materialIndex = -1; // for every material
     
     // Check if .mtl file with same name exists, if so load&parse it.
-    char* dest = (char*)arenaAlloc(&globals.assetArena, 99 * sizeof(char));
-    char* dot = (char*)arenaAlloc(&globals.assetArena, 99 * sizeof(char));
+    char* dest = (char*)arena_Alloc(&globals.assetArena, 99 * sizeof(char));
+    char* dot = (char*)arena_Alloc(&globals.assetArena, 99 * sizeof(char));
     strcpy(dot, "."); // Initialize dot with a period
     char *filepath_copy = strcpy(dest,filepath);
     dest = strtok(dest, ".");
     dest = strcat(dot, dest);
     dest = strcat(dest, ".mtl");
-    printf("dest: %s\n", dest);
+    //printf("dest: %s\n", dest);
     
     // Open .mtl file
     FILE* mtlfp;
@@ -389,7 +408,7 @@ void parseObjMaterial(const char *filepath){
 
     // Parse .mtl file
     while (fgets(mtlLine, sizeof mtlLine, mtlfp) != NULL){
-    // printf(TEXT_COLOR_ERROR "mtl line %s" TEXT_COLOR_RESET "\n", mtlLine);
+        
         // comment
         if((int)mtlLine[0] == 35){
             continue;
@@ -404,37 +423,49 @@ void parseObjMaterial(const char *filepath){
            token = strtok(NULL, " ");
            materialIndex++;
            materials[materialIndex].active = true;
-           materials[materialIndex].name = (char*)arenaAlloc(&globals.assetArena, (strlen(token) + 1) * sizeof(char));
+           materials[materialIndex].name = (char*)arena_Alloc(&globals.assetArena, (strlen(token) + 1) * sizeof(char));
            strcpy(materials[materialIndex].name, token);
               
-           printf("new material %s \n",materials[materialIndex].name);
+           //printf("new material %s \n",materials[materialIndex].name);
+           continue;
         }
         //Ka, ambient color
         if(strncmp(mtlLine, "Ka", 2) == 0){
             sscanf(mtlLine, "Ka %f %f %f", &materials[materialIndex].ambient.r, &materials[materialIndex].ambient.g, &materials[materialIndex].ambient.b);
-            printf("ambient color %f %f %f \n",materials[materialIndex].ambient.r, materials[materialIndex].ambient.g, materials[materialIndex].ambient.b);
+            //printf("ambient color %f %f %f \n",materials[materialIndex].ambient.r, materials[materialIndex].ambient.g, materials[materialIndex].ambient.b);
+            continue;
         }
         //Kd, diffuse color
         if(strncmp(mtlLine, "Kd", 2) == 0){
             sscanf(mtlLine, "Kd %f %f %f", &materials[materialIndex].diffuse.r, &materials[materialIndex].diffuse.g, &materials[materialIndex].diffuse.b);
-            printf("diffuse color %f %f %f \n",materials[materialIndex].diffuse.r, materials[materialIndex].diffuse.g, materials[materialIndex].diffuse.b);
+            //printf("diffuse color %f %f %f \n",materials[materialIndex].diffuse.r, materials[materialIndex].diffuse.g, materials[materialIndex].diffuse.b);
+            continue;
         }
         //Ks, specular color
         if(strncmp(mtlLine, "Ks", 2) == 0){
             sscanf(mtlLine, "Ks %f %f %f", &materials[materialIndex].specular.r, &materials[materialIndex].specular.g, &materials[materialIndex].specular.b);
-            printf("specular color %f %f %f \n",materials[materialIndex].specular.r, materials[materialIndex].specular.g, materials[materialIndex].specular.b);
+            //printf("specular color %f %f %f \n",materials[materialIndex].specular.r, materials[materialIndex].specular.g, materials[materialIndex].specular.b);
+            continue;
         }
         //Ke, emissive color
-      /*   if(strncmp(mtlLine, "Ke", 2) == 0){
+        if(strncmp(mtlLine, "Ke", 2) == 0){
             sscanf(mtlLine, "Ke %f %f %f", &materials[materialIndex].emissive.r, &materials[materialIndex].emissive.g, &materials[materialIndex].emissive.b);
-            printf("emissive color %f %f %f \n",materials[materialIndex].emissive.r, materials[materialIndex].emissive.g, materials[materialIndex].emissive.b);
-        } */
+            //printf("emissive color %f %f %f \n",materials[materialIndex].emissive.r, materials[materialIndex].emissive.g, materials[materialIndex].emissive.b);
+            continue;
+        }
         //Ns, shininess/specular exponent
         //d,  dissolve(transparency) & Tr, transparency
-       /*  if(strncmp(mtlLine, "d", 1) == 0){
+        if((strncmp(mtlLine, "d", 1) == 0)){
             sscanf(mtlLine, "d %f", &materials[materialIndex].transparency);
-            printf("transparency %f \n",materials[materialIndex].transparency);
-        } */
+            //printf("transparency %f \n",materials[materialIndex].transparency);
+            continue;
+        } 
+        if((strncmp(mtlLine, "Ns", 2) == 0)){
+            sscanf(mtlLine, "Ns %f", &materials[materialIndex].transparency);
+            //printf("transparency %f \n",materials[materialIndex].transparency);
+            continue;
+        } 
+        
         //     # some implementations use 'd'
         //d 0.9
         //     # others use 'Tr' (inverted: Tr = 1 - d)
@@ -451,10 +482,12 @@ void parseObjMaterial(const char *filepath){
         //     A material can also have an optical density for its surface. 
         //     This is also known as index of refraction. (IOR)
         //Ni 1.45000
-       /*  if(strncmp(mtlLine, "Ni", 2) == 0){
+         if(strncmp(mtlLine, "Ni", 2) == 0){
             sscanf(mtlLine, "Ni %f", &materials[materialIndex].ior);
-            printf("optical density(ior) %f \n",materials[materialIndex].ior);
-        } */
+            //printf("optical density(ior) %f \n",materials[materialIndex].ior);
+            continue;
+        } 
+
         //     # Illumination model (see below) https://en.wikipedia.org/wiki/List_of_common_shading_algorithms
         //illum 2  (0-10), 2 is Color on and Ambient on.
                     /* 
@@ -469,42 +502,36 @@ void parseObjMaterial(const char *filepath){
                     8. Reflection on and Ray trace off
                     9. Transparency: Glass on, Reflection: Ray trace off
                     10. Casts shadows onto invisible surfaces */
+        if(strncmp(mtlLine, "illum", 5) == 0){
+            //illum unhandled for now. Assuming illum 2.
+            continue;
+        }
         //map_Ka   lemur.tga  can have optional params: map_Ka -o 1 1 1 ambient.tga
         //  The options and their arguments are inserted between the 
         //  keyword and the "filename". 
         //  map_Ka -options args filename
-        if(strncmp(mtlLine, "map_Ka", 6) == 0){
-            char* token = strtok(mtlLine, " ");
-            token = strtok(NULL, "");
-            // null terminate token
-            token[strlen(token) - 1] = '\0';
-            printf("loading texture %s \n", token);
-
-            char* filepath = handleFilePath(token);
-            // /mnt/ d D: \\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
-            // D:\\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
-            TextureData texture = loadTexture(filepath);
-            GLuint ambientMap = setupTexture(texture);
-             materials[materialIndex].diffuseMap = ambientMap;
+        if(obj_processTextureMap(mtlLine,"map_Ka", &materials[materialIndex].ambientMap)){
+            continue;
         }
         //map_Kd   lemur.tga
-        if(strncmp(mtlLine, "map_Kd", 6) == 0){
-            char* token = strtok(mtlLine, " ");
-            token = strtok(NULL, "");
-            // null terminate token
-            token[strlen(token) - 1] = '\0';
-            printf("loading texture %s \n", token);
-
-            char* filepath = handleFilePath(token);
-            // /mnt/ d D: \\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
-            // D:\\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
-            TextureData texture = loadTexture(filepath);
-            GLuint diffuseMap = setupTexture(texture);
-            materials[materialIndex].diffuseMap = diffuseMap;
+        if(obj_processTextureMap(mtlLine,"map_Kd", &materials[materialIndex].diffuseMap)){
+            continue;
         }
-        //map_Ks   lemur.tga
-        //map_Ns   lemur_spec.tga
+        //map_Ks   lemur.tga   specular color map
+        if(obj_processTextureMap(mtlLine,"map_Ks", &materials[materialIndex].specularMap)){
+            continue;
+        }
+        //map_Ns   lemur_spec.tga specular intensity map
+        if(obj_processTextureMap(mtlLine,"map_Ns", &materials[materialIndex].shininessMap)){
+            continue;
+        }
         //map_d    lemur_alpha.tga (alpha)
+        if(obj_processTextureMap(mtlLine,"map_d", &materials[materialIndex].alpha)){
+            continue;
+        }
+       
+        printf(TEXT_COLOR_ERROR "unhandled mtl line %s" TEXT_COLOR_RESET "\n", mtlLine);
+        // BELOW, NOT IMPLEMENTED
         //          # some implementations use 'map_bump' instead of 'bump' below
         //map_bump  lemur_bump.tga
         //bump      # bump map (which by default uses luminance channel of the image)
@@ -532,20 +559,12 @@ void parseObjMaterial(const char *filepath){
         //           RMA
         //map_RMA
         //map_ORM
-
-      
-        // v: v & space(32), read vertices
-       /*  if((int)mtlLine[0] == 118 && (int)mtlLine[1] == 32){
-          //  printf(TEXT_COLOR_ERROR "v %s" TEXT_COLOR_RESET "\n", line);
-          sscanf(mtlLine, "v %f %f %f", &KaArr[mIndex], &KaArr[mIndex+1], &KaArr[mIndex+2]);
-          mIndex+=3;
-          continue;
-        } */
-       
-    
     }
     fclose(mtlfp);
-    
+    // Allocate memory in the assetArena for the materials and copy the data
+    globals.materialsCount = materialIndex + 1;
+    globals.materials = (Material*)arena_Alloc(&globals.assetArena, globals.materialsCount * sizeof(Material));
+    memcpy(globals.materials, materials, globals.materialsCount * sizeof(Material));
 }
 
 // Limit set to 100 o objects !. No indicies created.
@@ -557,7 +576,7 @@ void parseObjMaterial(const char *filepath){
 // obj specification: https://paulbourke.net/dataformats/obj/ 
 // mtl specification: https://paulbourke.net/dataformats/mtl/
 // & https://en.wikipedia.org/wiki/Wavefront_.obj_file
-ObjGroup* loadObjFile(const char *filepath)
+ObjGroup* obj_loadFile(const char *filepath)
 {
     // How many vertices can we store in the obj file
     #define OBJDATA_MAX 300001
@@ -565,19 +584,19 @@ ObjGroup* loadObjFile(const char *filepath)
     #define MAX_NUM_OBJECTS = 100
     
     // Allocate memory for the vertex data parsing
-    int* vf = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
-    int* tf = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
-    int* vn = (int*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
-    float* vArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
-    float* tArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
-    float* nArr = (float*)arenaAlloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
+    int* vf = (int*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
+    int* tf = (int*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
+    int* vn = (int*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
+    float* vArr = (float*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
+    float* tArr = (float*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
+    float* nArr = (float*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
 
     // An obj can have multiple objects. Every object gets placed in objData. All objData gets placed in a objGroup.
     // This objGroup is what is returned.
-    ObjGroup* objGroup = (ObjGroup*)arenaAlloc(&globals.assetArena, sizeof(ObjGroup));
-    objGroup->name = (char*)arenaAlloc(&globals.assetArena, 100 * sizeof(char)); // TODO: unneccessary?
+    ObjGroup* objGroup = (ObjGroup*)arena_Alloc(&globals.assetArena, sizeof(ObjGroup));
+    objGroup->name = (char*)arena_Alloc(&globals.assetArena, 100 * sizeof(char)); // TODO: unneccessary?
     objGroup->name = filepath;
-    objGroup->objData = (ObjData*)arenaAlloc(&globals.assetArena, 10 * sizeof(ObjData));
+    objGroup->objData = (ObjData*)arena_Alloc(&globals.assetArena, 10 * sizeof(ObjData));
     objGroup->objectCount = 0;
    
     int vIndex = 0;
@@ -595,11 +614,8 @@ ObjGroup* loadObjFile(const char *filepath)
     char material[100];
     char group[100];
     char usemtl[100];
-
-
     
-    parseObjMaterial(filepath);
-    
+    obj_parseMaterial(filepath);
     
 
     FILE* fp;
@@ -640,7 +656,7 @@ ObjGroup* loadObjFile(const char *filepath)
             }
         
             // Object name
-           objGroup->objData[objGroup->objectCount].name = (char*)arenaAlloc(&globals.assetArena, lineLength * sizeof(char));
+           objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
            for(int i = 0; i < lineLength; i++){
                 objGroup->objData[objGroup->objectCount].name[i] = line[i];
             }  
@@ -672,7 +688,7 @@ ObjGroup* loadObjFile(const char *filepath)
         if((int)line[0] == 117){
             if(strncmp(line, "usemtl", 6) == 0){
                 printf("ignoring material %s \n",line);
-             //   objGroup.objData[objectCount].material = (char*)arenaAlloc(&globals.assetArena, 100 * sizeof(char));
+             //   objGroup.objData[objectCount].material = (char*)arena_Alloc(&globals.assetArena, 100 * sizeof(char));
              //   objGroup.objData[objectCount].material = strdup(usemtl);
              /*    for(int j = 7; j < strlen(line); j++){
                     usemtl[j-7] = line[j];
@@ -715,7 +731,7 @@ ObjGroup* loadObjFile(const char *filepath)
         // or       f 1//1 2//2 3//3
         // or       f 1//1 2//2 3//3 4//4  <- quad
         if((int)line[0] == 102){
-           handleFaceLine(line, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
+           obj_handleFaceLine(line, vf, tf, vn, &vfCount, &tfCount, &vnCount, &faceLineCount);
            if(vfCount >= OBJDATA_MAX || tfCount >= OBJDATA_MAX){
                 printf("Error: Too many vertices in obj file. OBJDATA_MAX exceeded. Exiting..");
                 printf("vfCount: %d\n", vfCount);
@@ -735,13 +751,13 @@ ObjGroup* loadObjFile(const char *filepath)
     }else {
         // If file contain o object, this was specified there. But if not, we need to create a default object here.
         objGroup->objData[0].num_of_vertices = (faceLineCount * 3);
-        objGroup->objData[0].vertexData = (Vertex*)arenaAlloc(&globals.assetArena, objGroup->objData[0].num_of_vertices * sizeof(Vertex));
+        objGroup->objData[0].vertexData = (Vertex*)arena_Alloc(&globals.assetArena, objGroup->objData[0].num_of_vertices * sizeof(Vertex));
     }
     
     // Allocate memory for the vertex data in objData
     if(objGroup->objectCount > 0){
         for(int i = 0; i < objGroup->objectCount; i++){
-            objGroup->objData[i].vertexData = (Vertex*)arenaAlloc(&globals.assetArena, objGroup->objData[i].num_of_vertices * sizeof(Vertex));
+            objGroup->objData[i].vertexData = (Vertex*)arena_Alloc(&globals.assetArena, objGroup->objData[i].num_of_vertices * sizeof(Vertex));
         }
     }
 
@@ -750,7 +766,7 @@ ObjGroup* loadObjFile(const char *filepath)
     //    for (int j = faceLineCountStart[i]; j < faceLineCountEnd[i]; j++) {              <---  loop over faces
     //  for(int k = 0; k < 3; k++){                                                        <---  loop over vertices 
     // NOTE: Atm we fill vertexData in only objData[0] in objGroup. Somehow this works and we can access and use objData[1], objData[2] etc. 
-    // when creatObject is called. I presume this is because of the arenaAlloc and the memory is allocated in the same memory block,so it is accessible.
+    // when creatObject is called. I presume this is because of the arena_Alloc and the memory is allocated in the same memory block,so it is accessible.
     // But why can't we directly fill objData[1], objData[2] etc. with vertexData?. This is a unsolved mystery.
         
     // Fill vertex data

@@ -53,7 +53,7 @@ extern Camera mainCamera;
 
 // Macro to allocate memory from the arena and cast it to the appropriate type
 // Use this to get memory
-//#define GET_MEMORY(ARENA,TYPE,COUNT) ((TYPE*)arenaAlloc(&ARENA,sizeof(TYPE) * (COUNT)))
+//#define GET_MEMORY(ARENA,TYPE,COUNT) ((TYPE*)arena_Alloc(&ARENA,sizeof(TYPE) * (COUNT)))
 
 #ifdef DEV_MODE
     #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }

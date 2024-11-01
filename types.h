@@ -110,11 +110,17 @@ typedef struct Material {
     Color ambient;
     Color diffuse;
     Color specular;
+    Color emissive;
     float shininess;
+    float transparency;
     GLuint diffuseMap;
     float diffuseMapOpacity;
     GLuint specularMap;
+    GLuint shininessMap;
+    GLuint ambientMap;
   //  Texture* normalMap;
+    float ior;
+    GLuint alpha;
 } Material;
 
 typedef struct GpuData {
