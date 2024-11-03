@@ -137,7 +137,7 @@ typedef struct GpuData {
 // Child struct in ObjGroup.
 typedef struct ObjData {
     char* name;
-   // char* material;
+    int materialIndex; // index in globals.materials
     Vertex* vertexData;
     int num_of_vertices;
 } ObjData;
@@ -149,6 +149,15 @@ typedef struct ObjGroup {
     int objectCount;
     ObjData* objData;
 } ObjGroup;
+
+// Not used atm, but will be when we implement .obj group(g) support. 
+// This is needed for sketchup obj exported files.
+typedef struct ObjNode {
+    char* name;
+    struct ObjNode* children;
+    int childCount;
+    ObjData* objData;
+} ObjNode;
 
 // Used to instruct createMesh what type of data struct to setup.
 typedef enum {
@@ -185,6 +194,7 @@ typedef struct TransformComponent {
 typedef struct GroupComponent {
     bool active;
     mat4x4 transform;
+    //Entity* children
 } GroupComponent;
 
 typedef struct MeshComponent {

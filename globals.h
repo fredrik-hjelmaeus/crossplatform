@@ -43,6 +43,8 @@ struct Globals {
     Arena assetArena;
     Material* materials;
     int materialsCount;
+    int materialsCapacity;
+    int objDataCapacity;
 };
 
 extern struct Globals globals;

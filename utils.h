@@ -52,7 +52,8 @@ void arena_free(Arena* arena);  // Not evaluated/used yet, do this before using.
 #endif
 
 
-
+// Materials
+int getMaterialByName(const char* name);
 
 // Parse obj files
 void obj_runTests();
