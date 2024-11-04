@@ -195,19 +195,20 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     GLint specularLocation = glGetUniformLocation(buffer->shaderProgram, "specular");
     glUniform4f(specularLocation, material->specular.r, material->specular.g, material->specular.b, material->specular.a);
     
-    // Set the light ambient uniform
-    GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "light.ambient");
-    Entity* lightEntity = &globals.lights[0];
-
-    // Set the light diffuse uniform
-    GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "light.diffuse");
-    glUniform4f(lightDiffuseLocation, lightEntity->lightComponent->diffuse.r, lightEntity->lightComponent->diffuse.g, lightEntity->lightComponent->diffuse.b, lightEntity->lightComponent->diffuse.a);
-
-    // Set the light specular uniform
-    GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "light.specular");
-    glUniform4f(lightSpecularLocation, lightEntity->lightComponent->specular.r, lightEntity->lightComponent->specular.g, lightEntity->lightComponent->specular.b, lightEntity->lightComponent->specular.a);
     
+    Entity* lightEntity = &globals.lights[0];
     if(lightEntity != NULL && lightEntity->lightComponent != NULL){
+
+        // Set the light ambient uniform
+        GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "light.ambient");
+
+        // Set the light diffuse uniform
+        GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "light.diffuse");
+        glUniform4f(lightDiffuseLocation, lightEntity->lightComponent->diffuse.r, lightEntity->lightComponent->diffuse.g, lightEntity->lightComponent->diffuse.b, lightEntity->lightComponent->diffuse.a);
+
+        // Set the light specular uniform
+        GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "light.specular");
+        glUniform4f(lightSpecularLocation, lightEntity->lightComponent->specular.r, lightEntity->lightComponent->specular.g, lightEntity->lightComponent->specular.b, lightEntity->lightComponent->specular.a);
         glUniform4f(lightAmbientLocation, lightEntity->lightComponent->ambient.r, lightEntity->lightComponent->ambient.g, lightEntity->lightComponent->ambient.b, lightEntity->lightComponent->ambient.a);
 
         // Set the light position uniform
@@ -217,6 +218,19 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         // Set the light direction uniform
         GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "light.direction");
         glUniform3f(lightDirLocation, lightEntity->lightComponent->direction[0], lightEntity->lightComponent->direction[1], lightEntity->lightComponent->direction[2]);
+
+        // Set the light constant uniform
+        GLint lightConstantLocation = glGetUniformLocation(buffer->shaderProgram, "light.constant");
+        glUniform1f(lightConstantLocation, lightEntity->lightComponent->constant);
+
+        // Set the light linear uniform
+        GLint lightLinearLocation = glGetUniformLocation(buffer->shaderProgram, "light.linear");
+        glUniform1f(lightLinearLocation, lightEntity->lightComponent->linear);
+
+        // Set the light quadratic uniform
+        GLint lightQuadraticLocation = glGetUniformLocation(buffer->shaderProgram, "light.quadratic");
+        glUniform1f(lightQuadraticLocation, lightEntity->lightComponent->quadratic);
+
     }
 
     // Set viewPos uniform

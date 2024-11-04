@@ -234,6 +234,9 @@ typedef struct LightComponent {
     Color diffuse;
     Color specular;
     float intensity;
+    float constant;
+    float linear;
+    float quadratic;
 } LightComponent;
 
 typedef struct MaterialComponent {
@@ -261,11 +264,6 @@ typedef struct Entity {
 } Entity;
 
 typedef vec3 Point;
-
-
-
-
-
 
 
 #endif // TYPES_H

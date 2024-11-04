@@ -1257,8 +1257,8 @@ void initScene(){
     createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
 
     // Primitives
-   // createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  //  createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1611,12 +1611,16 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
     entity->lightComponent->diffuse = material.diffuse;
     entity->lightComponent->specular = material.specular;
     entity->lightComponent->ambient = material.ambient;
+    entity->lightComponent->constant = 1.0f;
+    entity->lightComponent->linear = 0.09f;
+    entity->lightComponent->quadratic = 0.032f;
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
     globals.lights[0] = *entity;
 
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
+
 void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
