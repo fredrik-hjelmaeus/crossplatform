@@ -237,6 +237,8 @@ typedef struct LightComponent {
     float constant;
     float linear;
     float quadratic;
+    float cutOff;
+    float outerCutOff;
 } LightComponent;
 
 typedef struct MaterialComponent {

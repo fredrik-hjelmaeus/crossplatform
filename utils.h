@@ -21,6 +21,7 @@
 #define TEXT_COLOR_ORANGE "\033[1;33m"
 
 
+
 char* readFile(const char *filename);
 unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
 TextureData loadTexture(char* path);
@@ -50,7 +51,7 @@ void arena_free(Arena* arena);  // Not evaluated/used yet, do this before using.
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-
+#define DEG_TO_RAD(degrees) ((degrees) * (M_PI / 180.0f))
 
 // Materials
 int getMaterialByName(const char* name);

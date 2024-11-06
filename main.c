@@ -1201,7 +1201,7 @@ void initScene(){
     .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
     .diffuse = (Color){1.0f, 0.0f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
     .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
-    .shininess = 4.0f,                           // used
+    .shininess = 32.0f,                           // used
     .diffuseMap = containerTwoMap,               // used
     .diffuseMapOpacity = 1.0f,                  // used
     .specularMap = containerTwoSpecularMap,      // used
@@ -1221,7 +1221,7 @@ void initScene(){
         .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
         .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
         .specular = (Color){1.0f, 1.0f, 1.0f, 1.0f}, // used
-        .shininess = 256.0f,                         // NOT used
+        .shininess = 32.0f,                         // NOT used
         .diffuseMap = containerMap,                  // NOT used
         .diffuseMapOpacity = 1.0f,                  // NOT used
         .specularMap = containerMap,                 // NOT used
@@ -1229,17 +1229,17 @@ void initScene(){
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[0],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[1],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[2],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[3],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[4],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[5],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[6],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[7],(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-
-    createObject(VIEWPORT_MAIN,&textured_objects->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-    createObject(VIEWPORT_MAIN,&textured_objects->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    /* createObject(VIEWPORT_MAIN,&cornell_box->objData[0],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,&cornell_box->objData[1],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,&cornell_box->objData[2],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,&cornell_box->objData[3],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,&cornell_box->objData[4],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,&cornell_box->objData[5],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,&cornell_box->objData[6],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(VIEWPORT_MAIN,&cornell_box->objData[7],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+ */
+    createObject(VIEWPORT_MAIN,&textured_objects->objData[0],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    createObject(VIEWPORT_MAIN,&textured_objects->objData[1],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
    
    /* createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
@@ -1257,8 +1257,8 @@ void initScene(){
     createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
 
     // Primitives
-    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  //  createPlane(objectMaterial, (vec3){0.0f, -5.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    //createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, -5.0f, -8.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1600,7 +1600,16 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         20, 21, 22,
         22, 23, 20
     };
-  
+    
+    // cutOff
+    float degrees = 12.5f;
+    float radians = DEG_TO_RAD(degrees);
+    float cosine = cosf(radians);
+
+    // outerCutOff
+    float degreesOC = 17.5f;
+    float radiansOC = DEG_TO_RAD(degreesOC);
+    float cosineOC = cosf(radiansOC);
 
     Entity* entity = addEntity(MODEL);
     entity->lightComponent->active = 1;
@@ -1614,6 +1623,8 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
     entity->lightComponent->constant = 1.0f;
     entity->lightComponent->linear = 0.09f;
     entity->lightComponent->quadratic = 0.032f;
+    entity->lightComponent->cutOff = cosine;
+    entity->lightComponent->outerCutOff = cosineOC;
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
     globals.lights[0] = *entity;
