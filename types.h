@@ -267,5 +267,11 @@ typedef struct Entity {
 
 typedef vec3 Point;
 
+typedef enum {
+    SPOT = 0,
+    DIRECTIONAL = 1,
+    POINT = 2
+} LightType;
 
 #endif // TYPES_H
+

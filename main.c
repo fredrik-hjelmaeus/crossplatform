@@ -46,7 +46,7 @@
 void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
 void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
 void createObject(int ui,ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
-void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction);
+void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
 void onButtonClick();
 void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick);
 Camera* initCamera();
@@ -1254,7 +1254,8 @@ void initScene(){
 
  
     // lights
-    createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f});
+    createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
+    createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},DIRECTIONAL);
 
     // Primitives
   //  createPlane(objectMaterial, (vec3){0.0f, -5.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -1531,13 +1532,14 @@ void createPoint(vec3 position){
         position[0], position[1], position[2],  1.0f, 1.0f, 1.0f, 0.0f, 0.0f
     };
 }
+     
 /**
  * @brief Create a light
  * Create a light source in the scene.
  * 
  */
-void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction){
-    // vertex data
+void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type){
+    
    // vertex data
     GLfloat vertices[] = {
     -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
@@ -1627,7 +1629,12 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
     entity->lightComponent->outerCutOff = cosineOC;
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
-    globals.lights[0] = *entity;
+     if(type == SPOT){
+        globals.lights[0] = *entity;
+    } 
+    if(type == DIRECTIONAL){
+        globals.lights[1] = *entity;
+    }
 
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
 }

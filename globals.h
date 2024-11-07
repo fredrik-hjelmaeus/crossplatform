@@ -36,7 +36,7 @@ struct Globals {
     bool render;
     GpuData gpuFontData;
     float unitScale;
-    Entity lights[1]; // TODO: temporary solution for lights?
+    Entity lights[3]; // TODO: temporary solution for lights?
     bool culling;
     int drawCallsCounter;
     bool debugDrawCalls;
