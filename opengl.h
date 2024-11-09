@@ -19,6 +19,8 @@ void setupFontMaterial(GpuData* buffer,int width,int height);
 void setupFontTextures(char* fontPath,int fontSize);
 void setupFontMesh(GpuData *buffer);
 void renderText(GpuData* buffer, char* text, float x, float y, float scale, Color color);
+void renderLine(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,Color lineColor);
+void setupLine(Line* lines, int lineCount, GpuData* buffer);
 
 /**
  * @brief Generally called when view are switched

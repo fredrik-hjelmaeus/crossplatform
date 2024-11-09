@@ -112,6 +112,7 @@ int last_frame_time = 0;
 //------------------------------------------------------
 //  ECS
 //------------------------------------------------------
+// Every entity get's all components attached to it and memory is allocated for all components.
 
 // Max entities constant
 #define MAX_ENTITIES 1000
@@ -154,7 +155,7 @@ void initializeMeshComponent(MeshComponent* meshComponent){
     meshComponent->vertexCount = 5;
     meshComponent->indices = NULL;
     meshComponent->indexCount = 0;
-    meshComponent->gpuData = (GpuData*)malloc(sizeof(GpuData));
+    meshComponent->gpuData = (GpuData*)malloc(sizeof(GpuData)); // TODO: replace with arena alloc?
     if(meshComponent->gpuData == NULL) {
         printf("Failed to allocate memory for gpuData\n");
         exit(1);
@@ -224,10 +225,39 @@ void initializeLightComponent(LightComponent* lightComponent){
     lightComponent->specular.a = 1.0f;
 }
 
+void initializeLineComponent(LineComponent* lineComponent){
+    lineComponent->active = 0;
+    lineComponent->gpuData = (GpuData*)malloc(sizeof(GpuData)); // TODO: replace with arena alloc?
+    if(lineComponent->gpuData == NULL) {
+        printf("Failed to allocate memory for gpuData\n");
+        exit(1);
+    }
+    // Initialize GpuData
+    lineComponent->gpuData->VAO = 0;
+    lineComponent->gpuData->VBO = 0;
+    lineComponent->gpuData->EBO = 0;
+    lineComponent->gpuData->drawMode = GL_LINES; // Default draw mode
+    lineComponent->gpuData->numIndicies = 0;
+    lineComponent->color.r = 0.0f;
+    lineComponent->color.g = 0.0f;
+    lineComponent->color.b = 0.0f;
+    lineComponent->color.a = 1.0f;
+    lineComponent->start[0] = 0.0f;
+    lineComponent->start[1] = 0.0f;
+    lineComponent->start[2] = 0.0f;
+    lineComponent->end[0] = 0.0f;
+    lineComponent->end[1] = 0.0f;
+    lineComponent->end[2] = 0.0f;
+}
+
 
 /**
  * @brief Initialize the ECS
- * Allocates memory pools for the components and entities
+ * Allocates memory pools for the components and entities.
+ * This means that for every new component type we add, entity size grows.
+ * This is a tradeoff between memory and performance. 
+ * Having the components already allocated on startup is faster, but uses more memory.
+ * If component size grows too large, we might consider allocating them on the fly or have a memory pool for each component type?
 */
 void initECS(){
     // Allocate memory for MAX_ENTITIES Components structs
@@ -237,6 +267,7 @@ void initECS(){
     MaterialComponent* materialComponents = allocateComponentMemory(sizeof(MaterialComponent), "material");
     UIComponent* uiComponents = allocateComponentMemory(sizeof(UIComponent), "ui");
     LightComponent* lightComponents = allocateComponentMemory(sizeof(LightComponent), "light");
+    LineComponent* lineComponents = allocateComponentMemory(sizeof(LineComponent), "line");
 
     // Allocate memory for MAX_ENTITIES Entity structs
     Entity* entities = (Entity*)calloc(MAX_ENTITIES, sizeof(Entity));
@@ -262,6 +293,8 @@ void initECS(){
         initializeUIComponent(entities[i].uiComponent);
         entities[i].lightComponent = &lightComponents[i];
         initializeLightComponent(entities[i].lightComponent);
+        entities[i].lineComponent = &lineComponents[i];
+        initializeLineComponent(entities[i].lineComponent);
     }
 
     globals.entities = entities;
@@ -273,6 +306,7 @@ void initECS(){
         printf("materialComponent %zu\n",sizeof(MaterialComponent));
         printf("groupComponent %zu\n",sizeof(GroupComponent));
         printf("uiComponent %zu\n",sizeof(UIComponent));
+        printf("lineComponent %zu\n",sizeof(LineComponent));
     }
 }
 
@@ -1061,6 +1095,9 @@ void render(){
                     renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
                 }
             }
+            if(globals.entities[i].lineComponent->active == 1){
+                renderLine(globals.entities[i].lineComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].lineComponent->color);
+            }
         }
     }
     // Render ui scene & ui objects
@@ -1646,7 +1683,52 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
     ASSERT(globals.lightsCount < MAX_LIGHTS, "Too many lights");
     globals.lightsCount++;
 
+    if(type == DIRECTIONAL){
+        vec3 result;
+        vec3 normalized_direction;
+        vec3_norm(&normalized_direction,direction);
+        vec3_add(&result,normalized_direction,position);
+        printf("directional start position: %f %f %f \n",position[0],position[1],position[2]);
+        printf("directional end position: %f %f %f \n",result[0],result[1],result[2]);
+        createLine(position,result,entity);
+        return;
+    }
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
+}
+
+/**
+ * @brief Create a line segment between two points
+ * @param position - start position
+ * @param endPosition - end position
+ */
+void createLine(vec3 position, vec3 endPosition,Entity* entity){
+    entity->lineComponent->active = 1;
+    entity->lineComponent->start[0] = position[0];
+    entity->lineComponent->start[1] = position[1];
+    entity->lineComponent->start[2] = position[2];
+    entity->lineComponent->end[0] = endPosition[0];
+    entity->lineComponent->end[1] = endPosition[1];
+    entity->lineComponent->end[2] = endPosition[2];
+    entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
+    // TODO: transform pos is start of segment, should it be mid-point?
+    entity->transformComponent->position[0] = position[0];
+    entity->transformComponent->position[1] = position[1];
+    entity->transformComponent->position[2] = position[2];
+    entity->transformComponent->scale[0] = 1.0f;
+    entity->transformComponent->scale[1] = 1.0f;
+    entity->transformComponent->scale[2] = 1.0f;
+    entity->transformComponent->rotation[0] = 0.0f;
+    entity->transformComponent->rotation[1] = 0.0f;
+    entity->transformComponent->rotation[2] = 0.0f;
+    entity->transformComponent->modelNeedsUpdate = 1;
+
+    GLfloat lines[] = {
+        position[0], position[1], position[2], 
+        endPosition[0], endPosition[1], endPosition[2]
+    };
+
+    setupLine(lines,2,entity->lineComponent->gpuData);
+    setupMaterial(entity->lineComponent->gpuData,"shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
 }
 
 void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){

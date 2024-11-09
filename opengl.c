@@ -4,7 +4,50 @@
 #include "opengl.h"
 
 
+/** 
+ * @brief Setup buffer to render GL_LINES. Very similar to setupMesh, 
+ * only difference is that we only need color & position attributes.
+*/
+void setupLine(Line* lines, int lineCount, GpuData* buffer) {
 
+    buffer->numIndicies = 0;
+    buffer->drawMode = GL_LINES;
+    buffer->vertexCount = lineCount;
+    glGenVertexArrays(1, &(buffer->VAO));
+    glGenBuffers(1, &(buffer->VBO));
+    glGenBuffers(1, &buffer->EBO);
+    glBindVertexArray(buffer->VAO);
+
+    // Bind/Activate VBO
+    glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
+
+    // Copy vertices to buffer
+    glBufferData(GL_ARRAY_BUFFER, lineCount * sizeof(Line), lines, GL_STATIC_DRAW);
+
+    // Bind/Activate EBO
+  //  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->EBO);
+
+    // Copy indices to buffer
+   // glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_STATIC_DRAW);
+
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+
+    // Color attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+    
+    // Unbind VBO/buffer
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Unbind VAO/vertex array
+    glBindVertexArray(0);
+}
+
+/** 
+ * @brief Setup buffer to render a mesh.
+*/
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
 
     buffer->numIndicies = indexCount;
@@ -34,7 +77,6 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
     
-
     // Texture attribute
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
@@ -48,7 +90,6 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
     // Unbind VAO/vertex array
     glBindVertexArray(0);
-    
 }
 
 void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPath){
@@ -121,6 +162,36 @@ void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPa
     }
 }
 
+void renderLine(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,Color lineColor){
+    // Check if camera is NULL
+    if (camera == NULL) {
+        fprintf(stderr, "Error: camera is NULL\n");
+        return;
+    }
+     
+   // Set shader
+   glUseProgram(buffer->shaderProgram);
+
+   // Set uniforms
+   GLint lineColorLoc = glGetUniformLocation(buffer->shaderProgram, "lineColor");
+   glUniform4f(lineColorLoc, lineColor.r,lineColor.g,lineColor.b,lineColor.a);
+   
+   GLint modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
+   GLint viewLoc =  glGetUniformLocation(buffer->shaderProgram, "view");
+   GLint projLoc =  glGetUniformLocation(buffer->shaderProgram, "projection");
+
+   glUniformMatrix4fv(modelLoc,1,GL_FALSE,&transformComponent->transform[0][0]);
+   glUniformMatrix4fv(viewLoc, 1,GL_FALSE,&camera->view[0][0]);
+   glUniformMatrix4fv(projLoc, 1, GL_FALSE,&camera->projection[0][0]);
+
+  // Bind buffer
+  glBindVertexArray(buffer->VAO);
+  
+  glDrawArrays(buffer->drawMode,0,buffer->vertexCount);
+
+  // Unbind buffer
+  glBindVertexArray(0);
+}
 
 /**
  * @brief Render a mesh

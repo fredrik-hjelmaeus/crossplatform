@@ -92,6 +92,10 @@ typedef struct Vertex {
     vec3 normal;
 } Vertex;
 
+typedef struct Line {
+    vec3 position;
+} Line;
+
 typedef struct TextureData {
     unsigned char* data;
     int width;
@@ -213,6 +217,18 @@ typedef struct MeshComponent {
     GpuData* gpuData;
 } MeshComponent;
 
+// This is a line segment component atm. 
+// If we want to draw a line with more than 2 points,
+// we adapt this component (by adding vertices?) or create a separate component for that. TBD.
+typedef struct LineComponent {
+    bool active;
+    vec3 start;
+    vec3 end;
+    //Vertex* vertices; 
+    GpuData* gpuData;
+    Color color;
+} LineComponent;
+
 typedef struct UIComponent {
     bool active;
     bool hovered;
@@ -270,6 +286,7 @@ typedef struct Entity {
     MaterialComponent* materialComponent;
     UIComponent* uiComponent;
     LightComponent* lightComponent;
+    LineComponent* lineComponent;
 } Entity;
 
 typedef vec3 Point;
