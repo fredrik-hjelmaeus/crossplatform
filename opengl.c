@@ -195,68 +195,203 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     GLint specularLocation = glGetUniformLocation(buffer->shaderProgram, "specular");
     glUniform4f(specularLocation, material->specular.r, material->specular.g, material->specular.b, material->specular.a);
 
-
-   Entity spotLightEntity_ = globals.lights[0];
-   Entity* spotLightEntity = &spotLightEntity_;
-   
-  
-    if(spotLightEntity != NULL && spotLightEntity->lightComponent != NULL){
-  spotLightEntity->lightComponent->direction[0] = 0.0f;
-  spotLightEntity->lightComponent->direction[1] = -1.0f;
-  spotLightEntity->lightComponent->direction[2] = 0.0f;
-  spotLightEntity->transformComponent->position[0] = 0.0f;
-  spotLightEntity->transformComponent->position[1] = 1.0f;
-  spotLightEntity->transformComponent->position[2] = 0.0f;
-
+    // Spotlights
+   Entity spotLightEntityOne_ = globals.lights[0];
+   Entity* spotLightEntityOne = &spotLightEntityOne_;
+    if(spotLightEntityOne != NULL && spotLightEntityOne->lightComponent != NULL){
+ 
         // Set lightColor uniform
         GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
         glUniform3f(lightColorLocation, 0.0f,0.0f,1.0f);
 
-        // Set the light ambient uniform
-        GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.ambient");
-        glUniform3f(lightAmbientLocation, spotLightEntity->lightComponent->ambient.r, spotLightEntity->lightComponent->ambient.g, spotLightEntity->lightComponent->ambient.b);
+        // Set the light ambient uniform 
+        GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].ambient");
+        glUniform3f(lightAmbientLocation, spotLightEntityOne->lightComponent->ambient.r, spotLightEntityOne->lightComponent->ambient.g, spotLightEntityOne->lightComponent->ambient.b);
 
         // Set the light diffuse uniform
-        GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.diffuse");
-        glUniform3f(lightDiffuseLocation, spotLightEntity->lightComponent->diffuse.r, spotLightEntity->lightComponent->diffuse.g, spotLightEntity->lightComponent->diffuse.b);
+        GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].diffuse");
+        glUniform3f(lightDiffuseLocation, spotLightEntityOne->lightComponent->diffuse.r, spotLightEntityOne->lightComponent->diffuse.g, spotLightEntityOne->lightComponent->diffuse.b);
 
         // Set the light specular uniform
-        GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.specular");
-        glUniform3f(lightSpecularLocation, spotLightEntity->lightComponent->specular.r, spotLightEntity->lightComponent->specular.g, spotLightEntity->lightComponent->specular.b);
+        GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].specular");
+        glUniform3f(lightSpecularLocation, spotLightEntityOne->lightComponent->specular.r, spotLightEntityOne->lightComponent->specular.g, spotLightEntityOne->lightComponent->specular.b);
 
         // Set the light position uniform
-        GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.position");
-        glUniform3f(lightPositionLocation, spotLightEntity->transformComponent->position[0], spotLightEntity->transformComponent->position[1], spotLightEntity->transformComponent->position[2]);
+        GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].position");
+        glUniform3f(lightPositionLocation, spotLightEntityOne->transformComponent->position[0], spotLightEntityOne->transformComponent->position[1], spotLightEntityOne->transformComponent->position[2]);
       
         // Set the light direction uniform
-        GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.direction");
-        glUniform3f(lightDirLocation, spotLightEntity->lightComponent->direction[0], spotLightEntity->lightComponent->direction[1], spotLightEntity->lightComponent->direction[2]);
+        GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].direction");
+        glUniform3f(lightDirLocation, spotLightEntityOne->lightComponent->direction[0], spotLightEntityOne->lightComponent->direction[1], spotLightEntityOne->lightComponent->direction[2]);
 
         // Set the light constant uniform
-        GLint lightConstantLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.constant");
-        glUniform1f(lightConstantLocation, spotLightEntity->lightComponent->constant);
+        GLint lightConstantLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].constant");
+        glUniform1f(lightConstantLocation, spotLightEntityOne->lightComponent->constant);
 
         // Set the light linear uniform
-        GLint lightLinearLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.linear");
-        glUniform1f(lightLinearLocation, spotLightEntity->lightComponent->linear);
+        GLint lightLinearLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].linear");
+        glUniform1f(lightLinearLocation, spotLightEntityOne->lightComponent->linear);
 
         // Set the light quadratic uniform
-        GLint lightQuadraticLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.quadratic");
-        glUniform1f(lightQuadraticLocation, spotLightEntity->lightComponent->quadratic);
+        GLint lightQuadraticLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].quadratic");
+        glUniform1f(lightQuadraticLocation, spotLightEntityOne->lightComponent->quadratic);
 
         // Set the light cutOff uniform
-        GLint lightCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.cutOff");
-        glUniform1f(lightCutOffLocation, spotLightEntity->lightComponent->cutOff);
+        GLint lightCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].cutOff");
+        glUniform1f(lightCutOffLocation, spotLightEntityOne->lightComponent->cutOff);
 
         // Set the light outerCutOff uniform
-        GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLight.outerCutOff");
-        glUniform1f(lightOuterCutOffLocation, spotLightEntity->lightComponent->outerCutOff);
+        GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].outerCutOff");
+        glUniform1f(lightOuterCutOffLocation, spotLightEntityOne->lightComponent->outerCutOff);
+    }
+   Entity spotLightEntityTwo_ = globals.lights[1];
+   Entity* spotLightEntityTwo = &spotLightEntityTwo_;
+    if(spotLightEntityTwo != NULL && spotLightEntityTwo->lightComponent != NULL){
+ 
+        // Set lightColor uniform
+        GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+        glUniform3f(lightColorLocation, 0.0f,0.0f,1.0f);
+
+        // Set the light ambient uniform 
+        GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].ambient");
+        glUniform3f(lightAmbientLocation, spotLightEntityTwo->lightComponent->ambient.r, spotLightEntityTwo->lightComponent->ambient.g, spotLightEntityTwo->lightComponent->ambient.b);
+
+        // Set the light diffuse uniform
+        GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].diffuse");
+        glUniform3f(lightDiffuseLocation, spotLightEntityTwo->lightComponent->diffuse.r, spotLightEntityTwo->lightComponent->diffuse.g, spotLightEntityTwo->lightComponent->diffuse.b);
+
+        // Set the light specular uniform
+        GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].specular");
+        glUniform3f(lightSpecularLocation, spotLightEntityTwo->lightComponent->specular.r, spotLightEntityTwo->lightComponent->specular.g, spotLightEntityTwo->lightComponent->specular.b);
+
+        // Set the light position uniform
+        GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].position");
+        glUniform3f(lightPositionLocation, spotLightEntityTwo->transformComponent->position[0], spotLightEntityTwo->transformComponent->position[1], spotLightEntityTwo->transformComponent->position[2]);
+      
+        // Set the light direction uniform
+        GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].direction");
+        glUniform3f(lightDirLocation, spotLightEntityTwo->lightComponent->direction[0], spotLightEntityTwo->lightComponent->direction[1], spotLightEntityTwo->lightComponent->direction[2]);
+
+        // Set the light constant uniform
+        GLint lightConstantLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].constant");
+        glUniform1f(lightConstantLocation, spotLightEntityTwo->lightComponent->constant);
+
+        // Set the light linear uniform
+        GLint lightLinearLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].linear");
+        glUniform1f(lightLinearLocation, spotLightEntityTwo->lightComponent->linear);
+
+        // Set the light quadratic uniform
+        GLint lightQuadraticLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].quadratic");
+        glUniform1f(lightQuadraticLocation, spotLightEntityTwo->lightComponent->quadratic);
+
+        // Set the light cutOff uniform
+        GLint lightCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].cutOff");
+        glUniform1f(lightCutOffLocation, spotLightEntityTwo->lightComponent->cutOff);
+
+        // Set the light outerCutOff uniform
+        GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].outerCutOff");
+        glUniform1f(lightOuterCutOffLocation, spotLightEntityTwo->lightComponent->outerCutOff);
+    }
+   Entity spotLightEntityThree_ = globals.lights[2];
+   Entity* spotLightEntityThree = &spotLightEntityThree_;
+    if(spotLightEntityThree != NULL && spotLightEntityThree->lightComponent != NULL){
+ 
+        // Set lightColor uniform
+        GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+        glUniform3f(lightColorLocation, 0.0f,0.0f,1.0f);
+
+        // Set the light ambient uniform 
+        GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].ambient");
+        glUniform3f(lightAmbientLocation, spotLightEntityThree->lightComponent->ambient.r, spotLightEntityThree->lightComponent->ambient.g, spotLightEntityThree->lightComponent->ambient.b);
+
+        // Set the light diffuse uniform
+        GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].diffuse");
+        glUniform3f(lightDiffuseLocation, spotLightEntityThree->lightComponent->diffuse.r, spotLightEntityThree->lightComponent->diffuse.g, spotLightEntityThree->lightComponent->diffuse.b);
+
+        // Set the light specular uniform
+        GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].specular");
+        glUniform3f(lightSpecularLocation, spotLightEntityThree->lightComponent->specular.r, spotLightEntityThree->lightComponent->specular.g, spotLightEntityThree->lightComponent->specular.b);
+
+        // Set the light position uniform
+        GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].position");
+        glUniform3f(lightPositionLocation, spotLightEntityThree->transformComponent->position[0], spotLightEntityThree->transformComponent->position[1], spotLightEntityThree->transformComponent->position[2]);
+      
+        // Set the light direction uniform
+        GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].direction");
+        glUniform3f(lightDirLocation, spotLightEntityThree->lightComponent->direction[0], spotLightEntityThree->lightComponent->direction[1], spotLightEntityThree->lightComponent->direction[2]);
+
+        // Set the light constant uniform
+        GLint lightConstantLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].constant");
+        glUniform1f(lightConstantLocation, spotLightEntityThree->lightComponent->constant);
+
+        // Set the light linear uniform
+        GLint lightLinearLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].linear");
+        glUniform1f(lightLinearLocation, spotLightEntityThree->lightComponent->linear);
+
+        // Set the light quadratic uniform
+        GLint lightQuadraticLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].quadratic");
+        glUniform1f(lightQuadraticLocation, spotLightEntityThree->lightComponent->quadratic);
+
+        // Set the light cutOff uniform
+        GLint lightCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].cutOff");
+        glUniform1f(lightCutOffLocation, spotLightEntityThree->lightComponent->cutOff);
+
+        // Set the light outerCutOff uniform
+        GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].outerCutOff");
+        glUniform1f(lightOuterCutOffLocation, spotLightEntityThree->lightComponent->outerCutOff);
+    }
+   Entity spotLightEntityFour_ = globals.lights[3];
+   Entity* spotLightEntityFour = &spotLightEntityFour_;
+    if(spotLightEntityFour != NULL && spotLightEntityFour->lightComponent != NULL){
+ 
+        // Set lightColor uniform
+        GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+        glUniform3f(lightColorLocation, 0.0f,0.0f,1.0f);
+
+        // Set the light ambient uniform 
+        GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].ambient");
+        glUniform3f(lightAmbientLocation, spotLightEntityFour->lightComponent->ambient.r, spotLightEntityFour->lightComponent->ambient.g, spotLightEntityFour->lightComponent->ambient.b);
+
+        // Set the light diffuse uniform
+        GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].diffuse");
+        glUniform3f(lightDiffuseLocation, spotLightEntityFour->lightComponent->diffuse.r, spotLightEntityFour->lightComponent->diffuse.g, spotLightEntityFour->lightComponent->diffuse.b);
+
+        // Set the light specular uniform
+        GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].specular");
+        glUniform3f(lightSpecularLocation, spotLightEntityFour->lightComponent->specular.r, spotLightEntityFour->lightComponent->specular.g, spotLightEntityFour->lightComponent->specular.b);
+
+        // Set the light position uniform
+        GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].position");
+        glUniform3f(lightPositionLocation, spotLightEntityFour->transformComponent->position[0], spotLightEntityFour->transformComponent->position[1], spotLightEntityFour->transformComponent->position[2]);
+      
+        // Set the light direction uniform
+        GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].direction");
+        glUniform3f(lightDirLocation, spotLightEntityFour->lightComponent->direction[0], spotLightEntityFour->lightComponent->direction[1], spotLightEntityFour->lightComponent->direction[2]);
+
+        // Set the light constant uniform
+        GLint lightConstantLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].constant");
+        glUniform1f(lightConstantLocation, spotLightEntityFour->lightComponent->constant);
+
+        // Set the light linear uniform
+        GLint lightLinearLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].linear");
+        glUniform1f(lightLinearLocation, spotLightEntityFour->lightComponent->linear);
+
+        // Set the light quadratic uniform
+        GLint lightQuadraticLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].quadratic");
+        glUniform1f(lightQuadraticLocation, spotLightEntityFour->lightComponent->quadratic);
+
+        // Set the light cutOff uniform
+        GLint lightCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].cutOff");
+        glUniform1f(lightCutOffLocation, spotLightEntityFour->lightComponent->cutOff);
+
+        // Set the light outerCutOff uniform
+        GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].outerCutOff");
+        glUniform1f(lightOuterCutOffLocation, spotLightEntityFour->lightComponent->outerCutOff);
     }
 
-   Entity directionalLightEntity_ = globals.lights[1];
+    // Diretional light
+   Entity directionalLightEntity_ = globals.lights[4];
    Entity* directionalLightEntity = &directionalLightEntity_;
- 
-
     if(directionalLightEntity != NULL && directionalLightEntity->lightComponent != NULL){
 
          // Set lightColor uniform
@@ -280,7 +415,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         glUniform3f(lightDirLocation, directionalLightEntity->lightComponent->direction[0], directionalLightEntity->lightComponent->direction[1], directionalLightEntity->lightComponent->direction[2]);
     }
 
-    Entity pointLightEntityOne_ = globals.lights[2];
+    Entity pointLightEntityOne_ = globals.lights[5];
     Entity* pointLightEntityOne = &pointLightEntityOne_;
     if(pointLightEntityOne != NULL && pointLightEntityOne->lightComponent != NULL){
 
@@ -316,7 +451,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[0].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
     }
-    Entity pointLightEntityTwo_ = globals.lights[3];
+    Entity pointLightEntityTwo_ = globals.lights[6];
     Entity* pointLightEntityTwo = &pointLightEntityTwo_;
     if(pointLightEntityTwo != NULL && pointLightEntityTwo->lightComponent != NULL){
 
@@ -352,7 +487,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[1].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
     }
-    Entity pointLightEntityThree_ = globals.lights[4];
+    Entity pointLightEntityThree_ = globals.lights[7];
     Entity* pointLightEntityThree = &pointLightEntityThree_;
     if(pointLightEntityThree != NULL && pointLightEntityThree->lightComponent != NULL){
 
@@ -388,7 +523,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[2].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
     }
-    Entity pointLightEntityFour_ = globals.lights[5];
+    Entity pointLightEntityFour_ = globals.lights[8];
     Entity* pointLightEntityFour = &pointLightEntityFour_;
     if(pointLightEntityFour != NULL && pointLightEntityFour->lightComponent != NULL){
 
