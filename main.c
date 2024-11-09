@@ -89,7 +89,9 @@ struct Globals globals = {
     .materials=NULL,
     .materialsCount=0,
     .materialsCapacity=15,
-    .objDataCapacity=10
+    .objDataCapacity=10,
+    .lights={0},
+    .lightsCount=0
 };
 
 // Window dimensions
@@ -842,12 +844,12 @@ void movementSystem(){
                    // }
                 }
                 if(globals.entities[i].lightComponent->active == 1){
-                    globals.entities[i].transformComponent->rotation[1] = radians;
+                   // globals.entities[i].transformComponent->rotation[1] = radians;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                     float offset = 2.0 * sin(1.0 * globals.delta_time);
-                    globals.entities[i].lightComponent->direction[0] = offset;
+                  //  globals.entities[i].lightComponent->direction[0] = offset;
                     //printf("offset %f\n", offset);
-                    globals.entities[i].transformComponent->position[0] = offset;
+                   // globals.entities[i].transformComponent->position[0] = offset;
                 }
                 //globals.entities[i].transformComponent->rotation[1] += radians; //<- This is an example of acceleration.
            }
@@ -1238,8 +1240,8 @@ void initScene(){
     createObject(VIEWPORT_MAIN,&cornell_box->objData[6],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(VIEWPORT_MAIN,&cornell_box->objData[7],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
  */
-    createObject(VIEWPORT_MAIN,&textured_objects->objData[0],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-    createObject(VIEWPORT_MAIN,&textured_objects->objData[1],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //   createObject(VIEWPORT_MAIN,&textured_objects->objData[0],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+//    createObject(VIEWPORT_MAIN,&textured_objects->objData[1],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
    
    /* createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
@@ -1256,10 +1258,17 @@ void initScene(){
     // lights
     createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},DIRECTIONAL);
+    createLight(lightMaterial,(vec3){0.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
+     createLight(lightMaterial,(vec3){1.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
+    createLight(lightMaterial,(vec3){2.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
+    createLight(lightMaterial,(vec3){3.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); 
+  /*   createLight(lightMaterial,(vec3){2.3f, -3.3f, -4.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
+    createLight(lightMaterial,(vec3){-4.0f, 2.0f, -12.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
+    createLight(lightMaterial,(vec3){0.7f, 0.0f, -3.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); */
 
     // Primitives
-  //  createPlane(objectMaterial, (vec3){0.0f, -5.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    //createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, -5.0f, -8.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
+    createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1627,14 +1636,12 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
     entity->lightComponent->quadratic = 0.032f;
     entity->lightComponent->cutOff = cosine;
     entity->lightComponent->outerCutOff = cosineOC;
+    entity->lightComponent->type = type;
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
-     if(type == SPOT){
-        globals.lights[0] = *entity;
-    } 
-    if(type == DIRECTIONAL){
-        globals.lights[1] = *entity;
-    }
+    globals.lights[globals.lightsCount] = *entity;
+    ASSERT(globals.lightsCount < MAX_LIGHTS, "Too many lights");
+    globals.lightsCount++;
 
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
 }

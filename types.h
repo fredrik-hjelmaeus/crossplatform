@@ -168,6 +168,12 @@ typedef enum {
 
 typedef void (*ButtonCallback)();
 
+typedef enum {
+    SPOT = 0,
+    DIRECTIONAL = 1,
+    POINT = 2
+} LightType;
+
 // ECS
 
 enum Tag {
@@ -239,6 +245,7 @@ typedef struct LightComponent {
     float quadratic;
     float cutOff;
     float outerCutOff;
+    LightType type;
 } LightComponent;
 
 typedef struct MaterialComponent {
@@ -267,11 +274,7 @@ typedef struct Entity {
 
 typedef vec3 Point;
 
-typedef enum {
-    SPOT = 0,
-    DIRECTIONAL = 1,
-    POINT = 2
-} LightType;
+
 
 #endif // TYPES_H
 

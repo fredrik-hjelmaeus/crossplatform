@@ -15,6 +15,8 @@
     #define PLATFORM "Unknown"
 #endif
 
+#define MAX_LIGHTS 6
+
 struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -36,7 +38,8 @@ struct Globals {
     bool render;
     GpuData gpuFontData;
     float unitScale;
-    Entity lights[3]; // TODO: temporary solution for lights?
+    Entity lights[MAX_LIGHTS]; // TODO: temporary solution for lights?
+    int lightsCount;
     bool culling;
     int drawCallsCounter;
     bool debugDrawCalls;
