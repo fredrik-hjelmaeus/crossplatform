@@ -21,7 +21,7 @@ void setupFontMesh(GpuData *buffer);
 void renderText(GpuData* buffer, char* text, float x, float y, float scale, Color color);
 void renderLine(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,Color lineColor);
 void renderPoints(GpuData* buffer, TransformComponent* transformComponent, Camera* camera, Color pointColor,float pointSize);
-void setupLine(Line* lines, int lineCount, GpuData* buffer);
+void setupLine(GLfloat* lines, int lineCount, GpuData* buffer);
 void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
 /**

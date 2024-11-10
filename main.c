@@ -49,6 +49,9 @@ void createObject(int ui,ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
 void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
 void onButtonClick();
 void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick);
+void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation);
+void createLine(vec3 position, vec3 endPosition,Entity* entity);
+void createPoints(GLfloat* positions,int numPoints, Entity* entity);
 Camera* initCamera();
 
 
@@ -873,7 +876,7 @@ void uiSystem(){
 void movementSystem(){
     // rotate model logic (temporary)
     float degrees = 15.5f * globals.delta_time;
-    float radians = degrees * M_PI / 180.0f;
+   // float radians = degrees * M_PI / 180.0f;
 
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
@@ -899,7 +902,7 @@ void movementSystem(){
                 if(globals.entities[i].lightComponent->active == 1){
                    // globals.entities[i].transformComponent->rotation[1] = radians;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                    float offset = 2.0 * sin(1.0 * globals.delta_time);
+                   // float offset = 2.0 * sin(1.0 * globals.delta_time);
                   //  globals.entities[i].lightComponent->direction[0] = offset;
                     //printf("offset %f\n", offset);
                    // globals.entities[i].transformComponent->position[0] = offset;
@@ -1118,7 +1121,7 @@ void render(){
     }
     // Render GL_LINES & GL_POINTS(particles)
     for(int i = 0; i < MAX_ENTITIES; i++){
-        if(globals.entities[i].alive == 1 && globals.entities[i].lineComponent->active == 1 || globals.entities[i].pointComponent->active == 1){
+        if((globals.entities[i].alive == 1 && globals.entities[i].lineComponent->active == 1) || globals.entities[i].pointComponent->active == 1){
             if(globals.entities[i].lineComponent->active == 1){
               renderLine(globals.entities[i].lineComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].lineComponent->color);
             }
@@ -1257,7 +1260,7 @@ void initScene(){
 
    // Assets
    initFont();
-   TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
+ //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
    TextureData containerTextureData = loadTexture("./Assets/container.jpg");
    GLuint containerMap = setupTexture(containerTextureData);
    TextureData containerTwoTextureData = loadTexture("./Assets/container2.png");
@@ -1268,7 +1271,7 @@ void initScene(){
    
    
     //ObjGroup* truck = obj_loadFile("./Assets/truck.obj"); // Not supported atm, need .obj group support.
-    ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
+   // ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
   /*    ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
     ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
     ObjGroup* objExample = obj_loadFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
@@ -1276,7 +1279,7 @@ void initScene(){
     ObjGroup* triangleVolumes = obj_loadFile("./Assets/triangle_volumes.obj");
     ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");
     ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   */
-    ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
+ //   ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
  
     struct Material objectMaterial = {
     .active = 1,
@@ -1367,7 +1370,7 @@ void initScene(){
     printf("materials-list (%d): \n",globals.materialsCount);
     for(int i = 0; i < globals.materialsCount; i++){
         printf("%s \n",globals.materials[i].name);
-        printf("shininess %f \n",globals.materials[i].shininess);
+      /*   printf("shininess %f \n",globals.materials[i].shininess);
         printf("ambient.r %f \n",globals.materials[i].ambient.r);
         printf("ambient.g %f \n",globals.materials[i].ambient.g);
         printf("ambient.b %f \n",globals.materials[i].ambient.b);
@@ -1382,18 +1385,18 @@ void initScene(){
         printf("diffuseMap %d \n",globals.materials[i].diffuseMap);
         printf("ambientMap %d \n",globals.materials[i].ambientMap);
         printf("specularMap %d \n",globals.materials[i].specularMap);
-        printf("shininessMap %d \n\n",globals.materials[i].shininessMap); 
+        printf("shininessMap %d \n\n",globals.materials[i].shininessMap);  */
    } 
 
 }
 
 int main(int argc, char **argv) {
 
-    if(PLATFORM == "UNKNOWN") {
+   /*  if(PLATFORM == "UNKNOWN") {
         printf("Platform is unknown, please set PLATFORM in the makefile\n");
         return 1;
     }
-    printf("Platform is %s\n", PLATFORM);
+    printf("Platform is %s\n", PLATFORM); */
 
     // Initialize Memory Arenas
     arena_initMemory(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));

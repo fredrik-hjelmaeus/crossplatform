@@ -32,6 +32,7 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
 void captureFramebuffer(int width, int height, int drawCallsCounter);
 float deg2rad(float degrees);
+GLuint setupTexture(TextureData textureData);
 
 // Memory
 void arena_initMemory(Arena* arena, size_t size);

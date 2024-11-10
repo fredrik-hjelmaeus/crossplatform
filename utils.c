@@ -927,10 +927,10 @@ void captureFramebuffer(int width, int height, int drawCallsCounter) {
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
     // Flip y
-    stbi_flip_vertically_on_write(1);
+   // stbi_flip_vertically_on_write(1);
 
     // Save the pixels to an image file (e.g., using stb_image_write)
-    stbi_write_png(filename, width, height, 3, pixels, width * 3);
+    //stbi_write_png(filename, width, height, 3, pixels, width * 3);
 
     free(pixels);
 }

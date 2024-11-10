@@ -8,7 +8,7 @@
  * @brief Setup buffer to render GL_LINES. Very similar to setupMesh, 
  * only difference is that we only need position attributes & not prepared for indexed draws using a EBO.
 */
-void setupLine(Line* lines, int lineCount, GpuData* buffer) {
+void setupLine(GLfloat* lines, int lineCount, GpuData* buffer) {
 
     buffer->numIndicies = 0;
     buffer->drawMode = GL_LINES;
