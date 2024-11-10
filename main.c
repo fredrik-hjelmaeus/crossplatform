@@ -39,19 +39,29 @@
 #include <emscripten.h>
 #endif
 
-
-
-
 // Prototypes
-void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
-void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation);
-void createObject(int ui,ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
+void ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation);
+void createCube(Material material,vec3 position,vec3 scale,vec3 rotation);
+void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
 void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
 void onButtonClick();
-void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick);
+void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick);
 void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createLine(vec3 position, vec3 endPosition,Entity* entity);
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
+void createMesh(
+    GLfloat* verts,
+    GLuint num_of_vertex, 
+    GLuint* indices, // atm plug in some dummy-data if not used.
+    GLuint numIndicies, // atm just set to 0 if not used.
+    vec3 position,
+    vec3 scale,
+    vec3 rotation,
+    Material* material,
+    GLenum drawMode,
+    VertexDataType vertexDataType,
+    Entity* entity);
+
 Camera* initCamera();
 
 
@@ -415,6 +425,19 @@ void initWindow() {
 
 void setViewport(struct View view) {
     glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
+}
+
+void setViewportAndClear(View view){
+    Rectangle rect = convertViewRectangleToSDLCoordinates(view,globals.views.full.rect.height);
+   
+    // Set the viewport
+    glViewport(rect.x, rect.y, rect.width, rect.height);
+
+     // Set the clear color
+    glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
+
+    // Clear the viewport
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 /**
@@ -1108,8 +1131,8 @@ void render(){
     // TODO: find a way to avoid having to iterate over all entities twice, once for ui and once for 3d objects.
 
     // Render main view & 3d objects
-   setViewportWithScissorAndClear(globals.views.main);
-   setFontProjection(&globals.gpuFontData,globals.views.main);
+   setViewportAndClear(globals.views.full);
+   setFontProjection(&globals.gpuFontData,globals.views.full);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
@@ -1147,7 +1170,6 @@ void render(){
     }
 
     // Render ui scene & ui objects
-    setViewportWithScissorAndClear(globals.views.ui);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
@@ -1354,7 +1376,7 @@ void initScene(){
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
-    createCube(VIEWPORT_MAIN,objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
   
 
 
@@ -1363,8 +1385,8 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
- createRectangle(VIEWPORT_UI,uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
- createButton(VIEWPORT_UI,uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+ ui_createRectangle(uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
     printf("materials-list (%d): \n",globals.materialsCount);
@@ -1428,6 +1450,7 @@ int main(int argc, char **argv) {
     uiCamera->bottom = -200.0f/2.0f;
     uiCamera->top = 200.0f/2.0f;
     globals.views.ui.camera = uiCamera;
+    
     Camera* mainCamera = initCamera();
     mainCamera->aspectRatio = globals.views.main.rect.width / globals.views.main.rect.height;
     globals.views.main.camera = mainCamera;
@@ -1480,7 +1503,6 @@ void createMesh(
     vec3 scale,
     vec3 rotation,
     Material* material,
-    int ui,
     GLenum drawMode,
     VertexDataType vertexDataType,
     Entity* entity
@@ -1741,7 +1763,7 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         createPoints(positions,2,entity);
         return;
     }
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
 void createPoints(GLfloat* positions,int numPoints, Entity* entity){
     entity->pointComponent->active = 1;
@@ -1815,15 +1837,14 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
    
     Entity* entity = addEntity(MODEL);
 
-    createMesh(vertices,6,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
+    createMesh(vertices,6,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
 /**
  * @brief Create a object. Used together with obj-load/parse. Expects data from obj-parser to be of type ObjData.
  * Create a object mesh
- * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
-void createObject(int ui,ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
+void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
     
    // vertex data
     int stride = 11;
@@ -1835,20 +1856,16 @@ void createObject(int ui,ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
     }; 
 
     Entity* entity = addEntity(MODEL);
-    if(ui == 1){
-        entity->uiComponent->active = 1;
-    }
     
-    createMesh(obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&globals.materials[obj->materialIndex],ui,GL_TRIANGLES,VERTS_COLOR_ONEUV,entity);
+    createMesh(obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&globals.materials[obj->materialIndex],GL_TRIANGLES,VERTS_COLOR_ONEUV,entity);
 }
 
 /**
  * @brief Create a rectangle
  * Create a rectangle mesh
- * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
-void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rotation){
+void ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
@@ -1864,13 +1881,12 @@ void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rota
     };
 
     Entity* entity = addEntity(MODEL);
-    if(ui == 1){
         entity->uiComponent->active = 1;
         entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
         entity->uiComponent->uiNeedsUpdate =1;
-    }
+    
 
-    createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
 
     // Bounding box, reuses the vertices from the rectangle
    /*  Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
@@ -1891,7 +1907,7 @@ void createRectangle(int ui,Material material,vec3 position,vec3 scale,vec3 rota
  * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
-void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick){
+void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick){
     // vertex data
         GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
@@ -1907,15 +1923,15 @@ void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotatio
     };
 
     Entity* entity = addEntity(MODEL);
-    if(ui == 1){
-        entity->uiComponent->active = 1;
-        entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
-        entity->uiComponent->text = text;
-        entity->uiComponent->uiNeedsUpdate = 1;
-        entity->uiComponent->onClick = onClick;
-    }
+    
+    entity->uiComponent->active = 1;
+    entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
+    entity->uiComponent->text = text;
+    entity->uiComponent->uiNeedsUpdate = 1;
+    entity->uiComponent->onClick = onClick;
+    
 
-    createMesh(vertices,4,indices,6,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
 
     // Bounding box, reuses the vertices from the rectangle
  /*    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
@@ -1934,10 +1950,9 @@ void createButton(int ui,Material material,vec3 position,vec3 scale,vec3 rotatio
 /**
  * @brief Create a Cube
  * Create a Cube mesh
- * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the cube
 */
-void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation){
+void createCube(Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
     -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
@@ -2002,11 +2017,9 @@ void createCube(int ui,Material material,vec3 position,vec3 scale,vec3 rotation)
     };
 
     Entity* entity = addEntity(MODEL);
-    if(ui == 1){
-        entity->uiComponent->active = 1;
-    }
-
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,ui,GL_TRIANGLES,VERTS_ONEUV,entity);
+    entity->uiComponent->active = 1;
+    
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
 
 /**
