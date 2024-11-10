@@ -250,6 +250,21 @@ void initializeLineComponent(LineComponent* lineComponent){
     lineComponent->end[2] = 0.0f;
 }
 
+void initializePointComponent(PointComponent* pointComponent){
+    pointComponent->active = 0;
+    pointComponent->gpuData = (GpuData*)malloc(sizeof(GpuData)); // TODO: replace with arena alloc?
+    if(pointComponent->gpuData == NULL) {
+        printf("Failed to allocate memory for gpuData\n");
+        exit(1);
+    }
+    pointComponent->points = NULL;
+    pointComponent->color.r = 0.0f;
+    pointComponent->color.g = 0.0f;
+    pointComponent->color.b = 0.0f;
+    pointComponent->color.a = 1.0f;
+    pointComponent->pointSize = 1.0f;
+}
+
 
 /**
  * @brief Initialize the ECS
@@ -268,6 +283,7 @@ void initECS(){
     UIComponent* uiComponents = allocateComponentMemory(sizeof(UIComponent), "ui");
     LightComponent* lightComponents = allocateComponentMemory(sizeof(LightComponent), "light");
     LineComponent* lineComponents = allocateComponentMemory(sizeof(LineComponent), "line");
+    PointComponent* pointComponents = allocateComponentMemory(sizeof(PointComponent), "point");
 
     // Allocate memory for MAX_ENTITIES Entity structs
     Entity* entities = (Entity*)calloc(MAX_ENTITIES, sizeof(Entity));
@@ -295,6 +311,8 @@ void initECS(){
         initializeLightComponent(entities[i].lightComponent);
         entities[i].lineComponent = &lineComponents[i];
         initializeLineComponent(entities[i].lineComponent);
+        entities[i].pointComponent = &pointComponents[i];
+        initializePointComponent(entities[i].pointComponent);
     }
 
     globals.entities = entities;
@@ -307,6 +325,7 @@ void initECS(){
         printf("groupComponent %zu\n",sizeof(GroupComponent));
         printf("uiComponent %zu\n",sizeof(UIComponent));
         printf("lineComponent %zu\n",sizeof(LineComponent));
+        printf("pointComponent %zu\n",sizeof(PointComponent));
     }
 }
 
@@ -1095,11 +1114,35 @@ void render(){
                     renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
                 }
             }
-            if(globals.entities[i].lineComponent->active == 1){
-                renderLine(globals.entities[i].lineComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].lineComponent->color);
-            }
         }
     }
+    // Render GL_LINES & GL_POINTS(particles)
+    for(int i = 0; i < MAX_ENTITIES; i++){
+        if(globals.entities[i].alive == 1 && globals.entities[i].lineComponent->active == 1 || globals.entities[i].pointComponent->active == 1){
+            if(globals.entities[i].lineComponent->active == 1){
+              renderLine(globals.entities[i].lineComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].lineComponent->color);
+            }
+             if(globals.entities[i].pointComponent->active == 1){
+                // NOTE: point Size is not drawing anything else than 1.0 in windows/wsl2.
+                // Get point size range ( use this to debug pointSize or later at init to tell support or not of pointsize )
+                //GLfloat    pointSizeRange[2];
+                //glGetFloatv ( GL_ALIASED_POINT_SIZE_RANGE, pointSizeRange );
+                // Print the point size range
+                //printf("Point size range: min = %f, max = %f\n", pointSizeRange[0], pointSizeRange[1]);
+                renderPoints(
+                    globals.entities[i].pointComponent->gpuData,
+                    globals.entities[i].transformComponent, 
+                    globals.views.main.camera, 
+                    globals.entities[i].pointComponent->color,
+                    globals.entities[i].pointComponent->pointSize
+                );
+            }
+             
+               
+            
+        }
+    }
+
     // Render ui scene & ui objects
     setViewportWithScissorAndClear(globals.views.ui);
     for(int i = 0; i < MAX_ENTITIES; i++) {
@@ -1691,11 +1734,30 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         printf("directional start position: %f %f %f \n",position[0],position[1],position[2]);
         printf("directional end position: %f %f %f \n",result[0],result[1],result[2]);
         createLine(position,result,entity);
+        GLfloat positions[] = {  position[0], position[1], position[2] ,  result[0], result[1], result[2]  };
+        createPoints(positions,2,entity);
         return;
     }
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,0,GL_TRIANGLES,VERTS_ONEUV,entity);
 }
-
+void createPoints(GLfloat* positions,int numPoints, Entity* entity){
+    entity->pointComponent->active = 1;
+    entity->pointComponent->color = (Color){1.0f,0.0f,1.0f,1.0f};
+    entity->pointComponent->points = positions;
+    entity->pointComponent->pointSize = 10.0f;
+    entity->transformComponent->position[0] = positions[0];
+    entity->transformComponent->position[1] = positions[1];
+    entity->transformComponent->position[2] = positions[2];
+    entity->transformComponent->scale[0] = 1.0f;
+    entity->transformComponent->scale[1] = 1.0f;
+    entity->transformComponent->scale[2] = 1.0f;
+    entity->transformComponent->rotation[0] = 0.0f;
+    entity->transformComponent->rotation[1] = 0.0f;
+    entity->transformComponent->rotation[2] = 0.0f;
+    entity->transformComponent->modelNeedsUpdate = 1;
+    setupPoints(positions,numPoints,entity->pointComponent->gpuData);
+    setupMaterial(entity->pointComponent->gpuData,"shaders/point_vertex.glsl", "shaders/point_fragment.glsl");
+}
 /**
  * @brief Create a line segment between two points
  * @param position - start position

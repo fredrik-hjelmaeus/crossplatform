@@ -227,7 +227,19 @@ typedef struct LineComponent {
     //Vertex* vertices; 
     GpuData* gpuData;
     Color color;
+    // line width (See OpenGL_ES_3.0_Programming_Guide page 205)
+    // line type, dotted (GL_LINE_STIPPLE )
+    // line dotted pattern ( glLineStipple)
+    // line smooth? (GL_LINE_SMOOTH) seems unsupported by oges3.0
 } LineComponent;
+
+typedef struct PointComponent {
+    bool active;
+    GLfloat* points;
+    float pointSize;
+    GpuData* gpuData;
+    Color color;
+} PointComponent;
 
 typedef struct UIComponent {
     bool active;
@@ -287,6 +299,7 @@ typedef struct Entity {
     UIComponent* uiComponent;
     LightComponent* lightComponent;
     LineComponent* lineComponent;
+    PointComponent* pointComponent;
 } Entity;
 
 typedef vec3 Point;

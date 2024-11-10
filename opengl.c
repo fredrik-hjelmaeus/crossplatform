@@ -6,7 +6,7 @@
 
 /** 
  * @brief Setup buffer to render GL_LINES. Very similar to setupMesh, 
- * only difference is that we only need color & position attributes.
+ * only difference is that we only need position attributes & not prepared for indexed draws using a EBO.
 */
 void setupLine(Line* lines, int lineCount, GpuData* buffer) {
 
@@ -24,24 +24,45 @@ void setupLine(Line* lines, int lineCount, GpuData* buffer) {
     // Copy vertices to buffer
     glBufferData(GL_ARRAY_BUFFER, lineCount * sizeof(Line), lines, GL_STATIC_DRAW);
 
-    // Bind/Activate EBO
-  //  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->EBO);
-
-    // Copy indices to buffer
-   // glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_STATIC_DRAW);
-
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
 
-    // Color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
-    
     // Unbind VBO/buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Unbind VAO/vertex array
+    glBindVertexArray(0);
+}
+
+/** 
+ * @brief Setup buffer to render GL_POINTS. Very similar to setupMesh, 
+ * only difference is that we only need position attributes & not prepared for indexed draws using a EBO.
+*/
+void setupPoints(GLfloat *positions, int numPoints, GpuData *buffer)
+{
+    buffer->numIndicies = 0;
+    buffer->drawMode = GL_POINTS;
+    buffer->vertexCount = numPoints;
+    glGenVertexArrays(1, &(buffer->VAO));
+    glGenBuffers(1, &(buffer->VBO));
+    glGenBuffers(1, &buffer->EBO);
+    glBindVertexArray(buffer->VAO);
+
+    // Bind/Activate VBO
+    glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
+
+    // Copy vertices/points to buffer
+    glBufferData(GL_ARRAY_BUFFER, numPoints * sizeof(vec3), positions, GL_STATIC_DRAW);
+
+    // Position attribute
+    glVertexAttribPointer(0 , 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+
+    // Unbind VBO/buffer
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Unbind VAO/Vertex array
     glBindVertexArray(0);
 }
 
@@ -191,6 +212,41 @@ void renderLine(GpuData* buffer,TransformComponent* transformComponent, Camera* 
 
   // Unbind buffer
   glBindVertexArray(0);
+}
+
+void renderPoints(GpuData *buffer, TransformComponent *transformComponent, Camera *camera, Color pointColor, float pointSize)
+{
+    // Check if camera is NULL
+    if(camera == NULL){
+        fprintf(stderr, "Error: camera is NULL\n");
+        return;
+    }
+
+    // Set shader
+    glUseProgram(buffer->shaderProgram);
+
+    // Set uniforms
+    GLint pointColorLoc = glGetUniformLocation(buffer->shaderProgram, "pointColor");
+    glUniform4f(pointColorLoc, pointColor.r,pointColor.g,pointColor.b,pointColor.a);
+
+    GLint pointSizeLoc = glGetUniformLocation(buffer->shaderProgram, "pointSize");
+    glUniform1f(pointSizeLoc, pointSize);
+
+    GLint modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
+    GLint viewLoc =  glGetUniformLocation(buffer->shaderProgram, "view");
+    GLint projLoc =  glGetUniformLocation(buffer->shaderProgram, "projection");
+
+    glUniformMatrix4fv(modelLoc,1,GL_FALSE,&transformComponent->transform[0][0]);
+    glUniformMatrix4fv(viewLoc, 1,GL_FALSE,&camera->view[0][0]);
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE,&camera->projection[0][0]);
+
+     // Bind buffer
+    glBindVertexArray(buffer->VAO);
+  
+    glDrawArrays(buffer->drawMode,0,buffer->vertexCount);
+
+    // Unbind buffer
+    glBindVertexArray(0);
 }
 
 /**
