@@ -49,6 +49,8 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
 void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createLine(vec3 position, vec3 endPosition,Entity* entity);
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
+int addMaterial(Material material);
+Material* getMaterial(int index);
 void createMesh(
     GLfloat* verts,
     GLuint num_of_vertex, 
@@ -60,7 +62,9 @@ void createMesh(
     Material* material,
     GLenum drawMode,
     VertexDataType vertexDataType,
-    Entity* entity);
+    Entity* entity,
+    bool saveMaterial
+    );
 
 Camera* initCamera();
 
@@ -197,6 +201,9 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->specular.a = 1.0f;
     materialComponent->shininess = 0.0f;
     materialComponent->diffuseMapOpacity = 0.0f;
+    materialComponent->diffuseMap = 0;
+    materialComponent->specularMap = 0;
+    materialComponent->materialIndex = -1;
 }
 
 // Max text length for UI components
@@ -614,15 +621,15 @@ void input() {
         if(globals.event.type == SDL_KEYDOWN) {
             const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
             if(strcmp(key, "C") == 0) {
-                globals.views.main.clearColor.r = randFloat(0.0,1.0);
-                globals.views.main.clearColor.g = randFloat(0.0,1.0);
-                globals.views.main.clearColor.b = randFloat(0.0,1.0);
+                globals.views.full.clearColor.r = randFloat(0.0,1.0);
+                globals.views.full.clearColor.g = randFloat(0.0,1.0);
+                globals.views.full.clearColor.b = randFloat(0.0,1.0);
 
                 for(int i = 0; i < MAX_ENTITIES; i++){
                     if(globals.entities[i].alive == 1 && globals.entities[i].lightComponent->active == 1){
-                        globals.entities[i].lightComponent->ambient.r = globals.views.main.clearColor.r;
-                        globals.entities[i].lightComponent->ambient.g = globals.views.main.clearColor.g;
-                        globals.entities[i].lightComponent->ambient.b = globals.views.main.clearColor.b;
+                        globals.entities[i].lightComponent->ambient.r = globals.views.full.clearColor.r;
+                        globals.entities[i].lightComponent->ambient.g = globals.views.full.clearColor.g;
+                        globals.entities[i].lightComponent->ambient.b = globals.views.full.clearColor.b;
                     }
                 }
                 //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
@@ -983,7 +990,7 @@ void hoverAndClickSystem(){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
                               // printf("hovered changes done on entity with id %d\n", globals.entities[i].id);
                                 // Appearance changes when hovered
-                               globals.entities[i].materialComponent->diffuseMapOpacity = 0.5f;
+                               globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
                                globals.entities[i].materialComponent->diffuse.r = 0.0f;
                                globals.entities[i].materialComponent->diffuse.g = 0.5f;
                             }
@@ -995,7 +1002,7 @@ void hoverAndClickSystem(){
                                 //printf("clicked changes done\n");
                             }
                             // Appearance changes when clicked
-                            globals.entities[i].materialComponent->diffuseMapOpacity = 0.5f;
+                            globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
                             globals.entities[i].materialComponent->diffuse.r = 0.5f;
                             globals.entities[i].materialComponent->diffuse.g = 0.0f;
                          
@@ -1009,9 +1016,9 @@ void hoverAndClickSystem(){
                          if(strlen(globals.entities[i].uiComponent->text) > 0){
                                // printf("no action,disable actions\n");
                             } 
-                         globals.entities[i].uiComponent->hovered = 0;
+                        globals.entities[i].uiComponent->hovered = 0;
                         globals.entities[i].uiComponent->clicked = 0;
-                        globals.entities[i].materialComponent->diffuseMapOpacity =1.0f; 
+                        globals.entities[i].materialComponent->diffuseMapOpacity = getMaterial(globals.entities[i].materialComponent->materialIndex)->diffuseMapOpacity;
                         globals.entities[i].materialComponent->diffuse.r = 0.0f;
                         globals.entities[i].materialComponent->diffuse.g= 0.0f;
                     }
@@ -1181,6 +1188,7 @@ void render(){
                             }
                         }else {
                             if(globals.entities[i].tag != BOUNDING_BOX){
+                                //printf("rendering ui with shaderProgam %d: \n",globals.entities[i].meshComponent->gpuData->shaderProgram);
                                 //printf("rendering ui with no bb active %d \n", globals.entities[i].id);
                                 renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
                             }
@@ -1293,7 +1301,7 @@ void initScene(){
    
    
     //ObjGroup* truck = obj_loadFile("./Assets/truck.obj"); // Not supported atm, need .obj group support.
-   // ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
+    ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
   /*    ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
     ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
     ObjGroup* objExample = obj_loadFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
@@ -1301,10 +1309,11 @@ void initScene(){
     ObjGroup* triangleVolumes = obj_loadFile("./Assets/triangle_volumes.obj");
     ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");
     ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   */
- //   ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
+    ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
  
     struct Material objectMaterial = {
     .active = 1,
+    .name = "objectMaterial",
     .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
     .diffuse = (Color){1.0f, 0.0f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
     .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
@@ -1315,6 +1324,7 @@ void initScene(){
     };
     struct Material uiMaterial = {
         .active = 1,
+        .name = "uiMaterial",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
         .diffuse = (Color){0.5f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
         .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
@@ -1323,8 +1333,20 @@ void initScene(){
         .diffuseMapOpacity = 1.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
     };
+    struct Material flatColorUImaterial = {
+        .active = 1,
+        .name = "flatColorUImaterial",
+        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
+        .diffuse = DARK_GRAY_COLOR,  // used when diffuseMapOpacity lower than 1.0
+        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
+        .shininess = 4.0f,                           // NOT used
+        .diffuseMap = containerTwoMap,               // used
+        .diffuseMapOpacity = 0.0f,                    // used
+        .specularMap = containerTwoSpecularMap,      // NOT used
+    };
     struct Material lightMaterial = {
         .active = 1,
+        .name = "lightMaterial",
         .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
         .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used
         .specular = (Color){1.0f, 1.0f, 1.0f, 1.0f}, // used
@@ -1336,28 +1358,28 @@ void initScene(){
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-    /* createObject(VIEWPORT_MAIN,&cornell_box->objData[0],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[1],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[2],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[3],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[4],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[5],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[6],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&cornell_box->objData[7],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
- */
- //   createObject(VIEWPORT_MAIN,&textured_objects->objData[0],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-//    createObject(VIEWPORT_MAIN,&textured_objects->objData[1],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(&cornell_box->objData[0],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[1],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[2],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[3],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[4],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[5],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[6],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[7],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+ 
+    createObject(&textured_objects->objData[0],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    createObject(&textured_objects->objData[1],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
    
-   /* createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+ // createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   // createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
    // createObject(VIEWPORT_MAIN,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-     createObject(VIEWPORT_MAIN,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(VIEWPORT_MAIN,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(VIEWPORT_MAIN,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(VIEWPORT_MAIN,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
-    createObject(VIEWPORT_MAIN,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
+   //  createObject(VIEWPORT_MAIN,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    //createObject(VIEWPORT_MAIN,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    //createObject(VIEWPORT_MAIN,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    //createObject(VIEWPORT_MAIN,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
+    //createObject(VIEWPORT_MAIN,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
 
-      */ 
+     
 
  
     // lights
@@ -1370,9 +1392,6 @@ void initScene(){
     createLight(lightMaterial,(vec3){1.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
     createLight(lightMaterial,(vec3){2.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
     createLight(lightMaterial,(vec3){3.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); 
-  /*   createLight(lightMaterial,(vec3){2.3f, -3.3f, -4.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
-    createLight(lightMaterial,(vec3){-4.0f, 2.0f, -12.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
-    createLight(lightMaterial,(vec3){0.7f, 0.0f, -3.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); */
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
@@ -1385,8 +1404,9 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
- ui_createRectangle(uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
- ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
+ ui_createRectangle(flatColorUImaterial, (vec3){200.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //ui_createRectangle(uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+ //ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
     printf("materials-list (%d): \n",globals.materialsCount);
@@ -1413,7 +1433,7 @@ void initScene(){
 }
 
 int main(int argc, char **argv) {
-
+    
    /*  if(PLATFORM == "UNKNOWN") {
         printf("Platform is unknown, please set PLATFORM in the makefile\n");
         return 1;
@@ -1505,7 +1525,8 @@ void createMesh(
     Material* material,
     GLenum drawMode,
     VertexDataType vertexDataType,
-    Entity* entity
+    Entity* entity,
+    bool saveMaterial // save material to global list
     ){
 
     entity->meshComponent->active = 1;
@@ -1625,6 +1646,10 @@ void createMesh(
     entity->materialComponent->diffuseMap = material->diffuseMap;
     entity->materialComponent->diffuseMapOpacity = material->diffuseMapOpacity;
     entity->materialComponent->specularMap = material->specularMap;
+    if(saveMaterial){
+        entity->materialComponent->materialIndex = addMaterial(*material);
+    }
+
     entity->meshComponent->gpuData->drawMode = drawMode;
     
     setupMesh(  entity->meshComponent->vertices, 
@@ -1648,6 +1673,16 @@ void createPoint(vec3 position){
     GLfloat vertices[] = {
         position[0], position[1], position[2],  1.0f, 1.0f, 1.0f, 0.0f, 0.0f
     };
+}
+
+int addMaterial(Material material){
+    globals.materials[globals.materialsCount] = material;
+    globals.materialsCount++;
+    return globals.materialsCount-1;
+}
+Material* getMaterial(int index){
+    ASSERT(index < globals.materialsCount && index >= 0, "Material index out of bounds or not assigned");
+    return &globals.materials[index];
 }
      
 /**
@@ -1756,14 +1791,12 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         vec3 normalized_direction;
         vec3_norm(&normalized_direction,direction);
         vec3_add(&result,normalized_direction,position);
-        printf("directional start position: %f %f %f \n",position[0],position[1],position[2]);
-        printf("directional end position: %f %f %f \n",result[0],result[1],result[2]);
         createLine(position,result,entity);
         GLfloat positions[] = {  position[0], position[1], position[2] ,  result[0], result[1], result[2]  };
         createPoints(positions,2,entity);
         return;
     }
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity);
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
 }
 void createPoints(GLfloat* positions,int numPoints, Entity* entity){
     entity->pointComponent->active = 1;
@@ -1837,7 +1870,7 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
    
     Entity* entity = addEntity(MODEL);
 
-    createMesh(vertices,6,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity);
+    createMesh(vertices,6,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
 }
 /**
  * @brief Create a object. Used together with obj-load/parse. Expects data from obj-parser to be of type ObjData.
@@ -1857,7 +1890,15 @@ void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
 
     Entity* entity = addEntity(MODEL);
     
-    createMesh(obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&globals.materials[obj->materialIndex],GL_TRIANGLES,VERTS_COLOR_ONEUV,entity);
+    createMesh(obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&globals.materials[obj->materialIndex],GL_TRIANGLES,VERTS_COLOR_ONEUV,entity,false);
+}
+
+/**
+ * TODO: This will create a ui_panel and is in turn an abstraction to create a group of ui-elements to make up this panel.
+ */
+void ui_panel(Material material, vec3 position,vec3 scale, vec3 rotation,Rectangle rect, bool floating, bool collapsable){
+  //ui_createRectangle(Material material, vec3 positi)
+  printf("not yet implemented \n");
 }
 
 /**
@@ -1886,7 +1927,7 @@ void ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation
         entity->uiComponent->uiNeedsUpdate =1;
     
 
-    createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
     // Bounding box, reuses the vertices from the rectangle
    /*  Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
@@ -1931,7 +1972,7 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
     entity->uiComponent->onClick = onClick;
     
 
-    createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity);
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
     // Bounding box, reuses the vertices from the rectangle
  /*    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
@@ -2019,7 +2060,7 @@ void createCube(Material material,vec3 position,vec3 scale,vec3 rotation){
     Entity* entity = addEntity(MODEL);
     entity->uiComponent->active = 1;
     
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity);
+    createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
 }
 
 /**

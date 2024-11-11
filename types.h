@@ -118,7 +118,7 @@ typedef struct Material {
     float shininess;
     float transparency;
     GLuint diffuseMap;
-    float diffuseMapOpacity;
+    GLfloat diffuseMapOpacity;
     GLuint specularMap;
     GLuint shininessMap;
     GLuint ambientMap;
@@ -278,12 +278,13 @@ typedef struct LightComponent {
 
 typedef struct MaterialComponent {
     bool active;
+    int materialIndex; // index in globals.materials
     Color ambient;
     Color diffuse;
     Color specular;
     float shininess;
     GLuint diffuseMap;
-    float diffuseMapOpacity;
+    GLfloat diffuseMapOpacity;
     GLuint specularMap;
   //  Texture* normalMap;
 } MaterialComponent;
@@ -303,8 +304,6 @@ typedef struct Entity {
 } Entity;
 
 typedef vec3 Point;
-
-
 
 #endif // TYPES_H
 

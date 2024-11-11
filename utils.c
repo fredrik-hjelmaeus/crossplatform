@@ -2,7 +2,38 @@
 #include "globals.h"
 #include <ctype.h>
 
-char* readFile(const char *filename) {
+/**
+ * Converts hex to color
+ * @param hex #3355FF
+ * @returns Color {}
+ */
+Color hexToColor(const char *hex)
+{   
+    Color color;
+
+    // Remove the '#' if present
+    if (hex[0] == '#') {
+        hex++;
+    }
+
+    // Extract the red, green, and blue components
+    char r[3] = { hex[0], hex[1], '\0' };
+    char g[3] = { hex[2], hex[3], '\0' };
+    char b[3] = { hex[4], hex[5], '\0' };
+
+    // Convert hex to decimal
+    color.r = strtol(r, NULL, 16) / 255.0f;
+    color.g = strtol(g, NULL, 16) / 255.0f;
+    color.b = strtol(b, NULL, 16) / 255.0f;
+    
+    // Default alpha to 1.0
+    color.a = 1.0;
+
+    return color;
+}
+
+char *readFile(const char *filename)
+{
 
     FILE *fp;
 
@@ -455,7 +486,6 @@ void obj_parseMaterial(const char *filepath){
           // printf("new globals.materialsCount %d \n",globals.materialsCount);
         
            ASSERT(globals.materialsCount < globals.materialsCapacity, "Material count exceeds capacity");
-    
            printf("new material %s \n",globals.materials[globals.materialsCount-1].name);
            continue;
         }

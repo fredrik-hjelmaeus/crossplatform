@@ -20,8 +20,12 @@
 #define TEXT_COLOR_MAGENTA "\033[1;35m"
 #define TEXT_COLOR_ORANGE "\033[1;33m"
 
+// Common colors
+#define GRAY_COLOR hexToColor("#333333")
+#define DARK_GRAY_COLOR hexToColor("#1A1A1A")
 
 
+Color hexToColor(const char* hex);
 char* readFile(const char *filename);
 unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
 TextureData loadTexture(char* path);
