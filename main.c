@@ -75,6 +75,10 @@ Camera* initCamera();
 // Global variables / Initialization
 //------------------------------------------------------
 
+// Window dimensions
+static const int width = 800;  // If these change, the views defaults should be changed aswell.
+static const int height = 600; // If these change, the views defaults should be changed aswell.
+
 struct Globals globals = {
     .window=NULL,
     .renderer=NULL,
@@ -87,9 +91,9 @@ struct Globals globals = {
     .overideDrawMode=GL_TRIANGLES,
     .overrideDrawModeBool=0,
     .views = {
-        .ui={{0, 400, 800, 200}, {0.0f, 0.0f, 0.0f, 1.0f},NULL,false},
-        .main={{0, 0, 800, 400}, {1.0f, 0.0f, 0.0f, 1.0f},NULL,false},
-        .full={{0, 0, 800, 600}, {0.0f, 0.0f, 0.0f, 1.0f},NULL,false},
+        .ui={{0,   0, width, height}, {0.0f, 1.0f, 0.0f, 1.0f},NULL,false},
+        .main={{0, 0, width, height}, {1.0f, 0.0f, 0.0f, 1.0f},NULL,false},
+        .full={{0, 0, width, height}, {0.0f, 0.0f, 0.0f, 1.0f} ,NULL,false},
     },
     .firstMouse=1,
     .mouseXpos=0.0f,
@@ -98,7 +102,7 @@ struct Globals globals = {
     .drawBoundingBoxes=false,
     .render=true,
     .gpuFontData={0,0,0,0,0,0,GL_TRIANGLES},
-    .unitScale=100.0f,
+    .unitScale=100.0f, // 1 unit = 1 cm 
     .culling=false,
     .drawCallsCounter=0,
     .debugDrawCalls=false,
@@ -110,10 +114,6 @@ struct Globals globals = {
     .lights={0},
     .lightsCount=0
 };
-
-// Window dimensions
-static const int width = 800;  // If these change, the views defaults should be changed aswell.
-static const int height = 600; // If these change, the views defaults should be changed aswell.
 
 // Colors
 Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
@@ -766,7 +766,7 @@ void input() {
             globals.mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
-            //printf("Mouse moved to %d, %d\n", xpos, ypos);
+           // printf("Mouse moved to %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
             //  float x_ndc = (2.0f * xpos) / width - 1.0f;
             //   float y_ndc = 1.0f - (2.0f * ypos) / height;
@@ -856,6 +856,14 @@ void cameraSystem(){
     updateCamera(globals.views.ui.camera);
 }
 
+
+/**
+ * @brief UI system
+ * Responsible for setting the position of the UI elements in "UI" space. 
+ * UI space is top left corner of the screen is [0.0,0.0], bottom right is [width,height].
+ * Newly created UI elements is spawned in center of the screen [width/2, height/2] uiSystem then is responsible for 
+ * setting the position to top left corner + the requested position.
+ */
 void uiSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active && globals.entities[i].transformComponent->active && globals.entities[i].uiComponent->uiNeedsUpdate) {
@@ -867,21 +875,31 @@ void uiSystem(){
                 
                 // Position of element on spawn:
                 float ui_viewport_half_width = (float)globals.views.ui.rect.width / 2; 
-                float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2; 
+                float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2;
+                printf("ui_viewport_half_width %f\n", ui_viewport_half_width);
+                printf("ui_viewport_half_height %f\n", ui_viewport_half_height);
                 
                 // Half scale of element
-                float scaleFactorX = globals.entities[i].transformComponent->scale[0] / globals.unitScale;  
-                float scaleFactorY = globals.entities[i].transformComponent->scale[1] / globals.unitScale; 
+                float scaleInPixelsX = globals.entities[i].transformComponent->scale[0]; 
+                float scaleInPixelsY = globals.entities[i].transformComponent->scale[1]; /// globals.unitScale;
+                printf("scaleInPixelsX %f\n", scaleInPixelsX);
+                printf("scaleInPixelsY %f\n", scaleInPixelsY);
 
                 // TODO: rotation
             
                 // position of element
-                float requested_x = globals.entities[i].transformComponent->position[0];
-                float requested_y = globals.entities[i].transformComponent->position[1];
+                float requested_pos_x = globals.entities[i].transformComponent->position[0];
+                float requested_pos_y = globals.entities[i].transformComponent->position[1];
 
+                printf("requested_pos_x %f\n", requested_pos_x);
+                printf("requested_pos_y %f\n", requested_pos_y);
+
+                printf("before %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
+        
                 // move element to upper left corner and then add requested position.
-               globals.entities[i].transformComponent->position[0] = -1.0 * ui_viewport_half_width + globals.unitScale / 2.0 * scaleFactorX + requested_x;
-               globals.entities[i].transformComponent->position[1] = globals.unitScale - (ui_viewport_half_height / 2.0 * scaleFactorY) - requested_y;  
+               globals.entities[i].transformComponent->position[0] = (ui_viewport_half_width - (scaleInPixelsX * 0.5) - requested_pos_x) * -1.0; 
+               globals.entities[i].transformComponent->position[1] =(ui_viewport_half_height - (scaleInPixelsY * 0.5)) - requested_pos_y * 1.0;
+               printf("final pos: %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
                 
                 // Bounding box
                 globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0];
@@ -890,6 +908,7 @@ void uiSystem(){
                 globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];       
 
                 globals.entities[i].uiComponent->uiNeedsUpdate = 0;
+                
                 
         }
     }
@@ -1051,7 +1070,7 @@ void modelSystem(){
 
                     // set model scale
                     mat4x4_scale_aniso(model, model, globals.entities[i].transformComponent->scale[0],globals.entities[i].transformComponent->scale[1],globals.entities[i].transformComponent->scale[2]);
-
+                
                     // rotate model on x, y, and z axes
                     // The cast on model tells the compiler that you're aware of the 
                     // const requirement and that you're promising not to modify the model matrix.
@@ -1155,7 +1174,7 @@ void render(){
             if(globals.entities[i].lineComponent->active == 1){
               renderLine(globals.entities[i].lineComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].lineComponent->color);
             }
-             if(globals.entities[i].pointComponent->active == 1){
+            if(globals.entities[i].pointComponent->active == 1){
                 // NOTE: point Size is not drawing anything else than 1.0 in windows/wsl2.
                 // Get point size range ( use this to debug pointSize or later at init to tell support or not of pointsize )
                 //GLfloat    pointSizeRange[2];
@@ -1368,7 +1387,7 @@ void initScene(){
     createObject(&cornell_box->objData[7],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
  
     createObject(&textured_objects->objData[0],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-    createObject(&textured_objects->objData[1],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(&textured_objects->objData[1],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
    
  // createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
    // createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
@@ -1379,9 +1398,6 @@ void initScene(){
     //createObject(VIEWPORT_MAIN,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
     //createObject(VIEWPORT_MAIN,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
 
-     
-
- 
     // lights
     createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){-1.0f, 1.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
@@ -1391,7 +1407,7 @@ void initScene(){
     createLight(lightMaterial,(vec3){0.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
     createLight(lightMaterial,(vec3){1.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
     createLight(lightMaterial,(vec3){2.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
-    createLight(lightMaterial,(vec3){3.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); 
+    createLight(lightMaterial,(vec3){3.7f, 0.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);  
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
@@ -1399,20 +1415,20 @@ void initScene(){
   
 
 
-   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. 
+   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. <--- REWORK IT HERE <----
    // Scale is in pixels, 100.0f is 100 pixels etc.
    // z position will be z-depth, much like in DOM in web.
    // TODO: implement rotation, it is atm not affecting. 
  
- ui_createRectangle(flatColorUImaterial, (vec3){200.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  ui_createRectangle(flatColorUImaterial, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 400.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
  //ui_createRectangle(uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
  //ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
-    printf("materials-list (%d): \n",globals.materialsCount);
+/*     printf("materials-list (%d): \n",globals.materialsCount);
     for(int i = 0; i < globals.materialsCount; i++){
-        printf("%s \n",globals.materials[i].name);
-      /*   printf("shininess %f \n",globals.materials[i].shininess);
+       // printf("%s \n",globals.materials[i].name);
+         printf("shininess %f \n",globals.materials[i].shininess);
         printf("ambient.r %f \n",globals.materials[i].ambient.r);
         printf("ambient.g %f \n",globals.materials[i].ambient.g);
         printf("ambient.b %f \n",globals.materials[i].ambient.b);
@@ -1427,8 +1443,8 @@ void initScene(){
         printf("diffuseMap %d \n",globals.materials[i].diffuseMap);
         printf("ambientMap %d \n",globals.materials[i].ambientMap);
         printf("specularMap %d \n",globals.materials[i].specularMap);
-        printf("shininessMap %d \n\n",globals.materials[i].shininessMap);  */
-   } 
+        printf("shininessMap %d \n\n",globals.materials[i].shininessMap);  
+   }  */
 
 }
 
@@ -1465,10 +1481,10 @@ int main(int argc, char **argv) {
     Camera* uiCamera = initCamera();
     uiCamera->isOrthographic = 1;
     uiCamera->aspectRatio = globals.views.ui.rect.width / globals.views.ui.rect.height;
-    uiCamera->left = -800.0f/2.0f;
-    uiCamera->right = 800.0f/2.0f;
-    uiCamera->bottom = -200.0f/2.0f;
-    uiCamera->top = 200.0f/2.0f;
+    uiCamera->left = (float)-width/2.0f;
+    uiCamera->right = (float)width/2.0f;
+    uiCamera->bottom = -(float)height/2.0f;
+    uiCamera->top = (float)height/2.0f;
     globals.views.ui.camera = uiCamera;
     
     Camera* mainCamera = initCamera();
@@ -1620,9 +1636,9 @@ void createMesh(
     }
     entity->meshComponent->indexCount = numIndicies;
 
-    if(numIndicies == 0){
+   /*  if(numIndicies == 0){
         printf("not using indicies\n");
-    }
+    } */
 
     // transform data
     entity->transformComponent->active = 1;
@@ -1922,11 +1938,10 @@ void ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation
     };
 
     Entity* entity = addEntity(MODEL);
-        entity->uiComponent->active = 1;
-        entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
-        entity->uiComponent->uiNeedsUpdate =1;
+    entity->uiComponent->active = 1;
+    entity->uiComponent->boundingBox = (Rectangle){0,0,10,10};
+    entity->uiComponent->uiNeedsUpdate = 1;
     
-
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
     // Bounding box, reuses the vertices from the rectangle
@@ -2058,9 +2073,9 @@ void createCube(Material material,vec3 position,vec3 scale,vec3 rotation){
     };
 
     Entity* entity = addEntity(MODEL);
-    entity->uiComponent->active = 1;
     
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+     
 }
 
 /**
@@ -2089,7 +2104,7 @@ Camera* initCamera() {
     camera->fov = 45.0f;
     camera->near = 0.1f;
     camera->far = 100.0f;
-    camera->aspectRatio = 800.0f / 600.0f;
+    camera->aspectRatio = (float)width / (float)height;
     camera->left = -1.0f;
     camera->right = 1.0f;
     camera->bottom = -1.0f;

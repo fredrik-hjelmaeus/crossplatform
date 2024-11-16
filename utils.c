@@ -353,7 +353,7 @@ void arena_free(Arena* arena) {
 
 
 int findTrailingSpaces(const char* str){
-    printf("llen %c\n",str[strlen(str)-1]);
+    //printf("llen %c\n",str[strlen(str)-1]);
     int count = 0;
     for(int i = strlen(str)-1; i >= 0; i--){
         if((int)str[i] == 32){
@@ -398,13 +398,13 @@ char* obj_handleFilePath(const char* filepath){
         // Treating it as regular path that is a relative path from where main.c is ran.
         // This means we need to add ./Assets/ to the beginning of the path.
         strcpy(newPath,"./Assets/");
-        printf("newPath first step: %s\n",newPath);
+        //printf("newPath first step: %s\n",newPath);
         strcat(newPath,filepath); //"./Assets/oldbricks.jpg"
-        printf("newPath second step: %s\n",newPath);
+        //printf("newPath second step: %s\n",newPath);
         int trailingSpaces = findTrailingSpaces(newPath);
-        printf("found trailing spaces: %d\n",trailingSpaces);
+      //  printf("found trailing spaces: %d\n",trailingSpaces);
         newPath[strlen(newPath)-trailingSpaces] = '\0'; // Null-terminate the new path
-        printf("newPath third step: %s\n",newPath);
+       // printf("newPath third step: %s\n",newPath);
         
         
     }/* else {
@@ -422,10 +422,10 @@ bool obj_processTextureMap(char* mtlLine,const char* mapType,GLuint* map){
             token = strtok(NULL, "");
             // null terminate token
             token[strlen(token)-1] = '\0';
-            printf("loading texture %s \n", token);
+        /*     printf("loading texture %s \n", token);
             for(int i = 0; i < strlen(token); i++){
                 printf("TOKEN:%c\n", token[i]);
-            }
+            } */
 
             char* filepath = obj_handleFilePath(token);
             TextureData texture = loadTexture(filepath);
@@ -486,7 +486,7 @@ void obj_parseMaterial(const char *filepath){
           // printf("new globals.materialsCount %d \n",globals.materialsCount);
         
            ASSERT(globals.materialsCount < globals.materialsCapacity, "Material count exceeds capacity");
-           printf("new material %s \n",globals.materials[globals.materialsCount-1].name);
+           //printf("new material %s \n",globals.materials[globals.materialsCount-1].name);
            continue;
         }
         //Ka, ambient color
@@ -632,12 +632,12 @@ void obj_parseMaterial(const char *filepath){
  * @returns materialIndex in globals.materials or -1 if no hits
  */
 int getMaterialByName(const char* name){
-    printf("getMaterialByName %s\n",name);
+   // printf("getMaterialByName %s\n",name);
     //printf("globals.materialsCount %d\n",globals.materialsCount);
     for(int i = 0; i < globals.materialsCount; i++){
         //printf("globals.materials[i].name %s\n",globals.materials[i].name);
         if(strncmp(globals.materials[i].name,name,strlen(name)-1) == 0){
-            printf("found material %s at index %d\n",name,i);
+          //  printf("found material %s at index %d\n",name,i);
             return i;
         } 
     }
@@ -724,15 +724,15 @@ ObjGroup* obj_loadFile(const char *filepath)
                 printf("Error: Object name too long. Exiting..");
                 exit(1);
             }
-            printf("--------------------\n");
-            printf("objGroup->objectCount %d\n",objGroup->objectCount);
+          //  printf("--------------------\n");
+           // printf("objGroup->objectCount %d\n",objGroup->objectCount);
             // Object name
             objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
             for(int i = 0; i < lineLength; i++){
                 objGroup->objData[objGroup->objectCount].name[i] = line[i];
             }  
             objGroup->objData[objGroup->objectCount].name[lineLength-1] = '\0'; // Null terminate the string
-            printf("new o object: %s\n", objGroup->objData[objGroup->objectCount].name);
+         //   printf("new o object: %s\n", objGroup->objData[objGroup->objectCount].name);
             
             faceLineCountStart[objGroup->objectCount] = faceLineCount; 
             if(objGroup->objectCount > 0){
@@ -765,8 +765,8 @@ ObjGroup* obj_loadFile(const char *filepath)
                 token[strlen(token)] = '\0';
                 int matIndex = getMaterialByName(token);
                 ASSERT(objGroup->objectCount-1 >= 0, "Error: No object to assign material to");
-                printf("object tp assign mtl: %s\n", objGroup->objData[objGroup->objectCount-1].name);
-                printf("usemtl:::: %s %d\n", token, matIndex);
+           //     printf("object tp assign mtl: %s\n", objGroup->objData[objGroup->objectCount-1].name);
+         //       printf("usemtl:::: %s %d\n", token, matIndex);
                 ASSERT(matIndex >= 0, "Missing material");
                 objGroup->objData[objGroup->objectCount-1].materialIndex = matIndex;
             }

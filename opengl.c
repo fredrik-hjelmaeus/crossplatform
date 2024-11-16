@@ -127,7 +127,7 @@ void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPa
         return;
     }
     
-    printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
+   // printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
 
     // Compile shaders
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -173,7 +173,7 @@ void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPa
     glAttachShader(buffer->shaderProgram, fragmentShader);
     glLinkProgram(buffer->shaderProgram);
 
-    printf("Shader program: %d\n", buffer->shaderProgram);
+   // printf("Shader program: %d\n", buffer->shaderProgram);
 
     // Check for linking errors
     glGetProgramiv(buffer->shaderProgram, GL_LINK_STATUS, &success);
@@ -772,7 +772,7 @@ void setupFontMaterial(GpuData* buffer,int width,int height){
         return;
     }
     
-    printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
+    //printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
 
     // Compile shaders
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -820,7 +820,7 @@ void setupFontMaterial(GpuData* buffer,int width,int height){
     glLinkProgram(buffer->shaderProgram);
 
    
-    printf("Shader program: %d\n", buffer->shaderProgram);
+    //printf("Shader program: %d\n", buffer->shaderProgram);
 
     // Check for linking errors
     glGetProgramiv(buffer->shaderProgram, GL_LINK_STATUS, &success);
