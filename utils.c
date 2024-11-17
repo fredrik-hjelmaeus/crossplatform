@@ -906,7 +906,7 @@ void intToPngFilename(int number, char* buffer, size_t bufferSize) {
  * use convertViewRectangleToSDLCoordinates to convert view coordinates to SDL coordinates if needed.
  * @param rect Rectangle to check against, x,y,width,height is expected to be in SDL coordinates
  */ 
-int isPointInsideRect(Rectangle rect, vec2 point) {
+bool isPointInsideRect(Rectangle rect, vec2 point) {
     return (point[0] >= rect.x && point[0] <= rect.x + rect.width &&
             point[1] >= rect.y && point[1] <= rect.y + rect.height);
 }

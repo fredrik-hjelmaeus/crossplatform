@@ -246,6 +246,7 @@ typedef struct UIComponent {
     bool hovered;
     bool clicked;
     Rectangle boundingBox;
+    int boundingBoxEntityId;
     char* text;
     bool uiNeedsUpdate;
     ButtonCallback onClick;

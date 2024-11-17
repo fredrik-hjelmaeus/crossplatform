@@ -223,6 +223,7 @@ void initializeUIComponent(UIComponent* uiComponent){
         uiComponent->text[0] = '\0';
     }
     uiComponent->uiNeedsUpdate = 0;
+    uiComponent->boundingBoxEntityId = -1;
 }
 
 void initializeLightComponent(LightComponent* lightComponent){
@@ -766,7 +767,7 @@ void input() {
             globals.mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
-           // printf("Mouse moved to %d, %d\n", xpos, ypos);
+            printf("Mouse moved to %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
             //  float x_ndc = (2.0f * xpos) / width - 1.0f;
             //   float y_ndc = 1.0f - (2.0f * ypos) / height;
@@ -876,14 +877,14 @@ void uiSystem(){
                 // Position of element on spawn:
                 float ui_viewport_half_width = (float)globals.views.ui.rect.width / 2; 
                 float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2;
-                printf("ui_viewport_half_width %f\n", ui_viewport_half_width);
-                printf("ui_viewport_half_height %f\n", ui_viewport_half_height);
+              //  printf("ui_viewport_half_width %f\n", ui_viewport_half_width);
+              //  printf("ui_viewport_half_height %f\n", ui_viewport_half_height);
                 
                 // Half scale of element
                 float scaleInPixelsX = globals.entities[i].transformComponent->scale[0]; 
                 float scaleInPixelsY = globals.entities[i].transformComponent->scale[1]; /// globals.unitScale;
-                printf("scaleInPixelsX %f\n", scaleInPixelsX);
-                printf("scaleInPixelsY %f\n", scaleInPixelsY);
+              //  printf("scaleInPixelsX %f\n", scaleInPixelsX);
+              //  printf("scaleInPixelsY %f\n", scaleInPixelsY);
 
                 // TODO: rotation
             
@@ -894,22 +895,39 @@ void uiSystem(){
                 printf("requested_pos_x %f\n", requested_pos_x);
                 printf("requested_pos_y %f\n", requested_pos_y);
 
-                printf("before %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
+              //  printf("before %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
         
                 // move element to upper left corner and then add requested position.
-               globals.entities[i].transformComponent->position[0] = (ui_viewport_half_width - (scaleInPixelsX * 0.5) - requested_pos_x) * -1.0; 
-               globals.entities[i].transformComponent->position[1] =(ui_viewport_half_height - (scaleInPixelsY * 0.5)) - requested_pos_y * 1.0;
-               printf("final pos: %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
+               globals.entities[i].transformComponent->position[0] = (float)(ui_viewport_half_width - (scaleInPixelsX * 0.5) - requested_pos_x) * -1.0; 
+               globals.entities[i].transformComponent->position[1] =(float)(ui_viewport_half_height - (scaleInPixelsY * 0.5)) - requested_pos_y * 1.0;
+             //  printf("final pos: %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
                 
                 // Bounding box
-                globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0];
-                globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1];
+                globals.entities[i].uiComponent->boundingBox.x = requested_pos_x;
+                globals.entities[i].uiComponent->boundingBox.y = requested_pos_y;
                 globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
-                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];       
+                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
+                
+                printf("bounding box x %d\n", globals.entities[i].uiComponent->boundingBox.x);
+                printf("bounding box y %d\n", globals.entities[i].uiComponent->boundingBox.y);
+                printf("bounding box width %d\n", globals.entities[i].uiComponent->boundingBox.width);
+                printf("bounding box height %d\n", globals.entities[i].uiComponent->boundingBox.height);  
+                printf("entity id %d\n", globals.entities[i].id);
+                printf("bb entity to update %d\n", globals.entities[i].uiComponent->boundingBoxEntityId);
+                
 
+                // Find the bounding box entity and update with new values
+                for(int j = 0; j < MAX_ENTITIES; j++) {
+                    if(globals.entities[j].alive == 1 && globals.entities[i].uiComponent->boundingBoxEntityId == globals.entities[j].id) { 
+                        printf("bounding box entity found id %d\n", globals.entities[j].id);
+                        globals.entities[j].transformComponent->position[0] = globals.entities[i].transformComponent->position[0];
+                        globals.entities[j].transformComponent->position[1] = globals.entities[i].transformComponent->position[1];
+                        globals.entities[j].transformComponent->scale[0] = globals.entities[i].transformComponent->scale[0];
+                        globals.entities[j].transformComponent->scale[1] = globals.entities[i].transformComponent->scale[1];
+                        globals.entities[j].transformComponent->modelNeedsUpdate = 1;
+                    }
+                }
                 globals.entities[i].uiComponent->uiNeedsUpdate = 0;
-                
-                
         }
     }
 }
@@ -966,28 +984,12 @@ void hoverAndClickSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
-
-                    // Ui element pos is in ui-space-coords. We need to convert this to same as mouse coords, which is SDL-coords. Where x,y is TOP LEFT CORNER.
-                    float halfWidth = (float)globals.entities[i].uiComponent->boundingBox.width / 2.0;
-                    float halfHeight = (float)globals.entities[i].uiComponent->boundingBox.height / 2.0;
-                    float uiViewHalfWidth = (float)globals.views.ui.rect.width / 2.0;
-                    float uiViewHalfHeight = (float)globals.views.ui.rect.height / 2.0; 
                    
-                    float xLeftCornerSDL = globals.entities[i].uiComponent->boundingBox.x - halfWidth + uiViewHalfWidth; // 0
-                    float yTopCornerSDL = (globals.entities[i].uiComponent->boundingBox.y - uiViewHalfHeight) * -1 + (float)globals.views.main.rect.height - halfHeight;
-     
-                    Rectangle getRect;
-                    getRect.y = yTopCornerSDL;
-                    getRect.x = xLeftCornerSDL;
-                    getRect.height = globals.entities[i].uiComponent->boundingBox.height;
-                    getRect.width = globals.entities[i].uiComponent->boundingBox.width;
-                    if(getRect.x >= globals.mouseXpos && getRect.x + getRect.width <= globals.mouseXpos && getRect.y >= globals.mouseYpos && getRect.y + getRect.height <= globals.mouseYpos){
-                       // printf("mouse is within bounding box\n");
-                    }
                     if(
                         globals.views.ui.isMousePointerWithin && 
-                        isPointInsideRect(getRect, (vec2){ globals.mouseXpos, globals.mouseYpos})
+                        isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos})
                     ){
+                       
                         // Left Click or just hover?
                         if(globals.mouseLeftButtonPressed){
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
@@ -1114,7 +1116,7 @@ void update(){
     cameraSystem();
     uiSystem();
     hoverAndClickSystem();
-    movementSystem();
+   // movementSystem();
     modelSystem();
 }
 
@@ -1199,20 +1201,16 @@ void render(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active == 1){
                         // render ui, could be overhead with switching viewports?. profile.    
                         if(globals.drawBoundingBoxes){
                             if(globals.entities[i].tag == BOUNDING_BOX){
                                 renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
                             }
                         }else {
-                            if(globals.entities[i].tag != BOUNDING_BOX){
-                                //printf("rendering ui with shaderProgam %d: \n",globals.entities[i].meshComponent->gpuData->shaderProgram);
-                                //printf("rendering ui with no bb active %d \n", globals.entities[i].id);
+                            if(globals.entities[i].uiComponent->active == 1 && globals.entities[i].tag != BOUNDING_BOX){
                                 renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
                             }
                         }
-                }
             }
         }
     }
@@ -1352,11 +1350,22 @@ void initScene(){
         .diffuseMapOpacity = 1.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
     };
-    struct Material flatColorUImaterial = {
+    struct Material flatColorUiDarkGrayMat = {
         .active = 1,
-        .name = "flatColorUImaterial",
+        .name = "flatColorUiDarkGrayMat",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
         .diffuse = DARK_GRAY_COLOR,  // used when diffuseMapOpacity lower than 1.0
+        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
+        .shininess = 4.0f,                           // NOT used
+        .diffuseMap = containerTwoMap,               // used
+        .diffuseMapOpacity = 0.0f,                    // used
+        .specularMap = containerTwoSpecularMap,      // NOT used
+    };
+    struct Material flatColorUiGrayMat = {
+        .active = 1,
+        .name = "flatColorUiGrayMat",
+        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
+        .diffuse = GRAY_COLOR,  // used when diffuseMapOpacity lower than 1.0
         .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
         .shininess = 4.0f,                           // NOT used
         .diffuseMap = containerTwoMap,               // used
@@ -1377,7 +1386,7 @@ void initScene(){
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-    createObject(&cornell_box->objData[0],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+   /*  createObject(&cornell_box->objData[0],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[1],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[2],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[3],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
@@ -1411,16 +1420,21 @@ void initScene(){
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
-    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); */
   
 
 
-   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. <--- REWORK IT HERE <----
+   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. (controlled by the uiSystem)
    // Scale is in pixels, 100.0f is 100 pixels etc.
-   // z position will be z-depth, much like in DOM in web.
+   // z position will be z-depth, much like in DOM in web.Use this to control draw order.
    // TODO: implement rotation, it is atm not affecting. 
  
-  ui_createRectangle(flatColorUImaterial, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 400.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+
+  ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 400.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 1.0f}, (vec3){150.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
+  ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 25.0f, 1.0f}, (vec3){200.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+
+
  //ui_createRectangle(uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
  //ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
@@ -1939,23 +1953,22 @@ void ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation
 
     Entity* entity = addEntity(MODEL);
     entity->uiComponent->active = 1;
-    entity->uiComponent->boundingBox = (Rectangle){0,0,10,10};
+    entity->uiComponent->boundingBox = (Rectangle){0.0f,0.0f,0.0f,0.0f};
     entity->uiComponent->uiNeedsUpdate = 1;
     
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
     // Bounding box, reuses the vertices from the rectangle
-   /*  Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
     GLuint bbIndices[] = {
         0, 1, 1,2, 2,3 ,3,0, 
     };
     Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
-    if(ui == 1){
-        boundingBoxEntity->uiComponent->active = 1;
-        boundingBoxEntity->uiComponent->uiNeedsUpdate = 1;
+    ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
+    
+    entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
+    ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    } 
-    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity); */
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 }
 /**
  * @brief Create a button
@@ -1981,26 +1994,24 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
     Entity* entity = addEntity(MODEL);
     
     entity->uiComponent->active = 1;
-    entity->uiComponent->boundingBox = (Rectangle){0,0,100,100};
+    entity->uiComponent->boundingBox = (Rectangle){0.0f,0.0f,0.0f,0.0f};
     entity->uiComponent->text = text;
     entity->uiComponent->uiNeedsUpdate = 1;
     entity->uiComponent->onClick = onClick;
     
-
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
     // Bounding box, reuses the vertices from the rectangle
- /*    Material boundingBoxMaterial = {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, material.specular, material.shininess, material.diffuseMap, false};
     GLuint bbIndices[] = {
         0, 1, 1,2, 2,3 ,3,0, 
     };
     Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
-    if(ui == 1){
-        boundingBoxEntity->uiComponent->active = 1;
-        boundingBoxEntity->uiComponent->uiNeedsUpdate = 1;
+    ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
+    
+    entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
+    ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    } 
-    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&boundingBoxMaterial,ui,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity); */
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 }
 
 /**

@@ -31,7 +31,7 @@ unsigned char* loadImage(const char* filename, int* width, int* height, int* nrC
 TextureData loadTexture(char* path);
 int randInt(int rmin, int rmax);
 float randFloat(float rmin, float rmax);
-int isPointInsideRect(Rectangle rect, vec2 point);
+bool isPointInsideRect(Rectangle rect, vec2 point);
 Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
 void captureFramebuffer(int width, int height, int drawCallsCounter);
