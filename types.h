@@ -28,6 +28,14 @@ typedef enum {
     SPLIT_VERTICAL = 2
 } SplitDirection;
 
+typedef enum {
+    UITYPE_NONE = 0,
+    UITYPE_INPUT = 1,
+    TEXTAREA = 2,
+    UITYPE_TEXT = 3,
+    UITYPE_BUTTON = 4,
+} UiType;
+
  typedef struct {
     unsigned int TextureID;  // ID handle of the glyph texture
     int Size[2];             // Size of glyph (width, height)
@@ -171,6 +179,7 @@ typedef enum {
 } VertexDataType;
 
 typedef void (*ButtonCallback)();
+typedef void (*OnChangeCallback)();
 
 typedef enum {
     SPOT = 0,
@@ -250,6 +259,8 @@ typedef struct UIComponent {
     char* text;
     bool uiNeedsUpdate;
     ButtonCallback onClick;
+    OnChangeCallback onChange;
+    UiType type;
     // padding?
     // margin?
     // offset?

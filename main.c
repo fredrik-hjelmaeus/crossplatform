@@ -40,12 +40,17 @@
 #endif
 
 // Prototypes
-void ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation);
+int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createCube(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
 void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
+void modelSystem();
+void uiSystem();
+void uiInputSystem();
 void onButtonClick();
+void onTextInputChange();
 void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick);
+void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange);
 void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createLine(vec3 position, vec3 endPosition,Entity* entity);
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
@@ -112,7 +117,9 @@ struct Globals globals = {
     .materialsCapacity=15,
     .objDataCapacity=10,
     .lights={0},
-    .lightsCount=0
+    .lightsCount=0,
+    .focusedEntityId=-1,
+    .cursorEntityId=-1
 };
 
 // Colors
@@ -224,6 +231,9 @@ void initializeUIComponent(UIComponent* uiComponent){
     }
     uiComponent->uiNeedsUpdate = 0;
     uiComponent->boundingBoxEntityId = -1;
+    uiComponent->onClick = NULL;
+    uiComponent->onChange = NULL;
+    uiComponent->type = UITYPE_NONE;
 }
 
 void initializeLightComponent(LightComponent* lightComponent){
@@ -621,6 +631,12 @@ void input() {
         } 
         if(globals.event.type == SDL_KEYDOWN) {
             const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
+           
+            if(globals.focusedEntityId != -1){
+                printf("input field is focused, ignoring keydown input from main loop\n");
+                printf("instead adding key to input field\n");
+                return;
+            }
             if(strcmp(key, "C") == 0) {
                 globals.views.full.clearColor.r = randFloat(0.0,1.0);
                 globals.views.full.clearColor.g = randFloat(0.0,1.0);
@@ -769,9 +785,12 @@ void input() {
             // -----------TEMP CODE------------
             printf("Mouse moved to %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
-            //  float x_ndc = (2.0f * xpos) / width - 1.0f;
-            //   float y_ndc = 1.0f - (2.0f * ypos) / height;
-            //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
+              float x_ndc = (2.0f * xpos) / width - 1.0f;
+              float y_ndc = 1.0f - (2.0f * ypos) / height;
+              float x_ui =  (-1 * x_ndc) * ((float)width * 0.5);
+              float y_ui =   y_ndc * ((float)height * 0.5);
+              //printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
+              //printf("Mouse moved to %f, %f\n", mouseX, mouseY);
             // END TEMP CODE------------------
 
             if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
@@ -892,8 +911,8 @@ void uiSystem(){
                 float requested_pos_x = globals.entities[i].transformComponent->position[0];
                 float requested_pos_y = globals.entities[i].transformComponent->position[1];
 
-                printf("requested_pos_x %f\n", requested_pos_x);
-                printf("requested_pos_y %f\n", requested_pos_y);
+              //  printf("requested_pos_x %f\n", requested_pos_x);
+              //  printf("requested_pos_y %f\n", requested_pos_y);
 
               //  printf("before %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
         
@@ -908,12 +927,12 @@ void uiSystem(){
                 globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
                 globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
                 
-                printf("bounding box x %d\n", globals.entities[i].uiComponent->boundingBox.x);
+               /*  printf("bounding box x %d\n", globals.entities[i].uiComponent->boundingBox.x);
                 printf("bounding box y %d\n", globals.entities[i].uiComponent->boundingBox.y);
                 printf("bounding box width %d\n", globals.entities[i].uiComponent->boundingBox.width);
                 printf("bounding box height %d\n", globals.entities[i].uiComponent->boundingBox.height);  
                 printf("entity id %d\n", globals.entities[i].id);
-                printf("bb entity to update %d\n", globals.entities[i].uiComponent->boundingBoxEntityId);
+                printf("bb entity to update %d\n", globals.entities[i].uiComponent->boundingBoxEntityId); */
                 
 
                 // Find the bounding box entity and update with new values
@@ -981,6 +1000,7 @@ void movementSystem(){
 }
 
 void hoverAndClickSystem(){
+    int newCursor = SDL_SYSTEM_CURSOR_ARROW;
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
@@ -1008,6 +1028,12 @@ void hoverAndClickSystem(){
 
                         // Hover effect
                         if(globals.entities[i].uiComponent->hovered == 1){
+                            if(globals.entities[i].uiComponent->type == UITYPE_INPUT){
+                                newCursor = SDL_SYSTEM_CURSOR_IBEAM;
+                            }
+                            if(globals.entities[i].uiComponent->type == UITYPE_BUTTON){
+                                newCursor = SDL_SYSTEM_CURSOR_HAND;
+                            }
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
                               // printf("hovered changes done on entity with id %d\n", globals.entities[i].id);
                                 // Appearance changes when hovered
@@ -1015,10 +1041,21 @@ void hoverAndClickSystem(){
                                globals.entities[i].materialComponent->diffuse.r = 0.0f;
                                globals.entities[i].materialComponent->diffuse.g = 0.5f;
                             }
-           
                         }
 
                         if(globals.entities[i].uiComponent->clicked == 1){
+                            printf("clicked entity with id: %d\n", globals.entities[i].id);
+                            if(globals.entities[i].uiComponent->type == UITYPE_INPUT){
+                                globals.focusedEntityId = globals.entities[i].id;
+                                printf("input field on entity with id %d clicked\n", globals.entities[i].id);
+                            }else {
+                                // If clicked ui element is not an input field
+                                //if(globals.focusedEntityId != globals.entities[i].id)
+                                    // Reset focused entity if there was one, same as onBlur.
+                                   // printf("onblur/defocusing entity id %d\n", globals.focusedEntityId);
+                                  //  globals.focusedEntityId = -1;
+                                
+                            }
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
                                 //printf("clicked changes done\n");
                             }
@@ -1046,6 +1083,152 @@ void hoverAndClickSystem(){
             }
         }
     } 
+    changeCursor(newCursor);
+}
+
+bool isCapsLock() {
+    SDL_Keymod modState = SDL_GetModState();
+    if (modState & KMOD_CAPS) {
+        printf("Caps Lock is activated\n");
+        return true;
+    } else {
+        printf("Caps Lock is not activated\n");
+        return false;
+    }
+}
+
+char toUpperCase(char c) {
+    if (c >= 'a' && c <= 'z') {
+        return c - 32;
+    }
+    return c; // Return the character unchanged if it's not a lowercase letter
+}
+
+void uiInputSystem(){
+    if(globals.focusedEntityId != -1){
+         if(globals.event.type == SDL_KEYDOWN) {
+            char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
+            
+            if(strcmp(key, "CapsLock") == 0){
+                printf("CapsLock pressed\n");
+                return;
+            }
+            if(strcmp(key, "Return") == 0 || strcmp(key, "Escape") == 0){
+                printf("stopped editing input field\n");
+                globals.focusedEntityId = -1;
+            }else {
+                
+                // Remove last character from input field
+                if(strcmp(key, "Backspace") == 0){
+                    char* textCopy = (char*)malloc(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) + 1);
+                    strcpy(textCopy, globals.entities[globals.focusedEntityId].uiComponent->text);    
+                    textCopy[strlen(textCopy) - 1] = '\0';
+                    globals.entities[globals.focusedEntityId].uiComponent->text = textCopy;
+                }else {
+
+                // Add pressed key to input field
+                char* textCopy = (char*)malloc(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) + 1);
+                strcpy(textCopy, globals.entities[globals.focusedEntityId].uiComponent->text);
+
+           /*  
+                if(isCapsLock()){
+                    keyCopy[1] = toUpperCase(key[0]);
+                } */
+                strcat(textCopy, key);
+                globals.entities[globals.focusedEntityId].uiComponent->text = textCopy;
+                }
+                
+            }
+         }else {
+           // printf("NO input \n");
+         }
+    }
+}
+
+
+
+Vector2 convertSDLToUI(float x, float y){
+    float x_ndc = (2.0f * x) / width - 1.0f;
+    float y_ndc = 1.0f - (2.0f * y) / height;
+    float x_ui = x_ndc * ((float)width * 0.5);
+    float y_ui = y_ndc * ((float)height * 0.5);
+    return (Vector2){x_ui, y_ui};
+}
+
+Vector2 getClosestLetterInText(UIComponent* uiComponent, float mouseX){
+    const char* text = uiComponent->text;
+    float x = (float)uiComponent->boundingBox.x;
+    float y = (float)uiComponent->boundingBox.y + (float)globals.characters[0].Size[1];
+    float scale = 0.5f;
+    float xpos = 0.0f;
+    float ypos = 0.0f;
+    float bestCharX = (float)uiComponent->boundingBox.x + (float)uiComponent->boundingBox.width;
+    float lastShift = 0.0f;
+    printf("bestCharX %f \n", bestCharX);
+    for (unsigned char c = 0; c < strlen(text); c++) {
+        Character ch = globals.characters[text[c]];
+      
+      printf("lasstshift %f \n", lastShift);
+      printf("wat %f \n", (float)ch.Bearing[0] * scale);
+        xpos = x + (float)ch.Bearing[0] * scale;
+        ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
+
+        printf("xpos %f \n", xpos);
+        float w = (float)ch.Size[0] * scale;
+        float h = (float)ch.Size[1] * scale;    
+       // printf("ypos %f \n", ypos);
+        //printf("w %f \n", w);
+        //printf("h %f \n", h); 
+        float testxpos = absValue(mouseX - xpos);
+        float testbestCharX = absValue(mouseX - bestCharX);
+        //printf("testbestCharX %f \n", testbestCharX);
+        if(testxpos > bestCharX){
+            printf("index we want %d \n", c-1);
+        printf("testxpos %f \n", testxpos);
+      printf("bestCharX %f \n", bestCharX);
+      printf("xpos %f \n", xpos);
+      printf("previous xpos %f \n", xpos - (float)ch.Bearing[0] * scale - lastShift);
+              //ASSERT(false, "stopped early");
+            return (Vector2){xpos - (float)ch.Bearing[0] * scale - lastShift, ypos};
+        }
+        bestCharX = testxpos;
+        lastShift = (float)(ch.Advance >> 6) * scale;
+    //    Vector2 uiVec = convertSDLToUI(xpos, ypos);
+     //   ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += lastShift; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+   } 
+//   ASSERT(false, "last char");
+   float lastChar = absValue(mouseX - (xpos + lastShift));
+   float prevChar = absValue(mouseX - xpos);
+   printf("lastChar %f \n", lastChar);
+printf("prevChar %f \n", prevChar);
+   float result = prevChar > lastChar ? (xpos+lastShift) : xpos; //FIX <------------------
+    return (Vector2){result, ypos};
+}
+
+void textCursorSystem(){
+    if(globals.focusedEntityId != -1){
+        // create ui_createRectangle
+      //  printf("mouseX pos %f \n", globals.mouseXpos);
+      //  printf("mouseY pos %f \n", globals.mouseYpos);
+        
+        //ch.Advance.y
+       // printf("closestLetter xy %f %f \n", closestLetter.x, closestLetter.y);
+        
+       // printf("uiVec xy %f %f \n", uiVec.x, uiVec.y);
+        if(globals.cursorEntityId == -1){
+        Vector2 closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+        globals.entities[globals.focusedEntityId].uiComponent->text;
+        Vector2 uiVec = convertSDLToUI(closestLetter.x, closestLetter.y);
+          //  printf("creating cursor entity \n");
+            globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+        }
+       // globals.entities[globals.cursorEntityId].transformComponent->position[0] = uiVec.x;
+       // globals.entities[globals.cursorEntityId].transformComponent->position[1] = uiVec.y; 
+
+        
+    }
 }
 
 /**
@@ -1115,7 +1298,9 @@ void update(){
     // Systems
     cameraSystem();
     uiSystem();
+    uiInputSystem();
     hoverAndClickSystem();
+    textCursorSystem();
    // movementSystem();
     modelSystem();
 }
@@ -1386,7 +1571,7 @@ void initScene(){
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-   /*  createObject(&cornell_box->objData[0],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[0],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[1],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[2],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[3],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
@@ -1420,7 +1605,7 @@ void initScene(){
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
-    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); */
+    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
 
 
@@ -1429,13 +1614,21 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.Use this to control draw order.
    // TODO: implement rotation, it is atm not affecting. 
  
-
-  ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 400.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-  ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 1.0f}, (vec3){150.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
-  ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 25.0f, 1.0f}, (vec3){200.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  // UI Settings Panel
+  ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
+  ui_createTextInput(flatColorUiGrayMat, (vec3){200.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange);
+    //ui_slider(flatColorUiDarkGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider",onSliderChange);
+    //ui_colorPicker(flatColorUiDarkGrayMat, (vec3){545.0f, 105.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "ColorPicker",onColorPickerChange);
+    ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 55.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+  ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",onButtonClick);
+    ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
 
 
  //ui_createRectangle(uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
+
+ // Textured button
  //ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    
@@ -1936,7 +2129,7 @@ void ui_panel(Material material, vec3 position,vec3 scale, vec3 rotation,Rectang
  * Create a rectangle mesh
  * @param diffuse - color of the rectangle
 */
-void ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation){
+int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
@@ -1968,12 +2161,13 @@ void ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation
     entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
     ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true);
+
+    return entity->id;
 }
 /**
  * @brief Create a button
  * Create a button mesh in ui
- * @param ui - 1 for ui, 0 for 3d scene
  * @param diffuse - color of the rectangle
 */
 void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick){
@@ -1998,6 +2192,50 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
     entity->uiComponent->text = text;
     entity->uiComponent->uiNeedsUpdate = 1;
     entity->uiComponent->onClick = onClick;
+    entity->uiComponent->type = UITYPE_BUTTON;
+    
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+
+    // Bounding box, reuses the vertices from the rectangle
+    GLuint bbIndices[] = {
+        0, 1, 1,2, 2,3 ,3,0, 
+    };
+    Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
+    ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
+    
+    entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
+    ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
+
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+}
+/**
+ * @brief Create a input field
+ * Create a input mesh in ui
+ * @param diffuse - color of the rectangle
+*/
+void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange){
+    // vertex data
+        GLfloat vertices[] = {
+    // Positions          // Colors           // Texture Coords    // Normals
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
+};
+    // OBSOLETE index data (counterclockwise)
+    GLuint indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
+
+    Entity* entity = addEntity(MODEL);
+    
+    entity->uiComponent->active = 1;
+    entity->uiComponent->boundingBox = (Rectangle){0.0f,0.0f,0.0f,0.0f};
+    entity->uiComponent->text = text;
+    entity->uiComponent->uiNeedsUpdate = 1;
+    entity->uiComponent->onChange = onChange;
+    entity->uiComponent->type = UITYPE_INPUT;
     
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
@@ -2134,6 +2372,9 @@ void onButtonClick() {
        }
     }
     printf("Button pressed!\n");
+}
+void onTextInputChange(){
+    printf("Text input changed!\n");
 }
 
 // -----------------------------------------------------

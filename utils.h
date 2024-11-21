@@ -6,6 +6,7 @@
 #include "stb_image.h"
 #include <string.h>
 #include "types.h"
+#include <SDL2/SDL.h>
 
 // Text output colors
 #define TEXT_COLOR_ERROR     "\x1b[31m"
@@ -24,7 +25,7 @@
 #define GRAY_COLOR hexToColor("#333333")
 #define DARK_GRAY_COLOR hexToColor("#1A1A1A")
 
-
+float absValue(float value);
 Color hexToColor(const char* hex);
 char* readFile(const char *filename);
 unsigned char* loadImage(const char* filename, int* width, int* height, int* nrChannels);
@@ -37,6 +38,7 @@ void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* trans
 void captureFramebuffer(int width, int height, int drawCallsCounter);
 float deg2rad(float degrees);
 GLuint setupTexture(TextureData textureData);
+void changeCursor(SDL_SystemCursor cursorType); 
 
 // Memory
 void arena_initMemory(Arena* arena, size_t size);

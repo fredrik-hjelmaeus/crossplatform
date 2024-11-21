@@ -48,6 +48,8 @@ struct Globals {
     int materialsCount;
     int materialsCapacity;
     int objDataCapacity;
+    int focusedEntityId;
+    int cursorEntityId;
 };
 
 extern struct Globals globals;
