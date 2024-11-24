@@ -317,5 +317,11 @@ typedef struct Entity {
 
 typedef vec3 Point;
 
+typedef struct ClosestLetter {
+    Vector2 position;
+    int characterIndex;
+    float charWidth;
+} ClosestLetter;
+
 #endif // TYPES_H
 
