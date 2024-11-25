@@ -54,6 +54,8 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
 void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createLine(vec3 position, vec3 endPosition,Entity* entity);
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
+Entity* addEntity(enum Tag tag);
+void deleteEntity(Entity* entity);
 ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX);
 int addMaterial(Material material);
 Vector2 convertSDLToUI(float x, float y);
@@ -377,7 +379,18 @@ Entity* addEntity(enum Tag tag){
     printf("Out of entities\n");
     exit(1);
 }
-
+void deleteEntity(Entity* entity){
+    entity->alive = 0;
+    entity->tag = UNINITIALIZED;
+    entity->transformComponent->active = 0;
+    entity->groupComponent->active = 0;
+    entity->meshComponent->active = 0;
+    entity->materialComponent->active = 0;
+    entity->uiComponent->active = 0;
+    entity->lightComponent->active = 0;
+    entity->lineComponent->active = 0;
+    entity->pointComponent->active = 0;
+}
 // remove entity
 // get entity by id
 // get entities by tag
@@ -1176,7 +1189,6 @@ void uiInputSystem(){
                 return;
             }
             if(strcmp(key, "Delete") == 0){
-               
                 ASSERT(globals.focusedEntityId != -1, "No focused entity");
                 handleDeleteButton(globals.focusedEntityId);
                 return;
@@ -1421,7 +1433,11 @@ void textCursorSystem(){
         }else {
             globals.entities[globals.cursorEntityId].uiComponent->active = 1;
         }
-
+    }else{
+        if(globals.cursorEntityId != -1){
+            deleteEntity(&globals.entities[globals.cursorEntityId]);
+            globals.cursorEntityId = -1;
+        }
     }
 }
 
