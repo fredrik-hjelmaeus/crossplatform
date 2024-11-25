@@ -44,12 +44,15 @@ struct Globals {
     int drawCallsCounter;
     bool debugDrawCalls;
     Arena assetArena;
+    Arena uiArena;
     Material* materials;
     int materialsCount;
     int materialsCapacity;
     int objDataCapacity;
     int focusedEntityId;
     int cursorEntityId;
+    float cursorBlinkInterval;
+    float charScale;
 };
 
 extern struct Globals globals;
@@ -57,6 +60,7 @@ extern Camera uiCamera;
 extern Camera mainCamera;
 
 #define ASSET_MEMORY_SIZE 5000000
+#define UI_MEMORY_SIZE 5000000
 
 // Macro to allocate memory from the arena and cast it to the appropriate type
 // Use this to get memory

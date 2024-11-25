@@ -325,8 +325,8 @@ void arena_initMemory(Arena* arena, size_t size) {
 }
 
 void* arena_Alloc(Arena* arena, size_t size) {
-  // Debug output
-   /*  printf("size i want to allocate: %zu \n",size);
+    // Debug output
+    /* printf("size i want to allocate: %zu \n",size);
     printf("used size: %zu \n",arena->used);
     printf("arena size: %zu \n",arena->size);
     printf("arena left: %zu \n",arena->size-arena->used); */

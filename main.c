@@ -122,7 +122,8 @@ struct Globals globals = {
     .lights={0},
     .lightsCount=0,
     .focusedEntityId=-1,
-    .cursorEntityId=-1
+    .cursorEntityId=-1,
+    .charScale=0.5f
 };
 
 // Colors
@@ -637,7 +638,7 @@ void input() {
             const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
            
             if(globals.focusedEntityId != -1){
-                printf("input field is focused, ignoring keydown input from main loop\n");
+                //printf("input field is focused, ignoring keydown input from main loop\n");
                 //printf("instead adding key to input field\n");
                 return;
             }
@@ -757,28 +758,28 @@ void input() {
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
             SDL_GetWindowSize(globals.window, &w, &h);
-            printf("New Window size: %d x %d\n", w, h);
+            //printf("New Window size: %d x %d\n", w, h);
             recalculateViewports(w,h);
             
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
             //glViewport(0, 0, w / 2, h);
         }
         if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
-            printf("Mouse button pressed\n");
+            //printf("Mouse button pressed\n");
             // A button was pressed
             if (globals.event.button.button == SDL_BUTTON_LEFT) {
                 // Left Button Pressed
                 globals.mouseLeftButtonPressed = true;
-                printf("Left button pressed\n");
+                //printf("Left button pressed\n");
             } else if (globals.event.button.button == SDL_BUTTON_RIGHT) {
                 // Left Button Released
-                printf("Right button pressed\n");
+                //printf("Right button pressed\n");
             }
         }  
         if (globals.event.type == SDL_MOUSEBUTTONUP) {
             // A button was released
             globals.mouseLeftButtonPressed = false;
-            printf("Mouse button released\n");
+            //printf("Mouse button released\n");
         }
         if (globals.event.type == SDL_MOUSEMOTION) {
             int xpos =  globals.event.motion.x;
@@ -952,7 +953,6 @@ void uiSystem(){
                 // Find the bounding box entity and update with new values
                 for(int j = 0; j < MAX_ENTITIES; j++) {
                     if(globals.entities[j].alive == 1 && globals.entities[i].uiComponent->boundingBoxEntityId == globals.entities[j].id) { 
-                        printf("bounding box entity found id %d\n", globals.entities[j].id);
                         globals.entities[j].transformComponent->position[0] = globals.entities[i].transformComponent->position[0];
                         globals.entities[j].transformComponent->position[1] = globals.entities[i].transformComponent->position[1];
                         globals.entities[j].transformComponent->scale[0] = globals.entities[i].transformComponent->scale[0];
@@ -1100,13 +1100,27 @@ void hoverAndClickSystem(){
     changeCursor(newCursor);
 }
 
+// TODO: temp solution, do not handle if caps lock is already active on program run.
 bool isCapsLock() {
     SDL_Keymod modState = SDL_GetModState();
     if (modState & KMOD_CAPS) {
-        printf("Caps Lock is activated\n");
+        //printf("Caps Lock is activated\n");
         return true;
     } else {
-        printf("Caps Lock is not activated\n");
+        //printf("Caps Lock is not activated\n");
+        return false;
+    }
+}
+
+// TODO: This is a temp solution. We should handle this using
+// event->key.keysym.sym == SDLK_LSHIFT instead.
+bool isLeftShiftPressed(){
+    SDL_Keymod modState = SDL_GetModState();
+    if (modState & KMOD_LSHIFT) {
+        //printf("Left Shift is activated\n");
+        return true;
+    } else {
+        //printf("Left Shift is not activated\n");
         return false;
     }
 }
@@ -1118,24 +1132,56 @@ char toUpperCase(char c) {
     return c; // Return the character unchanged if it's not a lowercase letter
 }
 
+char toLowerCase(char c) {
+    if (c >= 'A' && c <= 'Z') {
+        return c + 32;
+    }
+    return c; // Return the character unchanged if it's not an uppercase letter
+}
+
+/**
+ * @brief UI input system
+ * Handles input on UI elements.
+ * TODO: memory leak, we are not deallocating the textCopy memory.
+ * TODO: Support !?#
+ * TODO: Support arrow keys for moving cursor
+ * TODO: Support selecting text
+ * TODO: Support remove selected text part
+ * TODO: Support copy/paste
+ * TODO: Support undo/redo
+ * TODO: Support input validation
+ * TODO: Support input mask
+ * TODO: Support input type (number, email, password etc)
+ * TODO: Support input placeholder
+ * TODO: Support input focus indicator
+ * TODO: Support values change from outside the input field
+ * TODO: Support input field disabled state
+ * BUG:  Empty field bugs out on input
+ * BUG:  Too far typing to into the right of input field bugs out
+ * BUG:  BackSpace in middle of a text should remove left character
+ */
 void uiInputSystem(){
     if(globals.focusedEntityId != -1){
          if(globals.event.type == SDL_KEYDOWN) {
             char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
+            bool isSpaceKey = false;
             
-         
+            if(strcmp(key, "Space") == 0){
+                isSpaceKey = true;
+            }
             if(strcmp(key, "CapsLock") == 0){
-                printf("CapsLock pressed\n");
+                return;
+            }
+            if(strcmp(key, "Left Shift") == 0){
                 return;
             }
             if(strcmp(key, "Delete") == 0){
-                printf("Delete pressed\n");
+               
                 ASSERT(globals.focusedEntityId != -1, "No focused entity");
                 handleDeleteButton(globals.focusedEntityId);
                 return;
             }
             if(strcmp(key, "Return") == 0 || strcmp(key, "Escape") == 0){
-                printf("stopped editing input field\n");
                 globals.focusedEntityId = -1;
             }else {
                 
@@ -1143,32 +1189,60 @@ void uiInputSystem(){
                 if(strcmp(key, "Backspace") == 0){
                     if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) > 0){
                         removeCharacter(strlen(globals.entities[globals.focusedEntityId].uiComponent->text)-1);
+
                         // Move cursor one step to the left
-                      Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
-                        printf("cursor x position %f\n", sdlVec.x);
+                        Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
                         ClosestLetter closestLetter = getClosestLetterInText(
                                 globals.entities[globals.focusedEntityId].uiComponent,
                                 sdlVec.x
                         );
-                        printf("new cursor position x %f\n", closestLetter.position.x);
-                        printf("old c x %f\n", globals.entities[globals.cursorEntityId].transformComponent->position[0]);
                         Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y);
                         globals.entities[globals.cursorEntityId].transformComponent->position[0] = uiVec.x;
                         globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
                     }
                 
                 }else {
+                  
+                    ASSERT(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) < 100, "Input field is full");
+                    
+                    // TODO: This is not deallocated , memory leak
+                    char* textCopy = (char*)arena_Alloc(&globals.uiArena, 99 * sizeof(char));
+                    
+                    // Add pressed key to input field & apply logic uppercase/lowercase/space
+                    bool doUpperCase = isLeftShiftPressed() ? isCapsLock() ? 0 : 1 : isCapsLock() ? 1 : 0;
+                    char keyCopy = doUpperCase == 1 ? toUpperCase(key[0]) : toLowerCase(key[0]);
+                    isSpaceKey ? keyCopy = 32 : keyCopy;
+    
+                    // Find closest letter to cursor
+                    Vector2 sdlVec = convertUIToSDL(
+                        globals.entities[globals.cursorEntityId].transformComponent->position[0], 
+                        globals.entities[globals.cursorEntityId].transformComponent->position[1]
+                    );
+                    ClosestLetter closestLetter = getClosestLetterInText(
+                            globals.entities[globals.focusedEntityId].uiComponent,
+                            sdlVec.x
+                    );
 
-                // Add pressed key to input field
-                char* textCopy = (char*)malloc(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) + 1);
-                strcpy(textCopy, globals.entities[globals.focusedEntityId].uiComponent->text);
+                    // Use closest letter to insert key at the right position
+                    int j = 0;
+                    for(int i = 0; i < strlen(globals.entities[globals.focusedEntityId].uiComponent->text)+1; i++){
 
-           /*  
-                if(isCapsLock()){
-                    keyCopy[1] = toUpperCase(key[0]);
-                } */
-                strcat(textCopy, key);
-                globals.entities[globals.focusedEntityId].uiComponent->text = textCopy;
+                        if(i == (closestLetter.characterIndex)){
+                            textCopy[i] = keyCopy;
+                            j++;
+                        }
+
+                        textCopy[i+j] = globals.entities[globals.focusedEntityId].uiComponent->text[i];   
+                    }
+                    textCopy[strlen(globals.entities[globals.focusedEntityId].uiComponent->text)+2] = '\0';
+                    globals.entities[globals.focusedEntityId].uiComponent->text = textCopy;
+
+                    // Move cursor one step to the right
+                    Character ch = globals.characters[keyCopy];
+                    float advanceCursor = (float)(ch.Advance >> 6) * globals.charScale;
+                    globals.entities[globals.cursorEntityId].transformComponent->position[0] += advanceCursor;
+                    globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
+
                 }
                 
             }
@@ -1215,7 +1289,6 @@ void removeCharacter(int index){
         if(i == index){
             continue;
         }else{
-            printf("adding index %d\n", i);
             textCopy[j] = originalText[i];
             j++;
             printf("textCopy %c\n", textCopy[j]);
@@ -1234,12 +1307,10 @@ void removeCharacter(int index){
  * @return Vector2 The position of the closest letter.
  */
 ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
-   // printf("mouseX %f\n", mouseX);
     const char* text = uiComponent->text;
-   
     float x = (float)uiComponent->boundingBox.x; 
     float y = (float)uiComponent->boundingBox.y + ((float)uiComponent->boundingBox.height / 2);   //(float)globals.characters[0].Size[1]; 
-    float scale = 0.5f; // Character size, also set when renderText is called (they should be in sync)
+    float scale = globals.charScale; // Character size, also set when renderText is called (they should be in sync)
     float xpos = 0.0f;
     float ypos = 0.0f;
     float bestCharX = (float)uiComponent->boundingBox.x + (float)uiComponent->boundingBox.width;
@@ -1264,16 +1335,15 @@ ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
         // Check if the mouse is closer to the current character than the previous closest character
         float testxpos = absValue(mouseX - xpos);
         float testbestCharX = absValue(mouseX - bestCharX);
-           // printf("c %d\n", c);
+           
         if(testxpos > bestCharX){
             // Previous character was the closest,so we remove the last character width from the xpos.
             closestLetter.position.x = xpos - (float)ch.Bearing[0] * scale - lastShift;
             closestLetter.position.y = ypos;
-            closestLetter.characterIndex = c - 1; // <----
+            closestLetter.characterIndex = c - 1; 
             closestLetter.charWidth = (float)ch.Bearing[0] * scale + lastShift;
             ASSERT(closestLetter.position.x >= 0, "closestLetter.position.x is negative");
             ASSERT(closestLetter.position.y >= 0, "closestLetter.position.y is negative");
-           // printf("closes_tLetter.characterIndex %d\n", closestLetter.characterIndex);
             ASSERT(closestLetter.characterIndex >= 0, "closestLetter.characterIndex is negative");
             ASSERT(closestLetter.charWidth >= 0, "closestLetter.charWidth is negative");
             return closestLetter;
@@ -1296,10 +1366,10 @@ ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
    closestLetter.position.y = ypos;
    closestLetter.characterIndex = prevCharPos > lastCharPos ? closestLetter.characterIndex : (closestLetter.characterIndex - 1);
             
-    ASSERT(closestLetter.position.x >= 0, "closestLetter.position.x is negative(e)");
-    ASSERT(closestLetter.position.y >= 0, "closestLetter.position.y is negative(e)");
-    ASSERT(closestLetter.characterIndex >= 0, "closestLetter.characterIndex is negative(e)");
-    ASSERT(closestLetter.charWidth >= 0, "closestLetter.charWidth is negative(e)");
+   ASSERT(closestLetter.position.x >= 0, "closestLetter.position.x is negative(e)");
+   ASSERT(closestLetter.position.y >= 0, "closestLetter.position.y is negative(e)");
+   ASSERT(closestLetter.characterIndex >= 0, "closestLetter.characterIndex is negative(e)");
+   ASSERT(closestLetter.charWidth >= 0, "closestLetter.charWidth is negative(e)");
 
    return closestLetter;
 }
@@ -1315,17 +1385,16 @@ void handleDeleteButton(){
     // Find out where the cursor is in the text
     // Find the closest letter to the cursor (getClosestLetterInText) probably need to also return the index of the letter in the text and its char-width.
     ASSERT(globals.focusedEntityId != -1, "No focused entity");
-    //printf("cursor entity id %d\n", globals.cursorEntityId);
-  //  printf("cursor POS %f\n", globals.entities[globals.cursorEntityId].transformComponent->position[0]);
+ 
     Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
-  //  printf("sdlVec.position.x %f\n", sdlVec.x);
+  
     ASSERT(sdlVec.x >= 0, "Sdl cursor x position is negative");
     ASSERT(sdlVec.y >= 0, "Sdl cursor y position is negative");
     ClosestLetter closestLetter = getClosestLetterInText(
                     globals.entities[globals.focusedEntityId].uiComponent,
                     sdlVec.x
                     );
-                 //   printf("closestLetter.characterIndex %d\n", closestLetter.characterIndex);
+                 
     // Remove the letter to the left of the cursor
     removeCharacter(closestLetter.characterIndex);
 }
@@ -1339,18 +1408,20 @@ void selectAllText(){
 void textCursorSystem(){
     if(globals.focusedEntityId != -1){
   
-        // Create ui_createRectangle
+        // Create cursor
         if(globals.cursorEntityId == -1){
-            ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
-            printf("closestLetter.position.x %f\n", closestLetter.position.x);
-            //globals.entities[globals.focusedEntityId].uiComponent->text;
+            ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);         
             Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y);
-            printf("uiVec.position.x %f\n", uiVec.x);
             globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-            printf("cursor entity transformed position %f\n", globals.entities[globals.cursorEntityId].transformComponent->position[0]);
-            printf("cursor entity id %d\n", globals.cursorEntityId);
         }
-       
+        
+        // Blink cursor logic
+        if((int)globals.delta_time % 2 == 0){
+            globals.entities[globals.cursorEntityId].uiComponent->active = 0;
+        }else {
+            globals.entities[globals.cursorEntityId].uiComponent->active = 1;
+        }
+
     }
 }
 
@@ -1547,7 +1618,7 @@ void render(){
                             &globals.gpuFontData, 
                             globals.entities[i].uiComponent->text, 
                             result[0],result[1],
-                            .5f,(Color){1.0f, 1.0f, 0.0f});
+                            globals.charScale,(Color){1.0f, 1.0f, 0.0f});
                     }
                 }
         }
@@ -1790,6 +1861,7 @@ int main(int argc, char **argv) {
 
     // Initialize Memory Arenas
     arena_initMemory(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
+    arena_initMemory(&globals.uiArena, UI_MEMORY_SIZE * sizeof(char));
 
     // Sub memory allocations
     globals.materials = arena_Alloc(&globals.assetArena, globals.materialsCapacity * sizeof(Material));
@@ -1977,7 +2049,6 @@ void createMesh(
     entity->transformComponent->position[0] = position[0];
     entity->transformComponent->position[1] = position[1];
     entity->transformComponent->position[2] = position[2];
-    printf("create mesh position %f %f %f \n",position[0],position[1],position[2]);
     entity->transformComponent->scale[0] = scale[0];
     entity->transformComponent->scale[1] = scale[1];
     entity->transformComponent->scale[2] = scale[2];
