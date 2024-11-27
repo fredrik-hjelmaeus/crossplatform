@@ -54,6 +54,8 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
 void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createLine(vec3 position, vec3 endPosition,Entity* entity);
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
+void moveCursor(float x);
+ClosestLetter findCharacterUnderCursor();
 Entity* addEntity(enum Tag tag);
 void deleteEntity(Entity* entity);
 ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX);
@@ -1177,8 +1179,18 @@ void uiInputSystem(){
     if(globals.focusedEntityId != -1){
          if(globals.event.type == SDL_KEYDOWN) {
             char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
+            printf("key %s\n", key);
             bool isSpaceKey = false;
             
+            // Special keys
+            if(strcmp(key, "Left") == 0){
+                moveCursor(findCharacterUnderCursor().charWidth*-1.0);
+                return;
+            }
+            if(strcmp(key, "Right") == 0){
+                moveCursor(findCharacterUnderCursor().charWidth);
+                return;
+            }
             if(strcmp(key, "Space") == 0){
                 isSpaceKey = true;
             }
@@ -1195,69 +1207,64 @@ void uiInputSystem(){
             }
             if(strcmp(key, "Return") == 0 || strcmp(key, "Escape") == 0){
                 globals.focusedEntityId = -1;
-            }else {
-                
-                // Remove last character from input field
-                if(strcmp(key, "Backspace") == 0){
-                    if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) > 0){
-                        removeCharacter(strlen(globals.entities[globals.focusedEntityId].uiComponent->text)-1);
+                return;
+            } 
+            if(strcmp(key, "Backspace") == 0){
+                if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) > 0){
 
-                        // Move cursor one step to the left
-                        Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
-                        ClosestLetter closestLetter = getClosestLetterInText(
-                                globals.entities[globals.focusedEntityId].uiComponent,
-                                sdlVec.x
-                        );
-                        Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y);
-                        globals.entities[globals.cursorEntityId].transformComponent->position[0] = uiVec.x;
-                        globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
-                    }
-                
-                }else {
-                  
-                    ASSERT(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) < 100, "Input field is full");
-                    
-                    // TODO: This is not deallocated , memory leak
-                    char* textCopy = (char*)arena_Alloc(&globals.uiArena, 99 * sizeof(char));
-                    
-                    // Add pressed key to input field & apply logic uppercase/lowercase/space
-                    bool doUpperCase = isLeftShiftPressed() ? isCapsLock() ? 0 : 1 : isCapsLock() ? 1 : 0;
-                    char keyCopy = doUpperCase == 1 ? toUpperCase(key[0]) : toLowerCase(key[0]);
-                    isSpaceKey ? keyCopy = 32 : keyCopy;
-    
-                    // Find closest letter to cursor
-                    Vector2 sdlVec = convertUIToSDL(
-                        globals.entities[globals.cursorEntityId].transformComponent->position[0], 
-                        globals.entities[globals.cursorEntityId].transformComponent->position[1]
-                    );
+                    // Remove the letter to the left of the cursor
+                    removeCharacter(findCharacterUnderCursor().characterIndex-1);
+
+                    // Move cursor one step to the left
+                    Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
                     ClosestLetter closestLetter = getClosestLetterInText(
                             globals.entities[globals.focusedEntityId].uiComponent,
                             sdlVec.x
                     );
-
-                    // Use closest letter to insert key at the right position
-                    int j = 0;
-                    for(int i = 0; i < strlen(globals.entities[globals.focusedEntityId].uiComponent->text)+1; i++){
-
-                        if(i == (closestLetter.characterIndex)){
-                            textCopy[i] = keyCopy;
-                            j++;
-                        }
-
-                        textCopy[i+j] = globals.entities[globals.focusedEntityId].uiComponent->text[i];   
-                    }
-                    textCopy[strlen(globals.entities[globals.focusedEntityId].uiComponent->text)+2] = '\0';
-                    globals.entities[globals.focusedEntityId].uiComponent->text = textCopy;
-
-                    // Move cursor one step to the right
-                    Character ch = globals.characters[keyCopy];
-                    float advanceCursor = (float)(ch.Advance >> 6) * globals.charScale;
-                    globals.entities[globals.cursorEntityId].transformComponent->position[0] += advanceCursor;
+                    Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y);
+                    globals.entities[globals.cursorEntityId].transformComponent->position[0] = uiVec.x;
                     globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
-
                 }
-                
+                return;
             }
+                  
+            // Any other key pressed
+            ASSERT(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) < 99, "Input field is full");
+            
+            // TODO: This is not deallocated , memory leak
+            char* textCopy = (char*)arena_Alloc(&globals.uiArena, 99 * sizeof(char));
+            
+            // Add pressed key to input field & apply logic uppercase/lowercase/space
+            bool doUpperCase = isLeftShiftPressed() ? isCapsLock() ? 0 : 1 : isCapsLock() ? 1 : 0;
+            char keyCopy = doUpperCase == 1 ? toUpperCase(key[0]) : toLowerCase(key[0]);
+            isSpaceKey ? keyCopy = 32 : keyCopy;
+
+            // Find closest letter to cursor
+            ClosestLetter closestLetter = findCharacterUnderCursor();
+        
+            // Use closest letter to insert key at the right position
+            int j = 0;
+            for(int i = 0; i < strlen(globals.entities[globals.focusedEntityId].uiComponent->text)+1; i++){
+
+                if(i == (closestLetter.characterIndex)){
+                    textCopy[i] = keyCopy;
+                    j++;
+                }
+
+                textCopy[i+j] = globals.entities[globals.focusedEntityId].uiComponent->text[i];   
+            }
+            textCopy[strlen(globals.entities[globals.focusedEntityId].uiComponent->text)+2] = '\0';
+            globals.entities[globals.focusedEntityId].uiComponent->text = textCopy;
+
+            // Move cursor one step to the right
+            Character ch = globals.characters[keyCopy];
+            float advanceCursor = (float)(ch.Advance >> 6) * globals.charScale;
+            globals.entities[globals.cursorEntityId].transformComponent->position[0] += advanceCursor;
+            globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
+
+                
+                
+            
          }else {
            // printf("NO input \n");
          }
@@ -1280,12 +1287,18 @@ Vector2 convertSDLToUI(float x, float y){
     return (Vector2){x_ui, y_ui};
 }
 
-
+void moveCursor(float x){
+    globals.entities[globals.cursorEntityId].transformComponent->position[0] += x;
+    globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
+}
 /**
  * @brief Removes the character on the index. Example: "TextIn|put" -> removeCharacter(6) "TextInut"
  */
 void removeCharacter(int index){
-    printf("index %d\n", index);
+    if(index < 0){
+        return;
+    }
+    
     char* originalText = globals.entities[globals.focusedEntityId].uiComponent->text;
     int originalLength = strlen(originalText);
     
@@ -1303,7 +1316,6 @@ void removeCharacter(int index){
         }else{
             textCopy[j] = originalText[i];
             j++;
-            printf("textCopy %c\n", textCopy[j]);
         }
     }
     textCopy[j] = '\0'; // null terminate
@@ -1386,6 +1398,22 @@ ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
    return closestLetter;
 }
 
+ClosestLetter findCharacterUnderCursor(){
+    // Find out where the cursor is in the text
+    // Find the closest letter to the cursor (getClosestLetterInText) probably need to also return the index of the letter in the text and its char-width.
+    ASSERT(globals.focusedEntityId != -1, "No focused entity");
+    ASSERT(globals.cursorEntityId != -1, "No cursor entity");
+ 
+    Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
+  
+    ASSERT(sdlVec.x >= 0, "Sdl cursor x position is negative");
+    ASSERT(sdlVec.y >= 0, "Sdl cursor y position is negative");
+    return getClosestLetterInText(
+                    globals.entities[globals.focusedEntityId].uiComponent,
+                    sdlVec.x
+        );
+}
+
 /**
  * @brief Delete the character to the left of the cursor.
  * Triggers on backspace key press.
@@ -1394,18 +1422,7 @@ void handleDeleteButton(){
     if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) == 0){
         return;
     }
-    // Find out where the cursor is in the text
-    // Find the closest letter to the cursor (getClosestLetterInText) probably need to also return the index of the letter in the text and its char-width.
-    ASSERT(globals.focusedEntityId != -1, "No focused entity");
- 
-    Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
-  
-    ASSERT(sdlVec.x >= 0, "Sdl cursor x position is negative");
-    ASSERT(sdlVec.y >= 0, "Sdl cursor y position is negative");
-    ClosestLetter closestLetter = getClosestLetterInText(
-                    globals.entities[globals.focusedEntityId].uiComponent,
-                    sdlVec.x
-                    );
+    ClosestLetter closestLetter = findCharacterUnderCursor();
                  
     // Remove the letter to the left of the cursor
     removeCharacter(closestLetter.characterIndex);
