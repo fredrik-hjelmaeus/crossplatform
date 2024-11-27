@@ -1154,6 +1154,40 @@ char toLowerCase(char c) {
     return c; // Return the character unchanged if it's not an uppercase letter
 }
 
+char specialLeftShiftHandling(char c){
+    if(c == '1'){
+        return '!';
+    }
+    if(c == '2'){
+        return '"';
+    }
+    if(c == '3'){
+        return '#';
+    }
+    if(c == '4'){
+        return '$';
+    }
+    if(c == '5'){
+        return '%';
+    }
+    if(c == '6'){
+        return '^';
+    }
+    if(c == '7'){
+        return '&';
+    }
+    if(c == '8'){
+        return '*';
+    }
+    if(c == '9'){
+        return '(';
+    }
+    if(c == '0'){
+        return ')';
+    }
+    return c;
+}
+
 /**
  * @brief UI input system
  * Handles input on UI elements.
@@ -1238,6 +1272,7 @@ void uiInputSystem(){
             bool doUpperCase = isLeftShiftPressed() ? isCapsLock() ? 0 : 1 : isCapsLock() ? 1 : 0;
             char keyCopy = doUpperCase == 1 ? toUpperCase(key[0]) : toLowerCase(key[0]);
             isSpaceKey ? keyCopy = 32 : keyCopy;
+            isLeftShiftPressed() ? keyCopy = specialLeftShiftHandling(keyCopy) : keyCopy;
 
             // Find closest letter to cursor
             ClosestLetter closestLetter = findCharacterUnderCursor();
