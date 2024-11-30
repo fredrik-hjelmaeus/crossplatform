@@ -4,6 +4,8 @@
 #include "ecs.h"
 #include "text.h"
 #include "utils.h"
+#include "camera.h"
+#include "api.h"
 
 void moveCursor(float x){
     globals.entities[globals.cursorEntityId].transformComponent->position[0] += x;
@@ -33,7 +35,7 @@ void moveCursor(float x){
 void uiInputSystem(){
     if(globals.focusedEntityId != -1){
          if(globals.event.type == SDL_KEYDOWN) {
-            char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
+            const char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
             
             bool isSpaceKey = false;
             
@@ -116,7 +118,7 @@ void uiInputSystem(){
             globals.entities[globals.focusedEntityId].uiComponent->text = textCopy;
 
             // Move cursor one step to the right
-            Character ch = globals.characters[keyCopy];
+            Character ch = globals.characters[(int)keyCopy];
             float advanceCursor = (float)(ch.Advance >> 6) * globals.charScale;
             globals.entities[globals.cursorEntityId].transformComponent->position[0] += advanceCursor;
             globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
@@ -134,7 +136,7 @@ void uiInputSystem(){
  */
 void movementSystem(){
     // rotate model logic (temporary)
-    float degrees = 15.5f * globals.delta_time;
+    //float degrees = 15.5f * globals.delta_time;
    // float radians = degrees * M_PI / 180.0f;
 
     for(int i = 0; i < MAX_ENTITIES; i++) {
@@ -179,7 +181,6 @@ void movementSystem(){
  * Movement is handled in the input function, but will eventually be moved here.
  */
 void cameraSystem(){
-  
     updateCamera(globals.views.main.camera);
     updateCamera(globals.views.ui.camera);
 }

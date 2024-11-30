@@ -734,9 +734,9 @@ GLuint setupTexture(TextureData textureData){
   //   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     
 
-    printf("Texture width: %d\n", textureData.width);
+   /*  printf("Texture width: %d\n", textureData.width);
     printf("Texture height: %d\n", textureData.height);
-    printf("Texture channels: %d\n", textureData.channels);
+    printf("Texture channels: %d\n", textureData.channels); */
     if(textureData.data == NULL){
         printf("Error: Texture data is null\n");
         return 0;

@@ -2,6 +2,7 @@
 #include "types.h"
 #include "utils.h"
 #include "globals.h"
+#include "api.h"
 
 /**
  * @brief Get the closest letter position in the text to the given mouse X position.

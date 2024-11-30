@@ -57,7 +57,7 @@ void initECS(){
 
     globals.entities = entities;
 
-    if(1){
+    if(0){
         printf("lightComponent %zu\n",sizeof(LightComponent));
         printf("transformComponent %zu\n",sizeof(TransformComponent));
         printf("meshComponent %zu\n",sizeof(MeshComponent));
