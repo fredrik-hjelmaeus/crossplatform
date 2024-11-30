@@ -544,7 +544,7 @@ void input() {
             globals.mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
-           // printf("Mouse moved to %d, %d\n", xpos, ypos);
+            printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
               /* float x_ndc = (2.0f * xpos) / width - 1.0f;
               float y_ndc = 1.0f - (2.0f * ypos) / height;
@@ -552,8 +552,9 @@ void input() {
               float y_ui =   y_ndc * ((float)height * 0.5);  */
               //printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
               //printf("Mouse moved to %f, %f\n", mouseX, mouseY);
-             // Vector2 uiCoords = convertSDLToUI((float)xpos, (float)ypos, width, height);
-               // printf("Mouse moved in ui coords: %f, %f\n", uiCoords.x, uiCoords.y);
+            SDLVector2 sdlMouseCoords = {xpos, ypos};
+            UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
+            printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
             // END TEMP CODE------------------
 
             if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
@@ -1032,7 +1033,7 @@ int main(int argc, char **argv) {
 //------------------------------------------------------
 //  PROGRAM ACTIONS API
 //------------------------------------------------------
-
+// TODO: Move these to api.c after we used them.
 void createPoint(vec3 position){
     GLfloat vertices[] = {
         position[0], position[1], position[2],  1.0f, 1.0f, 1.0f, 0.0f, 0.0f

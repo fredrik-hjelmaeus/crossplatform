@@ -8,7 +8,7 @@
  * @brief Get the closest letter position in the text to the given mouse X position.
  * 
  * @param uiComponent The UI component containing the text.
- * @param mouseX The X position of the mouse.
+ * @param mouseX The X position of the mouse in SDL coordinates.
  * @return Vector2 The position of the closest letter.
  */
 ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
@@ -87,24 +87,34 @@ void selectAllText(int width, int height){
     if(length == 0){
         return;
     }
-    // Calculate width of the text
+    // Calculate width of the input field
     float xMin = globals.entities[globals.focusedEntityId].uiComponent->boundingBox.x;
     float xMax = xMin + globals.entities[globals.focusedEntityId].uiComponent->boundingBox.width;
-    Vector2 uiMax = convertSDLToUI(xMax, 0.0f,width,height);
-    Vector2 uiMin = convertSDLToUI(xMin, 0.0f,width,height);
-    float endOfInputField = uiMax.x-uiMin.x;
- //   printf("uiMax x %f\n", uiMax.x);
- //   printf("uiMin x %f\n", uiMin.x);
-   //  ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);         
-     //       Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y);
 
+    // Find the first and last letter in the text using max and min x values of the input field
+    ClosestLetter firstLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, xMin );
+    ClosestLetter lastLetter =  getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, xMax );
 
-    ClosestLetter firstLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent,globals.mouseXpos );
-    Vector2 uiVec = convertSDLToUI(firstLetter.position.x, firstLetter.position.y,width,height);
-    ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){35.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    // Convert to UI coordinates
+    SDLVector2 firstLetterSDLpos;
+    firstLetterSDLpos.x = firstLetter.position.x;
+    firstLetterSDLpos.y = firstLetter.position.y;
+    SDLVector2 lastLetterSDLpos;
+    lastLetterSDLpos.x = lastLetter.position.x;
+    lastLetterSDLpos.y = lastLetter.position.y;
+    UIVector2 firstLetterUIpos = convertSDLToUI(firstLetterSDLpos,width,height);
+    UIVector2 lastLetterUIpos = convertSDLToUI(lastLetterSDLpos,width,height);
+
+    // Calculate position of the rectangle
+    float rectangleStartPos = firstLetterUIpos.x - (lastLetterUIpos.x * 0.5);
+
+    // Set cursor to be a new width & position
+    globals.entities[globals.cursorEntityId].transformComponent->position[0] = rectangleStartPos;
+    globals.entities[globals.cursorEntityId].transformComponent->scale[0] = lastLetterUIpos.x;
+    globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
+    
+    //ui_createRectangle(globals.materials[0], (vec3){rectangleStartPos, firstLetterUIpos.y, 2.0f}, (vec3){lastLetterUIpos.x, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
    
-    printf("first letter x %d\n", uiVec.x);
-    printf("last letter x %d\n", uiVec.x);
 }
 
 /**
@@ -122,21 +132,20 @@ void handleDeleteButton(int width,int height){
 }
 
 ClosestLetter findCharacterUnderCursor(int width,int height){
-    // Find out where the cursor is in the text
-    // Find the closest letter to the cursor (getClosestLetterInText) probably need to also return the index of the letter in the text and its char-width.
     ASSERT(globals.focusedEntityId != -1, "No focused entity");
     ASSERT(globals.cursorEntityId != -1, "No cursor entity");
- 
-    Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], 
-    globals.entities[globals.cursorEntityId].transformComponent->position[1],
-    width,height);
+
+    UIVector2 uiVec;
+    uiVec.x = globals.entities[globals.cursorEntityId].transformComponent->position[0];
+    uiVec.y = globals.entities[globals.cursorEntityId].transformComponent->position[1];
+    SDLVector2 sdlVec = convertUIToSDL(uiVec, width, height);
   
     ASSERT(sdlVec.x >= 0, "Sdl cursor x position is negative");
     ASSERT(sdlVec.y >= 0, "Sdl cursor y position is negative");
     return getClosestLetterInText(
                     globals.entities[globals.focusedEntityId].uiComponent,
                     sdlVec.x
-        );
+    );
 }
 
 /**

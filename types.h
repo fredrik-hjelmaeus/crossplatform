@@ -158,7 +158,7 @@ typedef struct ObjData {
 // Data we get from obj-loader/parser. 
 // Parent struct for ObjData.
 typedef struct ObjGroup {
-    char* name;
+    const char* name;
     int objectCount;
     ObjData* objData;
 } ObjGroup;
@@ -317,9 +317,11 @@ typedef struct Entity {
 } Entity;
 
 typedef vec3 Point;
+typedef Vector2 SDLVector2;
+typedef Vector2 UIVector2;
 
 typedef struct ClosestLetter {
-    Vector2 position;
+    SDLVector2 position;
     int characterIndex;
     float charWidth;
 } ClosestLetter;

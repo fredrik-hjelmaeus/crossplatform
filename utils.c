@@ -4,18 +4,18 @@
 
 
 
-Vector2 convertUIToSDL(float x, float y,int screenWidth,int screenHeight){
-    float sdl_x = (screenWidth / 2) - absValue(x);
-    float sdl_y = (screenHeight / 2) - y;
-    return (Vector2){sdl_x,sdl_y};
+SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight){
+    float sdl_x = (screenWidth / 2) - absValue(v.x);
+    float sdl_y = (screenHeight / 2) - v.y;
+    return (SDLVector2){sdl_x,sdl_y};
 }
 
-Vector2 convertSDLToUI(float x, float y, int screenWidth, int screenHeight){
-    float x_ndc = (2.0f * x) / screenWidth - 1.0f;
-    float y_ndc = 1.0f - (2.0f * y) / screenHeight;
+UIVector2 convertSDLToUI(SDLVector2 v, int screenWidth, int screenHeight){
+    float x_ndc = (2.0f * v.x) / screenWidth - 1.0f;
+    float y_ndc = 1.0f - (2.0f * v.y) / screenHeight;
     float x_ui = x_ndc * ((float)screenWidth * 0.5);
     float y_ui = y_ndc * ((float)screenHeight * 0.5);
-    return (Vector2){x_ui, y_ui};
+    return (UIVector2){x_ui, y_ui};
 }
 /**
  * Converts hex to color
@@ -463,7 +463,7 @@ void obj_parseMaterial(const char *filepath){
     char* dest = (char*)arena_Alloc(&globals.assetArena, 99 * sizeof(char));
     char* dot = (char*)arena_Alloc(&globals.assetArena, 99 * sizeof(char));
     strcpy(dot, "."); // Initialize dot with a period
-    char *filepath_copy = strcpy(dest,filepath);
+    strcpy(dest,filepath);
     dest = strtok(dest, ".");
     dest = strcat(dot, dest);
     dest = strcat(dest, ".mtl"); 
@@ -702,7 +702,7 @@ ObjGroup* obj_loadFile(const char *filepath)
     // Keeps track of where objects faceLineCount.
     int faceLineCountStart[100];// = {0};// 100 is max num of object
     int faceLineCountEnd[100];// = {0};   // 100 is max num of object
-    char group[100]; // Not used/implemented
+    //char group[100]; // Not used/implemented
     
     FILE* fp;
     char line[1024];
@@ -766,15 +766,15 @@ ObjGroup* obj_loadFile(const char *filepath)
         }
         // g, grouping, read in the groups
         if((int)line[0] == 103){
-            for(int i = 2; i < strlen(line); i++){
+         /*    for(int i = 2; i < strlen(line); i++){
                 group[i-2] = line[i];
-            }
+            } */
             continue;
         }
         // u, check for usemtl
         if((int)line[0] == 117){
             if(strncmp(line, "usemtl", 6) == 0){
-                size_t lineLength = strlen(line);
+               // size_t lineLength = strlen(line);
                 char *token = strtok(line, " ");
                 token = strtok(NULL, " ");
                 token[strlen(token)] = '\0';
@@ -951,8 +951,8 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight) {
  */
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint) {
     float scaleFactorX = transformComponent->scale[0] / 100.0;  
-    float scaleFactorY = transformComponent->scale[1] / 100.0; 
-    transformComponent->scale[0] / 2.0 + transformComponent->position[0];
+    //float scaleFactorY = transformComponent->scale[1] / 100.0; 
+   // transformComponent->scale[0] / 2.0 + transformComponent->position[0];
     convertedPoint[0] = (float)windowWidth / 2.0 + (transformComponent->position[0] - scaleFactorX * 100 / 2.0); 
     convertedPoint[1] = ((float)view.rect.height / 2.0) + transformComponent->position[1];
 }

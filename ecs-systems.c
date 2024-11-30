@@ -73,15 +73,18 @@ void uiInputSystem(){
                     removeCharacter(findCharacterUnderCursor(width,height).characterIndex-1);
 
                     // Move cursor one step to the left
-                    Vector2 sdlVec = convertUIToSDL(
-                        globals.entities[globals.cursorEntityId].transformComponent->position[0], 
-                        globals.entities[globals.cursorEntityId].transformComponent->position[1],
-                        width,height);
+                    UIVector2 mouseCursor;
+                    mouseCursor.x = globals.entities[globals.cursorEntityId].transformComponent->position[0];
+                    mouseCursor.y = globals.entities[globals.cursorEntityId].transformComponent->position[1];
+                    SDLVector2 sdlVec = convertUIToSDL(mouseCursor,width,height);
                     ClosestLetter closestLetter = getClosestLetterInText(
                             globals.entities[globals.focusedEntityId].uiComponent,
                             sdlVec.x
                     );
-                    Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y,width,height);
+                    SDLVector2 closestLetterSDLpos;
+                    closestLetterSDLpos.x = closestLetter.position.x;
+                    closestLetterSDLpos.y = closestLetter.position.y;
+                    UIVector2 uiVec = convertSDLToUI(closestLetterSDLpos,width,height);
                     globals.entities[globals.cursorEntityId].transformComponent->position[0] = uiVec.x;
                     globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
                 }
@@ -397,8 +400,11 @@ void textCursorSystem(){
   
         // Create cursor
         if(globals.cursorEntityId == -1){
-            ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);         
-            Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y,width,height);
+            ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+            SDLVector2 sdlVec;
+            sdlVec.x = closestLetter.position.x;
+            sdlVec.y = closestLetter.position.y;         
+            UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
             globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
         }
         

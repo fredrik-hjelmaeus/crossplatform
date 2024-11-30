@@ -25,8 +25,8 @@
 #define GRAY_COLOR hexToColor("#333333")
 #define DARK_GRAY_COLOR hexToColor("#1A1A1A")
 
-Vector2 convertUIToSDL(float x, float y,int screenWidth,int screenHeight);
-Vector2 convertSDLToUI(float x, float y, int screenWidth, int screenHeight);
+SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight);
+UIVector2 convertSDLToUI(SDLVector2 v, int screenWidth, int screenHeight);
 float absValue(float value);
 Color hexToColor(const char* hex);
 char* readFile(const char *filename);
