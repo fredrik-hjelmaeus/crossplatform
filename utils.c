@@ -2,6 +2,21 @@
 #include "globals.h"
 #include <ctype.h>
 
+
+
+Vector2 convertUIToSDL(float x, float y,int screenWidth,int screenHeight){
+    float sdl_x = (screenWidth / 2) - absValue(x);
+    float sdl_y = (screenHeight / 2) - y;
+    return (Vector2){sdl_x,sdl_y};
+}
+
+Vector2 convertSDLToUI(float x, float y, int screenWidth, int screenHeight){
+    float x_ndc = (2.0f * x) / screenWidth - 1.0f;
+    float y_ndc = 1.0f - (2.0f * y) / screenHeight;
+    float x_ui = x_ndc * ((float)screenWidth * 0.5);
+    float y_ui = y_ndc * ((float)screenHeight * 0.5);
+    return (Vector2){x_ui, y_ui};
+}
 /**
  * Converts hex to color
  * @param hex #3355FF
@@ -988,4 +1003,14 @@ TextureData loadTexture(char* path) {
     }
     TextureData textureData = {data, width, height, nrChannels};
     return textureData;
+}
+
+int addMaterial(Material material){
+    globals.materials[globals.materialsCount] = material;
+    globals.materialsCount++;
+    return globals.materialsCount-1;
+}
+Material* getMaterial(int index){
+    ASSERT(index < globals.materialsCount && index >= 0, "Material index out of bounds or not assigned");
+    return &globals.materials[index];
 }

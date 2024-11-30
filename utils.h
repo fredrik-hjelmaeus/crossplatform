@@ -25,6 +25,8 @@
 #define GRAY_COLOR hexToColor("#333333")
 #define DARK_GRAY_COLOR hexToColor("#1A1A1A")
 
+Vector2 convertUIToSDL(float x, float y,int screenWidth,int screenHeight);
+Vector2 convertSDLToUI(float x, float y, int screenWidth, int screenHeight);
 float absValue(float value);
 Color hexToColor(const char* hex);
 char* readFile(const char *filename);
@@ -62,6 +64,8 @@ void arena_free(Arena* arena);  // Not evaluated/used yet, do this before using.
 
 // Materials
 int getMaterialByName(const char* name);
+int addMaterial(Material material);
+Material* getMaterial(int index);
 
 // Parse obj files
 void obj_runTests();

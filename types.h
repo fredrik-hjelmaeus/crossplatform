@@ -1,11 +1,12 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <stdio.h>
+
 #include <stdbool.h>
 #include "opengl_types.h"
-#include <ft2build.h>
 
+// Freetype
+#include <ft2build.h>
 #include FT_FREETYPE_H
 
 

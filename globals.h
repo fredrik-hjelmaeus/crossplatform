@@ -17,6 +17,10 @@
 
 #define MAX_LIGHTS 10
 
+// Window dimensions
+static const int width = 800;  // If these change, the views defaults should be changed aswell.
+static const int height = 600; // If these change, the views defaults should be changed aswell.
+
 struct Globals {
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -53,6 +57,8 @@ struct Globals {
     int cursorEntityId;
     float cursorBlinkInterval;
     float charScale;
+    float lastMouseClickTime;
+    bool mouseDoubleClick;
 };
 
 extern struct Globals globals;

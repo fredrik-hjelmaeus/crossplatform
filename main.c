@@ -27,6 +27,10 @@
 #include "linmath.h"
 #include "utils.h"
 #include "opengl.h"
+#include "text.h"
+#include "ecs.h"
+#include "ecs-entity.h"
+#include "ecs-systems.h"
 
 // Stb
 #define STB_IMAGE_IMPLEMENTATION
@@ -44,9 +48,7 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation)
 void createCube(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
 void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
-void modelSystem();
-void uiSystem();
-void uiInputSystem();
+
 void onButtonClick();
 void onTextInputChange();
 void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick);
@@ -54,15 +56,7 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
 void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation);
 void createLine(vec3 position, vec3 endPosition,Entity* entity);
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
-void moveCursor(float x);
-ClosestLetter findCharacterUnderCursor();
-Entity* addEntity(enum Tag tag);
-void deleteEntity(Entity* entity);
-ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX);
-int addMaterial(Material material);
-Vector2 convertSDLToUI(float x, float y);
-Vector2 convertUIToSDL(float x, float y);
-Material* getMaterial(int index);
+
 void createMesh(
     GLfloat* verts,
     GLuint num_of_vertex, 
@@ -86,10 +80,6 @@ Camera* initCamera();
 //------------------------------------------------------
 // Global variables / Initialization
 //------------------------------------------------------
-
-// Window dimensions
-static const int width = 800;  // If these change, the views defaults should be changed aswell.
-static const int height = 600; // If these change, the views defaults should be changed aswell.
 
 struct Globals globals = {
     .window=NULL,
@@ -127,7 +117,9 @@ struct Globals globals = {
     .lightsCount=0,
     .focusedEntityId=-1,
     .cursorEntityId=-1,
-    .charScale=0.5f
+    .charScale=0.5f,
+    .lastMouseClickTime=0.0f,
+    .mouseDoubleClick=false
 };
 
 // Colors
@@ -139,266 +131,6 @@ Color green = {0.0f, 1.0f, 0.0f, 1.0f};
 #define FPS 60
 #define FRAME_TARGET_TIME (1000 / FPS)
 int last_frame_time = 0;
-
-
-//------------------------------------------------------
-//  ECS
-//------------------------------------------------------
-// Every entity get's all components attached to it and memory is allocated for all components.
-
-// Max entities constant
-#define MAX_ENTITIES 1000
-
-void* allocateComponentMemory(size_t componentSize, const char* componentName) {
-    void* components = calloc(MAX_ENTITIES, componentSize);
-    if(components == NULL) {
-        printf("Failed to allocate memory for %s components\n", componentName);
-        exit(1);
-    }
-    return components;
-}
-
-void initializeTransformComponent(TransformComponent* transformComponent){
-    transformComponent->active = 0;
-    transformComponent->position[0] = 0.0f;
-    transformComponent->position[1] = 0.0f;
-    transformComponent->position[2] = 0.0f;
-    transformComponent->scale[0] = 1.0f;
-    transformComponent->scale[1] = 1.0f;
-    transformComponent->scale[2] = 1.0f;
-    transformComponent->rotation[0] = 0.0f;
-    transformComponent->rotation[1] = 0.0f;
-    transformComponent->rotation[2] = 0.0f;
-    transformComponent->modelNeedsUpdate = 1;
-}
-
-void initializeMatrix4(float (*matrix)[4][4]) {
-    mat4x4_identity(*matrix);
-}
-
-void initializeGroupComponent(GroupComponent* groupComponent){
-    groupComponent->active = 0;
-    initializeMatrix4(&groupComponent->transform);
-}
-
-void initializeMeshComponent(MeshComponent* meshComponent){
-    meshComponent->active = 0;
-    meshComponent->vertices = NULL;
-    meshComponent->vertexCount = 5;
-    meshComponent->indices = NULL;
-    meshComponent->indexCount = 0;
-    meshComponent->gpuData = (GpuData*)malloc(sizeof(GpuData)); // TODO: replace with arena alloc?
-    if(meshComponent->gpuData == NULL) {
-        printf("Failed to allocate memory for gpuData\n");
-        exit(1);
-    }
-    // Initialize GpuData
-    meshComponent->gpuData->VAO = 0;
-    meshComponent->gpuData->VBO = 0;
-    meshComponent->gpuData->EBO = 0;
-    meshComponent->gpuData->drawMode = GL_TRIANGLES; // Default draw mode
-    meshComponent->gpuData->numIndicies = 0;
-}
-
-void initializeMaterialComponent(MaterialComponent* materialComponent){
-    materialComponent->active = 0;
-    materialComponent->ambient.r = 0.0f;
-    materialComponent->ambient.g = 0.0f;
-    materialComponent->ambient.b = 0.0f;
-    materialComponent->ambient.a = 1.0f;
-    materialComponent->diffuse.r = 0.0f;
-    materialComponent->diffuse.g = 0.0f;
-    materialComponent->diffuse.b = 0.0f;
-    materialComponent->diffuse.a = 1.0f;
-    materialComponent->specular.r = 0.0f;
-    materialComponent->specular.g = 0.0f;
-    materialComponent->specular.b = 0.0f;
-    materialComponent->specular.a = 1.0f;
-    materialComponent->shininess = 0.0f;
-    materialComponent->diffuseMapOpacity = 0.0f;
-    materialComponent->diffuseMap = 0;
-    materialComponent->specularMap = 0;
-    materialComponent->materialIndex = -1;
-}
-
-// Max text length for UI components
-#define MAX_TEXT_LENGTH 100
-
-void initializeUIComponent(UIComponent* uiComponent){
-    uiComponent->active = 0;
-    uiComponent->hovered = 0;
-    uiComponent->clicked = 0;
-    uiComponent->boundingBox.x = 0;
-    uiComponent->boundingBox.y = 0;
-    uiComponent->boundingBox.width = 0;
-    uiComponent->boundingBox.height = 0;
-    uiComponent->text = (char*)malloc(MAX_TEXT_LENGTH * sizeof(char));
-    if (uiComponent->text != NULL) {
-        // Initialize the allocated memory to an empty string
-        uiComponent->text[0] = '\0';
-    }
-    uiComponent->uiNeedsUpdate = 0;
-    uiComponent->boundingBoxEntityId = -1;
-    uiComponent->onClick = NULL;
-    uiComponent->onChange = NULL;
-    uiComponent->type = UITYPE_NONE;
-}
-
-void initializeLightComponent(LightComponent* lightComponent){
-    lightComponent->active = 0;
-    lightComponent->direction[0] = 0.0f;
-    lightComponent->direction[1] = 0.0f;
-    lightComponent->direction[2] = 0.0f;
-    lightComponent->intensity = 0.0f;
-    lightComponent->ambient.r = 0.0f;
-    lightComponent->ambient.g = 0.0f;
-    lightComponent->ambient.b = 0.0f;
-    lightComponent->ambient.a = 1.0f;
-    lightComponent->diffuse.r = 0.0f;
-    lightComponent->diffuse.g = 0.0f;
-    lightComponent->diffuse.b = 0.0f;
-    lightComponent->diffuse.a = 1.0f;
-    lightComponent->specular.r = 0.0f;
-    lightComponent->specular.g = 0.0f;
-    lightComponent->specular.b = 0.0f;
-    lightComponent->specular.a = 1.0f;
-}
-
-void initializeLineComponent(LineComponent* lineComponent){
-    lineComponent->active = 0;
-    lineComponent->gpuData = (GpuData*)malloc(sizeof(GpuData)); // TODO: replace with arena alloc?
-    if(lineComponent->gpuData == NULL) {
-        printf("Failed to allocate memory for gpuData\n");
-        exit(1);
-    }
-    // Initialize GpuData
-    lineComponent->gpuData->VAO = 0;
-    lineComponent->gpuData->VBO = 0;
-    lineComponent->gpuData->EBO = 0;
-    lineComponent->gpuData->drawMode = GL_LINES; // Default draw mode
-    lineComponent->gpuData->numIndicies = 0;
-    lineComponent->color.r = 0.0f;
-    lineComponent->color.g = 0.0f;
-    lineComponent->color.b = 0.0f;
-    lineComponent->color.a = 1.0f;
-    lineComponent->start[0] = 0.0f;
-    lineComponent->start[1] = 0.0f;
-    lineComponent->start[2] = 0.0f;
-    lineComponent->end[0] = 0.0f;
-    lineComponent->end[1] = 0.0f;
-    lineComponent->end[2] = 0.0f;
-}
-
-void initializePointComponent(PointComponent* pointComponent){
-    pointComponent->active = 0;
-    pointComponent->gpuData = (GpuData*)malloc(sizeof(GpuData)); // TODO: replace with arena alloc?
-    if(pointComponent->gpuData == NULL) {
-        printf("Failed to allocate memory for gpuData\n");
-        exit(1);
-    }
-    pointComponent->points = NULL;
-    pointComponent->color.r = 0.0f;
-    pointComponent->color.g = 0.0f;
-    pointComponent->color.b = 0.0f;
-    pointComponent->color.a = 1.0f;
-    pointComponent->pointSize = 1.0f;
-}
-
-
-/**
- * @brief Initialize the ECS
- * Allocates memory pools for the components and entities.
- * This means that for every new component type we add, entity size grows.
- * This is a tradeoff between memory and performance. 
- * Having the components already allocated on startup is faster, but uses more memory.
- * If component size grows too large, we might consider allocating them on the fly or have a memory pool for each component type?
-*/
-void initECS(){
-    // Allocate memory for MAX_ENTITIES Components structs
-    TransformComponent* transformComponents = allocateComponentMemory(sizeof(TransformComponent), "transform");
-    GroupComponent* groupComponents = allocateComponentMemory(sizeof(GroupComponent), "group");
-    MeshComponent* meshComponents = allocateComponentMemory(sizeof(MeshComponent), "mesh");
-    MaterialComponent* materialComponents = allocateComponentMemory(sizeof(MaterialComponent), "material");
-    UIComponent* uiComponents = allocateComponentMemory(sizeof(UIComponent), "ui");
-    LightComponent* lightComponents = allocateComponentMemory(sizeof(LightComponent), "light");
-    LineComponent* lineComponents = allocateComponentMemory(sizeof(LineComponent), "line");
-    PointComponent* pointComponents = allocateComponentMemory(sizeof(PointComponent), "point");
-
-    // Allocate memory for MAX_ENTITIES Entity structs
-    Entity* entities = (Entity*)calloc(MAX_ENTITIES, sizeof(Entity));
-    if(entities == NULL) {
-        printf("Failed to allocate memory for entities\n");
-        exit(1);
-    }
-
-    // Initialize entities
-    for (int i = 0; i < MAX_ENTITIES; i++) {
-        entities[i].alive = 0;
-        entities[i].id = i;
-        entities[i].tag = UNINITIALIZED;
-        entities[i].transformComponent = &transformComponents[i];
-        initializeTransformComponent(entities[i].transformComponent);
-        entities[i].groupComponent = &groupComponents[i];
-        initializeGroupComponent(entities[i].groupComponent);
-        entities[i].meshComponent = &meshComponents[i];
-        initializeMeshComponent(entities[i].meshComponent);
-        entities[i].materialComponent = &materialComponents[i];
-        initializeMaterialComponent(entities[i].materialComponent); 
-        entities[i].uiComponent = &uiComponents[i];
-        initializeUIComponent(entities[i].uiComponent);
-        entities[i].lightComponent = &lightComponents[i];
-        initializeLightComponent(entities[i].lightComponent);
-        entities[i].lineComponent = &lineComponents[i];
-        initializeLineComponent(entities[i].lineComponent);
-        entities[i].pointComponent = &pointComponents[i];
-        initializePointComponent(entities[i].pointComponent);
-    }
-
-    globals.entities = entities;
-
-    if(1){
-        printf("lightComponent %zu\n",sizeof(LightComponent));
-        printf("transformComponent %zu\n",sizeof(TransformComponent));
-        printf("meshComponent %zu\n",sizeof(MeshComponent));
-        printf("materialComponent %zu\n",sizeof(MaterialComponent));
-        printf("groupComponent %zu\n",sizeof(GroupComponent));
-        printf("uiComponent %zu\n",sizeof(UIComponent));
-        printf("lineComponent %zu\n",sizeof(LineComponent));
-        printf("pointComponent %zu\n",sizeof(PointComponent));
-    }
-}
-
-Entity* addEntity(enum Tag tag){
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 0) {
-            globals.entities[i].alive = 1;
-            globals.entities[i].tag = tag;
-            return &globals.entities[i];
-        }
-    }
-    // if we get here we are out of entities and need to increase the MAX_ENTITIES constant 
-    // for now, we just exit the program
-    printf("Out of entities\n");
-    exit(1);
-}
-void deleteEntity(Entity* entity){
-    entity->alive = 0;
-    entity->tag = UNINITIALIZED;
-    entity->transformComponent->active = 0;
-    entity->groupComponent->active = 0;
-    entity->meshComponent->active = 0;
-    entity->materialComponent->active = 0;
-    entity->uiComponent->active = 0;
-    entity->lightComponent->active = 0;
-    entity->lineComponent->active = 0;
-    entity->pointComponent->active = 0;
-}
-// remove entity
-// get entity by id
-// get entities by tag
-
-
-
 
 //------------------------------------------------------
 // SDL, OpenGL & PROGRAM INITIALIZATION
@@ -636,27 +368,9 @@ void recalculateViewports(int w, int h){
     globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
 }
 
-/**
- * Atm we handle all events right here. Eventually we wan't to store the polled events in a queue and process them in the update loop instead.
- * This is because this fn will become too large otherwise,and we wan't to group & handle events in a more structured way. 
- * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
- */
-void input() {
-   
-    // Process events
-    while(pollEvent()) {
-        
-        if(globals.event.type == SDL_QUIT) {
-            globals.running = 0;
-        } 
-        if(globals.event.type == SDL_KEYDOWN) {
+void handleKeyInput(){
+         
             const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
-           
-            if(globals.focusedEntityId != -1){
-                //printf("input field is focused, ignoring keydown input from main loop\n");
-                //printf("instead adding key to input field\n");
-                return;
-            }
            
             if(strcmp(key, "C") == 0) {
                 globals.views.full.clearColor.r = randFloat(0.0,1.0);
@@ -769,7 +483,52 @@ void input() {
                 globals.views.main.camera->isOrthographic = 0;
                 globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
             }
+}
+
+
+/**
+ * Atm we handle all events right here. Eventually we wan't to store the polled events in a queue and process them in the update loop instead.
+ * This is because this fn will become too large otherwise,and we wan't to group & handle events in a more structured way. 
+ * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
+ */
+void input() {
+   
+    // Process events
+    while(pollEvent()) {
+        
+        if(globals.event.type == SDL_QUIT) {
+            globals.running = 0;
+        } 
+            if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
+            
+            // A button was pressed
+            if (globals.event.button.button == SDL_BUTTON_LEFT) {
+               
+                if(globals.event.button.clicks == 2){
+                   
+                    globals.mouseDoubleClick = true;
+                }
+                
+                // Left Button Pressed
+                globals.mouseLeftButtonPressed = true;
+                
+                
+                
+                
+            } else if (globals.event.button.button == SDL_BUTTON_RIGHT) {
+                
+                //printf("Right button pressed\n");
+            }
+        } 
+        if(globals.event.type == SDL_KEYDOWN) {
+            // If input element is focused, we don't handle keyboard events here but in the uiInputSystem
+            if(globals.focusedEntityId != -1){
+                return;
+            }else {
+                handleKeyInput();
+            }
         }
+            
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
             SDL_GetWindowSize(globals.window, &w, &h);
@@ -779,21 +538,15 @@ void input() {
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
             //glViewport(0, 0, w / 2, h);
         }
-        if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
-            //printf("Mouse button pressed\n");
-            // A button was pressed
-            if (globals.event.button.button == SDL_BUTTON_LEFT) {
-                // Left Button Pressed
-                globals.mouseLeftButtonPressed = true;
-                //printf("Left button pressed\n");
-            } else if (globals.event.button.button == SDL_BUTTON_RIGHT) {
-                // Left Button Released
-                //printf("Right button pressed\n");
-            }
-        }  
+       
         if (globals.event.type == SDL_MOUSEBUTTONUP) {
             // A button was released
             globals.mouseLeftButtonPressed = false;
+            if(globals.lastMouseClickTime-globals.delta_time > 0.5f){
+                printf("Mouse button held down for too long for doubleclick\n");
+            }else {
+                globals.lastMouseClickTime = globals.delta_time;
+            }
             //printf("Mouse button released\n");
         }
         if (globals.event.type == SDL_MOUSEMOTION) {
@@ -806,14 +559,14 @@ void input() {
             // -----------TEMP CODE------------
            // printf("Mouse moved to %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
-            /*   float x_ndc = (2.0f * xpos) / width - 1.0f;
+              /* float x_ndc = (2.0f * xpos) / width - 1.0f;
               float y_ndc = 1.0f - (2.0f * ypos) / height;
               float x_ui =  (-1 * x_ndc) * ((float)width * 0.5);
-              float y_ui =   y_ndc * ((float)height * 0.5); */
+              float y_ui =   y_ndc * ((float)height * 0.5);  */
               //printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
               //printf("Mouse moved to %f, %f\n", mouseX, mouseY);
-            //  Vector2 uiCoords = convertSDLToUI((float)xpos, (float)ypos);
-            //    printf("Mouse moved in ui coords: %f, %f\n", uiCoords.x, uiCoords.y);
+              Vector2 uiCoords = convertSDLToUI((float)xpos, (float)ypos, width, height);
+                printf("Mouse moved in ui coords: %f, %f\n", uiCoords.x, uiCoords.y);
             // END TEMP CODE------------------
 
             if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
@@ -888,660 +641,7 @@ void updateCamera(Camera* camera){
     }
 }
 
-/**
- * @brief Camera system
- * Handles camera update.
- * Atm we are not handling everything about the camera here, just the update of projection & view.
- * Movement is handled in the input function, but will eventually be moved here.
- */
-void cameraSystem(){
-  
-    updateCamera(globals.views.main.camera);
-    updateCamera(globals.views.ui.camera);
-}
 
-
-/**
- * @brief UI system
- * Responsible for setting the position of the UI elements in "UI" space. 
- * UI space is top left corner of the screen is [0.0,0.0], bottom right is [width,height].
- * Newly created UI elements is spawned in center of the screen [width/2, height/2] uiSystem then is responsible for 
- * setting the position to top left corner + the requested position.
- */
-void uiSystem(){
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(
-            globals.entities[i].alive == 1 
-        && globals.entities[i].uiComponent->active 
-        && globals.entities[i].transformComponent->active 
-        && globals.entities[i].uiComponent->uiNeedsUpdate 
-        && globals.cursorEntityId != i
-        ) {
-                
-                // Goal here: Position element in "UI" space, where start 0,0 is the center of the ui-viewport screen. 
-                // We will position the element to top left corner of the screen and treat this as 0,0 instead.
-                // If position or scale changes, this calculation won't be correct anymore.
-                // This calculation only works for elements that are spawned in the center of the screen.
-                
-                // Position of element on spawn:
-                float ui_viewport_half_width = (float)globals.views.ui.rect.width / 2; 
-                float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2;
-              //  printf("ui_viewport_half_width %f\n", ui_viewport_half_width);
-              //  printf("ui_viewport_half_height %f\n", ui_viewport_half_height);
-                
-                // Half scale of element
-                float scaleInPixelsX = globals.entities[i].transformComponent->scale[0]; 
-                float scaleInPixelsY = globals.entities[i].transformComponent->scale[1]; /// globals.unitScale;
-              //  printf("scaleInPixelsX %f\n", scaleInPixelsX);
-              //  printf("scaleInPixelsY %f\n", scaleInPixelsY);
-
-                // TODO: rotation
-            
-                // position of element
-                float requested_pos_x = globals.entities[i].transformComponent->position[0];
-                float requested_pos_y = globals.entities[i].transformComponent->position[1];
-
-              //  printf("requested_pos_x %f\n", requested_pos_x);
-              //  printf("requested_pos_y %f\n", requested_pos_y);
-
-              //  printf("before %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
-        
-                // move element to upper left corner and then add requested position.
-               globals.entities[i].transformComponent->position[0] = (float)(ui_viewport_half_width - (scaleInPixelsX * 0.5) - requested_pos_x) * -1.0; 
-               globals.entities[i].transformComponent->position[1] =(float)(ui_viewport_half_height - (scaleInPixelsY * 0.5)) - requested_pos_y * 1.0;
-             //  printf("final pos: %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
-                
-                // Bounding box
-                globals.entities[i].uiComponent->boundingBox.x = requested_pos_x;
-                globals.entities[i].uiComponent->boundingBox.y = requested_pos_y;
-                globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
-                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
-                
-               /*  printf("bounding box x %d\n", globals.entities[i].uiComponent->boundingBox.x);
-                printf("bounding box y %d\n", globals.entities[i].uiComponent->boundingBox.y);
-                printf("bounding box width %d\n", globals.entities[i].uiComponent->boundingBox.width);
-                printf("bounding box height %d\n", globals.entities[i].uiComponent->boundingBox.height);  
-                printf("entity id %d\n", globals.entities[i].id);
-                printf("bb entity to update %d\n", globals.entities[i].uiComponent->boundingBoxEntityId); */
-                
-
-                // Find the bounding box entity and update with new values
-                for(int j = 0; j < MAX_ENTITIES; j++) {
-                    if(globals.entities[j].alive == 1 && globals.entities[i].uiComponent->boundingBoxEntityId == globals.entities[j].id) { 
-                        globals.entities[j].transformComponent->position[0] = globals.entities[i].transformComponent->position[0];
-                        globals.entities[j].transformComponent->position[1] = globals.entities[i].transformComponent->position[1];
-                        globals.entities[j].transformComponent->scale[0] = globals.entities[i].transformComponent->scale[0];
-                        globals.entities[j].transformComponent->scale[1] = globals.entities[i].transformComponent->scale[1];
-                        globals.entities[j].transformComponent->modelNeedsUpdate = 1;
-                    }
-                }
-                globals.entities[i].uiComponent->uiNeedsUpdate = 0;
-        }
-    }
-}
-
-/**
- * @brief Movement system
- * Handles movement update on position,rotation & scale. (Atm only x-axis rotation.)
- * The model matrix that is used for rendering is NOT updated here, but in the modelSystem. ModelSystem uses 
- * the transform values that are updated here to update the model matrix. So this system needs to run before modelsystem.
- * Atm this system is more of a placeholder for movement logic, but will eventually be more complex. 
- * NOTE: Most movement logic is still done in the input function,but will eventually be moved here.
- */
-void movementSystem(){
-    // rotate model logic (temporary)
-    float degrees = 15.5f * globals.delta_time;
-   // float radians = degrees * M_PI / 180.0f;
-
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            
-           if(globals.entities[i].transformComponent->active == 1){
-                // Do movement logic here:
-                
-                // Example of movement logic: Rotate on y-axis on all entities that are not ui (temporary)
-                if(globals.entities[i].uiComponent->active == 1){
-                  //  printf("entity %d \n", i);
-                    //printf("confirmed active ui\n");
-                   /*  if(isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.event.motion.x, globals.event.motion.y})){
-                    globals.entities[i].transformComponent->scale[0] += 1.5f;
-                    globals.entities[i].transformComponent->modelNeedsUpdate = 1; */
-                     /*    printf("bb x %d ", globals.entities[i].uiComponent->boundingBox.x);
-                        printf("bb y %d ", globals.entities[i].uiComponent->boundingBox.y);
-                        printf("bb width %d ", globals.entities[i].uiComponent->boundingBox.width);
-                        printf("bb height %d ", globals.entities[i].uiComponent->boundingBox.height); */
-                        //globals.entities[i].transformComponent->rotation[1] = radians;
-                        //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                   // }
-                }
-                if(globals.entities[i].lightComponent->active == 1){
-                   // globals.entities[i].transformComponent->rotation[1] = radians;
-                    globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                   // float offset = 2.0 * sin(1.0 * globals.delta_time);
-                  //  globals.entities[i].lightComponent->direction[0] = offset;
-                    //printf("offset %f\n", offset);
-                   // globals.entities[i].transformComponent->position[0] = offset;
-                }
-                //globals.entities[i].transformComponent->rotation[1] += radians; //<- This is an example of acceleration.
-           }
-        }
-    }
-}
-
-void hoverAndClickSystem(){
-    int newCursor = SDL_SYSTEM_CURSOR_ARROW;
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
-                   
-                    if(
-                        globals.views.ui.isMousePointerWithin && 
-                        isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos})
-                    ){
-                       
-                        // Left Click or just hover?
-                        if(globals.mouseLeftButtonPressed){
-                            if(strlen(globals.entities[i].uiComponent->text) > 0){
-                               // printf("clicked\n");
-                            }
-                          
-                            globals.entities[i].uiComponent->clicked = 1;
-                        } else {
-                            
-                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                              //  printf("hovered entity with id: %d\n", globals.entities[i].id);
-                            }
-                            globals.entities[i].uiComponent->hovered = 1;
-                            globals.entities[i].uiComponent->clicked = 0;
-                        }
-
-                        // Hover effect
-                        if(globals.entities[i].uiComponent->hovered == 1){
-                            if(globals.entities[i].uiComponent->type == UITYPE_INPUT){
-                                newCursor = SDL_SYSTEM_CURSOR_IBEAM;
-                            }
-                            if(globals.entities[i].uiComponent->type == UITYPE_BUTTON){
-                                newCursor = SDL_SYSTEM_CURSOR_HAND;
-                            }
-                            if(strlen(globals.entities[i].uiComponent->text) > 0){
-                              // printf("hovered changes done on entity with id %d\n", globals.entities[i].id);
-                                // Appearance changes when hovered
-                               globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
-                               globals.entities[i].materialComponent->diffuse.r = 0.0f;
-                               globals.entities[i].materialComponent->diffuse.g = 0.5f;
-                            }
-                        }
-
-                        if(globals.entities[i].uiComponent->clicked == 1){
-                           // printf("clicked entity with id: %d\n", globals.entities[i].id);
-                            if(globals.entities[i].uiComponent->type == UITYPE_INPUT){
-                                globals.focusedEntityId = globals.entities[i].id;
-                               // printf("input field on entity with id %d clicked\n", globals.entities[i].id);
-                            }else {
-                                // If clicked ui element is not an input field
-                                //if(globals.focusedEntityId != globals.entities[i].id)
-                                    // Reset focused entity if there was one, same as onBlur.
-                                   // printf("onblur/defocusing entity id %d\n", globals.focusedEntityId);
-                                  //  globals.focusedEntityId = -1;
-                                
-                            }
-                            if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                //printf("clicked changes done\n");
-                            }
-                            // Appearance changes when clicked
-                            globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
-                            globals.entities[i].materialComponent->diffuse.r = 0.5f;
-                            globals.entities[i].materialComponent->diffuse.g = 0.0f;
-                         
-                            // Actions when clicked
-                            if(globals.entities[i].uiComponent->onClick != NULL){
-                                globals.entities[i].uiComponent->onClick();
-                            }
-                        }
-                    
-                    } else {
-                         if(strlen(globals.entities[i].uiComponent->text) > 0){
-                               // printf("no action,disable actions\n");
-                            } 
-                        globals.entities[i].uiComponent->hovered = 0;
-                        globals.entities[i].uiComponent->clicked = 0;
-                        globals.entities[i].materialComponent->diffuseMapOpacity = getMaterial(globals.entities[i].materialComponent->materialIndex)->diffuseMapOpacity;
-                        globals.entities[i].materialComponent->diffuse.r = 0.0f;
-                        globals.entities[i].materialComponent->diffuse.g= 0.0f;
-                    }
-            }
-        }
-    } 
-    changeCursor(newCursor);
-}
-
-// TODO: temp solution, do not handle if caps lock is already active on program run.
-bool isCapsLock() {
-    SDL_Keymod modState = SDL_GetModState();
-    if (modState & KMOD_CAPS) {
-        //printf("Caps Lock is activated\n");
-        return true;
-    } else {
-        //printf("Caps Lock is not activated\n");
-        return false;
-    }
-}
-
-// TODO: This is a temp solution. We should handle this using
-// event->key.keysym.sym == SDLK_LSHIFT instead.
-bool isLeftShiftPressed(){
-    SDL_Keymod modState = SDL_GetModState();
-    if (modState & KMOD_LSHIFT) {
-        //printf("Left Shift is activated\n");
-        return true;
-    } else {
-        //printf("Left Shift is not activated\n");
-        return false;
-    }
-}
-
-char toUpperCase(char c) {
-    if (c >= 'a' && c <= 'z') {
-        return c - 32;
-    }
-    return c; // Return the character unchanged if it's not a lowercase letter
-}
-
-char toLowerCase(char c) {
-    if (c >= 'A' && c <= 'Z') {
-        return c + 32;
-    }
-    return c; // Return the character unchanged if it's not an uppercase letter
-}
-
-char specialLeftShiftHandling(char c){
-    if(c == '1'){
-        return '!';
-    }
-    if(c == '2'){
-        return '"';
-    }
-    if(c == '3'){
-        return '#';
-    }
-    if(c == '4'){
-        return '$';
-    }
-    if(c == '5'){
-        return '%';
-    }
-    if(c == '6'){
-        return '^';
-    }
-    if(c == '7'){
-        return '&';
-    }
-    if(c == '8'){
-        return '*';
-    }
-    if(c == '9'){
-        return '(';
-    }
-    if(c == '0'){
-        return ')';
-    }
-    return c;
-}
-
-/**
- * @brief UI input system
- * Handles input on UI elements.
- * TODO: memory leak, we are not deallocating the textCopy memory.
- * TODO: Support !?#
- * TODO: Support arrow keys for moving cursor
- * TODO: Support selecting text
- * TODO: Support remove selected text part
- * TODO: Support copy/paste
- * TODO: Support undo/redo
- * TODO: Support input validation
- * TODO: Support input mask
- * TODO: Support input type (number, email, password etc)
- * TODO: Support input placeholder
- * TODO: Support input focus indicator
- * TODO: Support values change from outside the input field
- * TODO: Support input field disabled state
- * BUG:  Empty field bugs out on input
- * BUG:  Too far typing to into the right of input field bugs out
- * BUG:  BackSpace in middle of a text should remove left character
- */
-void uiInputSystem(){
-    if(globals.focusedEntityId != -1){
-         if(globals.event.type == SDL_KEYDOWN) {
-            char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
-            printf("key %s\n", key);
-            bool isSpaceKey = false;
-            
-            // Special keys
-            if(strcmp(key, "Left") == 0){
-                moveCursor(findCharacterUnderCursor().charWidth*-1.0);
-                return;
-            }
-            if(strcmp(key, "Right") == 0){
-                moveCursor(findCharacterUnderCursor().charWidth);
-                return;
-            }
-            if(strcmp(key, "Space") == 0){
-                isSpaceKey = true;
-            }
-            if(strcmp(key, "CapsLock") == 0){
-                return;
-            }
-            if(strcmp(key, "Left Shift") == 0){
-                return;
-            }
-            if(strcmp(key, "Delete") == 0){
-                ASSERT(globals.focusedEntityId != -1, "No focused entity");
-                handleDeleteButton(globals.focusedEntityId);
-                return;
-            }
-            if(strcmp(key, "Return") == 0 || strcmp(key, "Escape") == 0){
-                globals.focusedEntityId = -1;
-                return;
-            } 
-            if(strcmp(key, "Backspace") == 0){
-                if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) > 0){
-
-                    // Remove the letter to the left of the cursor
-                    removeCharacter(findCharacterUnderCursor().characterIndex-1);
-
-                    // Move cursor one step to the left
-                    Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
-                    ClosestLetter closestLetter = getClosestLetterInText(
-                            globals.entities[globals.focusedEntityId].uiComponent,
-                            sdlVec.x
-                    );
-                    Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y);
-                    globals.entities[globals.cursorEntityId].transformComponent->position[0] = uiVec.x;
-                    globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
-                }
-                return;
-            }
-                  
-            // Any other key pressed
-            ASSERT(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) < 99, "Input field is full");
-            
-            // TODO: This is not deallocated , memory leak
-            char* textCopy = (char*)arena_Alloc(&globals.uiArena, 99 * sizeof(char));
-            
-            // Add pressed key to input field & apply logic uppercase/lowercase/space
-            bool doUpperCase = isLeftShiftPressed() ? isCapsLock() ? 0 : 1 : isCapsLock() ? 1 : 0;
-            char keyCopy = doUpperCase == 1 ? toUpperCase(key[0]) : toLowerCase(key[0]);
-            isSpaceKey ? keyCopy = 32 : keyCopy;
-            isLeftShiftPressed() ? keyCopy = specialLeftShiftHandling(keyCopy) : keyCopy;
-
-            // Find closest letter to cursor
-            ClosestLetter closestLetter = findCharacterUnderCursor();
-        
-            // Use closest letter to insert key at the right position
-            int j = 0;
-            for(int i = 0; i < strlen(globals.entities[globals.focusedEntityId].uiComponent->text)+1; i++){
-
-                if(i == (closestLetter.characterIndex)){
-                    textCopy[i] = keyCopy;
-                    j++;
-                }
-
-                textCopy[i+j] = globals.entities[globals.focusedEntityId].uiComponent->text[i];   
-            }
-            textCopy[strlen(globals.entities[globals.focusedEntityId].uiComponent->text)+2] = '\0';
-            globals.entities[globals.focusedEntityId].uiComponent->text = textCopy;
-
-            // Move cursor one step to the right
-            Character ch = globals.characters[keyCopy];
-            float advanceCursor = (float)(ch.Advance >> 6) * globals.charScale;
-            globals.entities[globals.cursorEntityId].transformComponent->position[0] += advanceCursor;
-            globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
-
-                
-                
-            
-         }else {
-           // printf("NO input \n");
-         }
-    }
-}
-
-Vector2 convertUIToSDL(float x, float y){
-   // printf("ui x to convert: %f\n", x);
-  //  printf("ui y to convert: %f\n", y);
-    float sdl_x = (width / 2) - absValue(x);
-    float sdl_y = (height / 2) - y;
-    return (Vector2){sdl_x,sdl_y};
-}
-
-Vector2 convertSDLToUI(float x, float y){
-    float x_ndc = (2.0f * x) / width - 1.0f;
-    float y_ndc = 1.0f - (2.0f * y) / height;
-    float x_ui = x_ndc * ((float)width * 0.5);
-    float y_ui = y_ndc * ((float)height * 0.5);
-    return (Vector2){x_ui, y_ui};
-}
-
-void moveCursor(float x){
-    globals.entities[globals.cursorEntityId].transformComponent->position[0] += x;
-    globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
-}
-/**
- * @brief Removes the character on the index. Example: "TextIn|put" -> removeCharacter(6) "TextInut"
- */
-void removeCharacter(int index){
-    if(index < 0){
-        return;
-    }
-    
-    char* originalText = globals.entities[globals.focusedEntityId].uiComponent->text;
-    int originalLength = strlen(originalText);
-    
-    // Allocate memory for the new string (original length - 1 character + null terminator)
-    char* textCopy = (char*)malloc(originalLength * sizeof(char));
-      if (textCopy == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        return;
-    }
-    
-    int j = 0;
-    for(int i = 0; i < originalLength; i++){
-        if(i == index){
-            continue;
-        }else{
-            textCopy[j] = originalText[i];
-            j++;
-        }
-    }
-    textCopy[j] = '\0'; // null terminate
-    
-    globals.entities[globals.focusedEntityId].uiComponent->text = textCopy; // assign
-}
-
-/**
- * @brief Get the closest letter position in the text to the given mouse X position.
- * 
- * @param uiComponent The UI component containing the text.
- * @param mouseX The X position of the mouse.
- * @return Vector2 The position of the closest letter.
- */
-ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
-    const char* text = uiComponent->text;
-    float x = (float)uiComponent->boundingBox.x; 
-    float y = (float)uiComponent->boundingBox.y + ((float)uiComponent->boundingBox.height / 2);   //(float)globals.characters[0].Size[1]; 
-    float scale = globals.charScale; // Character size, also set when renderText is called (they should be in sync)
-    float xpos = 0.0f;
-    float ypos = 0.0f;
-    float bestCharX = (float)uiComponent->boundingBox.x + (float)uiComponent->boundingBox.width;
-    float lastShift = 0.0f;
-    ClosestLetter closestLetter;
-    closestLetter.characterIndex = 0;
-    closestLetter.position = (Vector2){0.0f, 0.0f};
-    if(strlen(text) == 0){
-        return closestLetter;
-    }
-        
-    for (unsigned char c = 0; c < strlen(text); c++) {
-        Character ch = globals.characters[text[c]];
-
-        // Calculate the position of the current character
-        xpos = x + (float)ch.Bearing[0] * scale;
-        ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
-
-        float w = (float)ch.Size[0] * scale;
-        float h = (float)ch.Size[1] * scale;    
-       
-        // Check if the mouse is closer to the current character than the previous closest character
-        float testxpos = absValue(mouseX - xpos);
-        float testbestCharX = absValue(mouseX - bestCharX);
-           
-        if(testxpos > bestCharX){
-            // Previous character was the closest,so we remove the last character width from the xpos.
-            closestLetter.position.x = xpos - (float)ch.Bearing[0] * scale - lastShift;
-            closestLetter.position.y = ypos;
-            closestLetter.characterIndex = c - 1; 
-            closestLetter.charWidth = (float)ch.Bearing[0] * scale + lastShift;
-            ASSERT(closestLetter.position.x >= 0, "closestLetter.position.x is negative");
-            ASSERT(closestLetter.position.y >= 0, "closestLetter.position.y is negative");
-            ASSERT(closestLetter.characterIndex >= 0, "closestLetter.characterIndex is negative");
-            ASSERT(closestLetter.charWidth >= 0, "closestLetter.charWidth is negative");
-            return closestLetter;
-        }
-        bestCharX = testxpos;
-   
-        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-        lastShift = (float)(ch.Advance >> 6) * scale;
-        x += lastShift; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
-        closestLetter.characterIndex++;
-        closestLetter.charWidth = (float)ch.Bearing[0] * scale + lastShift; 
-   } 
-   
-   // Determine which side of the character is closest to the mouse between last character and penultimate character.
-   float lastCharPos = absValue(mouseX - (xpos + lastShift));
-   float prevCharPos = absValue(mouseX - xpos);
-   float result = prevCharPos > lastCharPos ? (xpos+lastShift) : xpos; 
-
-   closestLetter.position.x = result;
-   closestLetter.position.y = ypos;
-   closestLetter.characterIndex = prevCharPos > lastCharPos ? closestLetter.characterIndex : (closestLetter.characterIndex - 1);
-            
-   ASSERT(closestLetter.position.x >= 0, "closestLetter.position.x is negative(e)");
-   ASSERT(closestLetter.position.y >= 0, "closestLetter.position.y is negative(e)");
-   ASSERT(closestLetter.characterIndex >= 0, "closestLetter.characterIndex is negative(e)");
-   ASSERT(closestLetter.charWidth >= 0, "closestLetter.charWidth is negative(e)");
-
-   return closestLetter;
-}
-
-ClosestLetter findCharacterUnderCursor(){
-    // Find out where the cursor is in the text
-    // Find the closest letter to the cursor (getClosestLetterInText) probably need to also return the index of the letter in the text and its char-width.
-    ASSERT(globals.focusedEntityId != -1, "No focused entity");
-    ASSERT(globals.cursorEntityId != -1, "No cursor entity");
- 
-    Vector2 sdlVec = convertUIToSDL(globals.entities[globals.cursorEntityId].transformComponent->position[0], globals.entities[globals.cursorEntityId].transformComponent->position[1]);
-  
-    ASSERT(sdlVec.x >= 0, "Sdl cursor x position is negative");
-    ASSERT(sdlVec.y >= 0, "Sdl cursor y position is negative");
-    return getClosestLetterInText(
-                    globals.entities[globals.focusedEntityId].uiComponent,
-                    sdlVec.x
-        );
-}
-
-/**
- * @brief Delete the character to the left of the cursor.
- * Triggers on backspace key press.
- */
-void handleDeleteButton(){
-    if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) == 0){
-        return;
-    }
-    ClosestLetter closestLetter = findCharacterUnderCursor();
-                 
-    // Remove the letter to the left of the cursor
-    removeCharacter(closestLetter.characterIndex);
-}
-
-
-// Select all text fn
-void selectAllText(){
-
-}
-
-void textCursorSystem(){
-    if(globals.focusedEntityId != -1){
-  
-        // Create cursor
-        if(globals.cursorEntityId == -1){
-            ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);         
-            Vector2 uiVec = convertSDLToUI(closestLetter.position.x, closestLetter.position.y);
-            globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-        }
-        
-        // Blink cursor logic
-        if((int)globals.delta_time % 2 == 0){
-            globals.entities[globals.cursorEntityId].uiComponent->active = 0;
-        }else {
-            globals.entities[globals.cursorEntityId].uiComponent->active = 1;
-        }
-    }else{
-        if(globals.cursorEntityId != -1){
-            deleteEntity(&globals.entities[globals.cursorEntityId]);
-            globals.cursorEntityId = -1;
-        }
-    }
-}
-
-/**
- * @brief Model system
- * Handles model update.
- * Atm we are not handling everything about the model here, just the update of model matrix.
- * Movement is handled in the input function, but will eventually be moved here or to a separate movement-system. 
- * Perhaps the model matrix update will move there aswell or maybe be handled in some kind of transform hierarchy system, 
- * since groups & hierarchy of entities should be something we would need when we try to build more complex scenes.
- * NOTE: Atm this is more of a placeholder for model matrix update logic, since we only handle rotation on x-axis and not even handling scale change. 
- * So atm only works with rigid body transforms.
- */
-void modelSystem(){
-    // Look for transform needs update flag & update/recalc model matrix if needed.
-     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-           if(globals.entities[i].transformComponent->modelNeedsUpdate == 1) {
-                    // create transformations
-                    mat4x4 model;
-                    mat4x4_identity(model);
-
-                    // set model position
-                    mat4x4_translate(model, globals.entities[i].transformComponent->position[0],globals.entities[i].transformComponent->position[1],globals.entities[i].transformComponent->position[2]);
-
-                    // set model scale
-                    mat4x4_scale_aniso(model, model, globals.entities[i].transformComponent->scale[0],globals.entities[i].transformComponent->scale[1],globals.entities[i].transformComponent->scale[2]);
-                
-                    // rotate model on x, y, and z axes
-                    // The cast on model tells the compiler that you're aware of the 
-                    // const requirement and that you're promising not to modify the model matrix.
-                    mat4x4 rotatedModelX, rotatedModelY, rotatedModelZ;
-                    mat4x4_rotate_X(rotatedModelX, (const float (*)[4])model, globals.entities[i].transformComponent->rotation[0]);
-                    mat4x4_rotate_Y(rotatedModelY, (const float (*)[4])rotatedModelX, globals.entities[i].transformComponent->rotation[1]);
-                    mat4x4_rotate_Z(rotatedModelZ, (const float (*)[4])rotatedModelY, globals.entities[i].transformComponent->rotation[2]);
-
-                    // Copy the rotated model matrix to the transform component
-                    memcpy(globals.entities[i].transformComponent->transform, rotatedModelZ, sizeof(mat4x4));
-
-                    globals.entities[i].transformComponent->modelNeedsUpdate = 0;
-           }
-          }}
-}
-
-void debugSystem(){
-    
-    // Turn off debug draw calls, we only want one frame of drawcalls saved.
-    if(globals.debugDrawCalls){
-        globals.debugDrawCalls = false;
-    }
-       
-}
 
 void update(){
 
@@ -2163,15 +1263,7 @@ void createPoint(vec3 position){
     };
 }
 
-int addMaterial(Material material){
-    globals.materials[globals.materialsCount] = material;
-    globals.materialsCount++;
-    return globals.materialsCount-1;
-}
-Material* getMaterial(int index){
-    ASSERT(index < globals.materialsCount && index >= 0, "Material index out of bounds or not assigned");
-    return &globals.materials[index];
-}
+
      
 /**
  * @brief Create a light

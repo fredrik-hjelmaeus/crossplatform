@@ -1,8 +1,6 @@
 #ifndef OPENGL_TYPES_H   // If OPENGL_TYPES_H isn't defined...
 #define OPENGL_TYPES_H   // Define it (with no particular value)
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "linmath.h"
 
 // wasm/OpenGL ES 3.0
