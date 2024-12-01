@@ -92,6 +92,7 @@ struct Globals globals = {
     .mouseYpos=0.0f,
     .mouseLeftButtonPressed=false,
     .mouseDoubleClick=false,
+    .deselectCondition=false,
 
     .drawBoundingBoxes=false,
     .render=true,
@@ -486,7 +487,7 @@ void handleKeyInput(){
  * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
  */
 void input() {
-   
+    
     // Process events
     while(pollEvent()) {
         
@@ -526,7 +527,6 @@ void input() {
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
             SDL_GetWindowSize(globals.window, &w, &h);
-          
             recalculateViewports(w,h);
             
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
@@ -534,8 +534,13 @@ void input() {
         }
        
         if (globals.event.type == SDL_MOUSEBUTTONUP) {
-            // A button was released
-            globals.mouseLeftButtonPressed = false;
+           // A button was released
+           globals.mouseLeftButtonPressed = false;
+           
+           if(globals.cursorSelectionActive){
+                globals.deselectCondition = true;
+           }
+
            
             
         }

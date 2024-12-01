@@ -389,43 +389,68 @@ void hoverAndClickSystem(){
 
 void textCursorSystem(){
     
-   
-
     if(globals.focusedEntityId != -1){
+        bool cursorExist = globals.cursorEntityId != -1;
+        bool onBlur = !isPointInsideRect(globals.entities[globals.focusedEntityId].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos});
 
-        if(globals.mouseLeftButtonPressed && globals.cursorEntityId != -1){
-          
-            // Logic to know this is not the first click
-            // Logic to only run this once per click
-            // Logic here to reposition cursor
-            // Logic for double click, to select all text
-            if(globals.mouseDoubleClick){
-          
-                selectAllText(width,height);
-                // Reset state of double click
-                // TODO: Why is this needed?
-                globals.mouseDoubleClick = false;
-            }
-
+        if(cursorExist){
             
-           if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
-            printf("Mouse button pressed\n");
-            // A button was pressed
-            if (globals.event.button.button == SDL_BUTTON_LEFT) {
-                // Left Button Pressed
-                globals.mouseLeftButtonPressed = true;
+            if(globals.mouseLeftButtonPressed){
+                
+                // click and drag to select text
+                
+                
+                // Double click select all text
+                if(globals.mouseDoubleClick == 1 && globals.cursorSelectionActive == false){
+                    selectAllText(width,height);
+                    globals.mouseDoubleClick = 0;
+                }
+
+                // Single click, place cursor where mouse clicked
+                if(globals.mouseDoubleClick == 0 && globals.cursorSelectionActive == false){
+
+                    ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                    SDLVector2 sdlVec;
+                    sdlVec.x = closestLetter.position.x;
+                    sdlVec.y = closestLetter.position.y;         
+                    UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
+                    moveCursor(uiVec.x);
+                }
+
+                // Single click, deselect text
+                if(globals.cursorSelectionActive && globals.deselectCondition){
+                    globals.cursorSelectionActive = false;
+                    globals.deselectCondition = false;
+                }
+                
             }
-        }  
-        if (globals.event.type == SDL_MOUSEBUTTONUP) {
-            // A button was released
-            globals.mouseLeftButtonPressed = false;
-        }
-            // Logic for click and drag to select text
+
+            // Blink cursor logic
+            if(globals.entities[globals.cursorEntityId].uiComponent->active == 1){
+                if(globals.delta_time - globals.cursorBlinkTime > 0.6f){
+                    globals.cursorBlinkTime = globals.delta_time;
+                    globals.entities[globals.cursorEntityId].uiComponent->active = 0;
+                }
+            }else {
+                if(globals.delta_time - globals.cursorBlinkTime > 0.6f){
+                    globals.cursorBlinkTime = globals.delta_time;
+                    globals.entities[globals.cursorEntityId].uiComponent->active = 1;
+                }
+            }
+            if(globals.cursorSelectionActive){
+                globals.entities[globals.cursorEntityId].uiComponent->active = 1;
+            }else{
+                
+                // Set mouse cursor scale to normal scale
+               // float halfScale = globals.entities[globals.cursorEntityId].transformComponent->scale[0] * 0.5f;
+                globals.entities[globals.cursorEntityId].transformComponent->scale[0] = 3.0f;
+                
+            }
         }
         
   
         // Create cursor
-        if(globals.cursorEntityId == -1){
+        if(!cursorExist){
             ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
             SDLVector2 sdlVec;
             sdlVec.x = closestLetter.position.x;
@@ -434,30 +459,9 @@ void textCursorSystem(){
             globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
         }
         
-     
-        // Blink cursor logic
-        if(globals.entities[globals.cursorEntityId].uiComponent->active == 1){
-            if(globals.delta_time - globals.cursorBlinkTime > 0.6f){
-                globals.cursorBlinkTime = globals.delta_time;
-                globals.entities[globals.cursorEntityId].uiComponent->active = 0;
-            }
-        }else {
-            if(globals.delta_time - globals.cursorBlinkTime > 0.6f){
-                globals.cursorBlinkTime = globals.delta_time;
-                globals.entities[globals.cursorEntityId].uiComponent->active = 1;
-            }
-        }
-        if(globals.cursorSelectionActive){
-            globals.entities[globals.cursorEntityId].uiComponent->active = 1;
-        }else{
-            
-            // Set mouse cursor scale to normal scale
-            float halfScale = globals.entities[globals.cursorEntityId].transformComponent->scale[0] * 0.5f;
-            globals.entities[globals.cursorEntityId].transformComponent->scale[0] = 3.0f;
-        }
-      
- 
     }else{
+
+        // When we are not focused on an input field, we should remove the cursor.
         if(globals.cursorEntityId != -1){
             deleteEntity(&globals.entities[globals.cursorEntityId]);
             globals.cursorEntityId = -1;

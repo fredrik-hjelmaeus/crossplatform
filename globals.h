@@ -61,6 +61,7 @@ struct Globals {
     int cursorEntityId;
     float cursorBlinkTime;
     bool cursorSelectionActive;
+    bool deselectCondition;
 };
 
 extern struct Globals globals;
