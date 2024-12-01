@@ -4,6 +4,45 @@
 #include "globals.h"
 #include "api.h"
 
+ClosestLetter getCharacterByIndexIndex(int index){
+
+    const char* text = globals.entities[globals.focusedEntityId].uiComponent->text;
+    if(index > strlen(text)){
+        return;
+    }
+    float x = (float)globals.entities[globals.focusedEntityId].uiComponent->boundingBox.x; 
+    float y = (float)globals.entities[globals.focusedEntityId].uiComponent->boundingBox.y 
+    + ((float)globals.entities[globals.focusedEntityId].uiComponent->boundingBox.height / 2);
+    float scale = globals.charScale;
+    float xpos = 0.0f;
+    float ypos = 0.0f;
+    float lastShift = 0.0f;
+    ClosestLetter closestLetter;
+    closestLetter.characterIndex = 0;
+    closestLetter.position = (Vector2){0.0f, 0.0f};
+
+    for (unsigned char c = 0; c <= index; c++) {
+        Character ch = globals.characters[text[c]];
+
+        // Calculate the position of the current character
+        xpos = x + (float)ch.Bearing[0] * scale;
+        ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
+
+        float w = (float)ch.Size[0] * scale;
+        float h = (float)ch.Size[1] * scale;    
+        
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        lastShift = (float)(ch.Advance >> 6) * scale;
+        x += lastShift; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+        closestLetter.characterIndex = c;
+        closestLetter.charWidth = (float)ch.Bearing[0] * scale + lastShift; 
+        closestLetter.position.x = xpos;
+        closestLetter.position.y = ypos;
+    }
+
+    return closestLetter;
+}
+
 /**
  * @brief Get the closest letter position in the text to the given mouse X position.
  * 
@@ -12,7 +51,7 @@
  * @return Vector2 The position of the closest letter.
  */
 ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
-    const char* text = uiComponent->text;
+    char* text = uiComponent->text;
     float x = (float)uiComponent->boundingBox.x; 
     float y = (float)uiComponent->boundingBox.y + ((float)uiComponent->boundingBox.height / 2);   //(float)globals.characters[0].Size[1]; 
     float scale = globals.charScale; // Character size, also set when renderText is called (they should be in sync)
@@ -22,7 +61,7 @@ ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
     float lastShift = 0.0f;
     ClosestLetter closestLetter;
     closestLetter.characterIndex = 0;
-    closestLetter.position = (Vector2){0.0f, 0.0f};
+    closestLetter.position = (Vector2){x, 0.0f};
     if(strlen(text) == 0){
         return closestLetter;
     }
@@ -46,7 +85,7 @@ ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
             closestLetter.position.x = xpos - (float)ch.Bearing[0] * scale - lastShift;
             closestLetter.position.y = ypos;
             closestLetter.characterIndex = c - 1; 
-            closestLetter.charWidth = (float)ch.Bearing[0] * scale + lastShift;
+            closestLetter.charWidth = w + (float)ch.Bearing[0] * scale;//lastShift; // (float)ch.Bearing[0] * scale; //+ lastShift;
             ASSERT(closestLetter.position.x >= 0, "closestLetter.position.x is negative");
             ASSERT(closestLetter.position.y >= 0, "closestLetter.position.y is negative");
             ASSERT(closestLetter.characterIndex >= 0, "closestLetter.characterIndex is negative");
@@ -87,6 +126,9 @@ void selectAllText(int width, int height){
     if(length == 0){
         return;
     }
+
+   globals.cursorSelectionActive = true;
+
     // Calculate width of the input field
     float xMin = globals.entities[globals.focusedEntityId].uiComponent->boundingBox.x;
     float xMax = xMin + globals.entities[globals.focusedEntityId].uiComponent->boundingBox.width;
@@ -113,8 +155,6 @@ void selectAllText(int width, int height){
     globals.entities[globals.cursorEntityId].transformComponent->scale[0] = lastLetterUIpos.x;
     globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
     
-    //ui_createRectangle(globals.materials[0], (vec3){rectangleStartPos, firstLetterUIpos.y, 2.0f}, (vec3){lastLetterUIpos.x, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   
 }
 
 /**

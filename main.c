@@ -85,13 +85,18 @@ struct Globals globals = {
         .main={{0, 0, width, height}, {1.0f, 0.0f, 0.0f, 1.0f},NULL,false},
         .full={{0, 0, width, height}, {0.0f, 0.0f, 0.0f, 1.0f} ,NULL,false},
     },
+
+    // Mouse
     .firstMouse=1,
     .mouseXpos=0.0f,
     .mouseYpos=0.0f,
     .mouseLeftButtonPressed=false,
+    .mouseDoubleClick=false,
+
     .drawBoundingBoxes=false,
     .render=true,
     .gpuFontData={0,0,0,0,0,0,GL_TRIANGLES},
+    .charScale=0.5f,
     .unitScale=100.0f, // 1 unit = 1 cm 
     .culling=false,
     .drawCallsCounter=0,
@@ -104,10 +109,12 @@ struct Globals globals = {
     .lights={0},
     .lightsCount=0,
     .focusedEntityId=-1,
+
+    // Cursor
     .cursorEntityId=-1,
-    .charScale=0.5f,
-    .lastMouseClickTime=0.0f,
-    .mouseDoubleClick=false
+    .cursorBlinkTime=0.5f,
+    .cursorSelectionActive=false
+    
 };
 
 // Colors
@@ -504,7 +511,7 @@ void input() {
                 
             } else if (globals.event.button.button == SDL_BUTTON_RIGHT) {
                 
-                //printf("Right button pressed\n");
+              
             }
         } 
         if(globals.event.type == SDL_KEYDOWN) {
@@ -519,7 +526,7 @@ void input() {
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
             SDL_GetWindowSize(globals.window, &w, &h);
-            //printf("New Window size: %d x %d\n", w, h);
+          
             recalculateViewports(w,h);
             
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
@@ -529,12 +536,8 @@ void input() {
         if (globals.event.type == SDL_MOUSEBUTTONUP) {
             // A button was released
             globals.mouseLeftButtonPressed = false;
-            if(globals.lastMouseClickTime-globals.delta_time > 0.5f){
-                printf("Mouse button held down for too long for doubleclick\n");
-            }else {
-                globals.lastMouseClickTime = globals.delta_time;
-            }
-            //printf("Mouse button released\n");
+           
+            
         }
         if (globals.event.type == SDL_MOUSEMOTION) {
             int xpos =  globals.event.motion.x;
@@ -544,7 +547,7 @@ void input() {
             globals.mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
-            printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
+            //printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
               /* float x_ndc = (2.0f * xpos) / width - 1.0f;
               float y_ndc = 1.0f - (2.0f * ypos) / height;
@@ -554,7 +557,7 @@ void input() {
               //printf("Mouse moved to %f, %f\n", mouseX, mouseY);
             SDLVector2 sdlMouseCoords = {xpos, ypos};
             UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
-            printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
+           //printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
             // END TEMP CODE------------------
 
             if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
@@ -569,9 +572,7 @@ void input() {
      
             if(isPointInsideRect(globals.views.ui.rect, (vec2){xpos, ypos})){
                 globals.views.ui.isMousePointerWithin = true; 
-                /* float degrees = 15.5f * globals.delta_time;
-                float radians = degrees * M_PI / 180.0f;  */ 
-               // printf("Mouse is within ui view\n ");
+              
                 
                
             }else{

@@ -54,11 +54,13 @@ struct Globals {
     int materialsCapacity;
     int objDataCapacity;
     int focusedEntityId;
-    int cursorEntityId;
-    float cursorBlinkInterval;
     float charScale;
-    float lastMouseClickTime;
     bool mouseDoubleClick;
+
+    // Cursor
+    int cursorEntityId;
+    float cursorBlinkTime;
+    bool cursorSelectionActive;
 };
 
 extern struct Globals globals;

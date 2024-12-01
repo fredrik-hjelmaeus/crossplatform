@@ -8,7 +8,7 @@
 #include "api.h"
 
 void moveCursor(float x){
-    globals.entities[globals.cursorEntityId].transformComponent->position[0] += x;
+    globals.entities[globals.cursorEntityId].transformComponent->position[0] = x;
     globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
 }
 /**
@@ -38,15 +38,48 @@ void uiInputSystem(){
             const char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
             
             bool isSpaceKey = false;
+            bool isSelectionActive = globals.cursorSelectionActive;
             
             // Special keys
             if(strcmp(key, "Left") == 0){
-                moveCursor(findCharacterUnderCursor(width,height).charWidth*-1.0);
+               if(isSelectionActive){
+                    globals.cursorSelectionActive = false;
+                    ClosestLetter letter = getCharacterByIndexIndex(0);
+                    SDLVector2 sdlVec;
+                    sdlVec.x = letter.position.x;
+                    sdlVec.y = letter.position.y;
+                    UIVector2 uiLetterPos = convertSDLToUI(sdlVec,width,height);
+                    moveCursor(uiLetterPos.x);
+               }else {
+                    ClosestLetter cursorLetter = findCharacterUnderCursor(width,height);
+                    ClosestLetter letter = getCharacterByIndexIndex(cursorLetter.characterIndex);
+                    SDLVector2 sdlVec;
+                    sdlVec.x = letter.position.x - letter.charWidth;
+                    sdlVec.y = letter.position.y;
+                    UIVector2 uiLetterPos = convertSDLToUI(sdlVec,width,height);
+                    moveCursor(uiLetterPos.x);
+               }
                 return;
             }
             if(strcmp(key, "Right") == 0){
-                moveCursor(findCharacterUnderCursor(width,height).charWidth);
-                return;
+                if(isSelectionActive){
+                    globals.cursorSelectionActive = false;
+                    int textLength = strlen(globals.entities[globals.focusedEntityId].uiComponent->text);
+                    ClosestLetter letter = getCharacterByIndexIndex(textLength);
+                    SDLVector2 sdlVec;
+                    sdlVec.x = letter.position.x;
+                    sdlVec.y = letter.position.y;
+                    UIVector2 uiLetterPos = convertSDLToUI(sdlVec,width,height);
+                    moveCursor(uiLetterPos.x);
+               }else {
+                    ClosestLetter letter = findCharacterUnderCursor(width,height);
+                    SDLVector2 sdlVec;
+                    sdlVec.x = letter.position.x + letter.charWidth;
+                    sdlVec.y = letter.position.y;
+                    UIVector2 uiLetterPos = convertSDLToUI(sdlVec,width,height);
+                    moveCursor(uiLetterPos.x);
+               }
+               return;
             }
             if(strcmp(key, "Space") == 0){
                 isSpaceKey = true;
@@ -355,11 +388,11 @@ void hoverAndClickSystem(){
 }
 
 void textCursorSystem(){
-           /*  printf("event btn pressed %d \n ", globals.event.button.timestamp);
-            printf("event btn clicks %d \n ", globals.event.button.clicks);
-            printf("event btn type %d \n ", globals.event.button.type); */
+    
+   
 
     if(globals.focusedEntityId != -1){
+
         if(globals.mouseLeftButtonPressed && globals.cursorEntityId != -1){
           
             // Logic to know this is not the first click
@@ -367,7 +400,7 @@ void textCursorSystem(){
             // Logic here to reposition cursor
             // Logic for double click, to select all text
             if(globals.mouseDoubleClick){
-                printf("double clickED\n");
+          
                 selectAllText(width,height);
                 // Reset state of double click
                 // TODO: Why is this needed?
@@ -381,18 +414,11 @@ void textCursorSystem(){
             if (globals.event.button.button == SDL_BUTTON_LEFT) {
                 // Left Button Pressed
                 globals.mouseLeftButtonPressed = true;
-             
-         
-                //printf("Left button pressed\n");
             }
         }  
         if (globals.event.type == SDL_MOUSEBUTTONUP) {
             // A button was released
             globals.mouseLeftButtonPressed = false;
-           
-
-
-            //printf("Mouse button released\n");
         }
             // Logic for click and drag to select text
         }
@@ -408,12 +434,29 @@ void textCursorSystem(){
             globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
         }
         
+     
         // Blink cursor logic
-        if((int)globals.delta_time % 2 == 0){
-            globals.entities[globals.cursorEntityId].uiComponent->active = 0;
+        if(globals.entities[globals.cursorEntityId].uiComponent->active == 1){
+            if(globals.delta_time - globals.cursorBlinkTime > 0.6f){
+                globals.cursorBlinkTime = globals.delta_time;
+                globals.entities[globals.cursorEntityId].uiComponent->active = 0;
+            }
         }else {
-            globals.entities[globals.cursorEntityId].uiComponent->active = 1;
+            if(globals.delta_time - globals.cursorBlinkTime > 0.6f){
+                globals.cursorBlinkTime = globals.delta_time;
+                globals.entities[globals.cursorEntityId].uiComponent->active = 1;
+            }
         }
+        if(globals.cursorSelectionActive){
+            globals.entities[globals.cursorEntityId].uiComponent->active = 1;
+        }else{
+            
+            // Set mouse cursor scale to normal scale
+            float halfScale = globals.entities[globals.cursorEntityId].transformComponent->scale[0] * 0.5f;
+            globals.entities[globals.cursorEntityId].transformComponent->scale[0] = 3.0f;
+        }
+      
+ 
     }else{
         if(globals.cursorEntityId != -1){
             deleteEntity(&globals.entities[globals.cursorEntityId]);

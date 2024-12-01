@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+ClosestLetter getCharacterByIndexIndex(int index);
 ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX);
 void selectAllText(int width, int height);
 void handleDeleteButton(int width,int height);
