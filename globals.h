@@ -37,6 +37,7 @@ struct Globals {
     float mouseXpos;
     float mouseYpos;
     bool mouseLeftButtonPressed;
+    bool mouseDragged;
     bool drawBoundingBoxes;
     Character characters[128];
     bool render;
@@ -62,6 +63,7 @@ struct Globals {
     float cursorBlinkTime;
     bool cursorSelectionActive;
     bool deselectCondition;
+    float cursorDragStart;
 };
 
 extern struct Globals globals;

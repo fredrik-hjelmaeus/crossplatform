@@ -93,6 +93,7 @@ struct Globals globals = {
     .mouseLeftButtonPressed=false,
     .mouseDoubleClick=false,
     .deselectCondition=false,
+    .mouseDragged=false,
 
     .drawBoundingBoxes=false,
     .render=true,
@@ -114,7 +115,8 @@ struct Globals globals = {
     // Cursor
     .cursorEntityId=-1,
     .cursorBlinkTime=0.5f,
-    .cursorSelectionActive=false
+    .cursorSelectionActive=false,
+    .cursorDragStart=-1.0f
     
 };
 
@@ -507,9 +509,6 @@ void input() {
                 // Left Button Pressed
                 globals.mouseLeftButtonPressed = true;
                 
-                
-                
-                
             } else if (globals.event.button.button == SDL_BUTTON_RIGHT) {
                 
               
@@ -540,11 +539,16 @@ void input() {
            if(globals.cursorSelectionActive){
                 globals.deselectCondition = true;
            }
+          globals.mouseDragged = false;
 
            
             
         }
         if (globals.event.type == SDL_MOUSEMOTION) {
+            if(globals.mouseLeftButtonPressed){
+                globals.mouseDragged = true;
+            }
+
             int xpos =  globals.event.motion.x;
             int ypos = globals.event.motion.y;
 

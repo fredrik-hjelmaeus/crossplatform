@@ -398,7 +398,40 @@ void textCursorSystem(){
             if(globals.mouseLeftButtonPressed){
                 
                 // click and drag to select text
-                
+                if(globals.mouseDragged){
+        
+                    // Find closest letter to cursor on dragstart
+                    if(globals.cursorDragStart == -1.0f){
+                        ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                        SDLVector2 sdlVec;
+                        sdlVec.x = closestLetter.position.x;
+                        sdlVec.y = closestLetter.position.y;         
+                        UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
+                        moveCursor(uiVec.x);
+                        globals.cursorDragStart = uiVec.x;
+                    }
+
+                    // Find closest letter to cursor on dragend
+                    ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                    SDLVector2 sdlVec;
+                    sdlVec.x = closestLetter.position.x;
+                    sdlVec.y = closestLetter.position.y;         
+                    UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
+                    moveCursor(uiVec.x);
+                    
+                    // Draw selection
+                    globals.cursorSelectionActive = true;
+                    float rectangleStartPos = globals.cursorDragStart - (uiVec.x * 0.5);
+                    float selectionWidth = uiVec.x - globals.cursorDragStart;
+
+                    // Set cursor to be a new width & position 
+                    globals.entities[globals.cursorEntityId].transformComponent->position[0] = globals.cursorDragStart + (selectionWidth * 0.5);
+                    globals.entities[globals.cursorEntityId].transformComponent->scale[0] = selectionWidth;
+                    globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
+
+                }else if(globals.cursorDragStart){
+                    globals.cursorDragStart = -1.0f;
+                }
                 
                 // Double click select all text
                 if(globals.mouseDoubleClick == 1 && globals.cursorSelectionActive == false){
@@ -446,8 +479,7 @@ void textCursorSystem(){
                 globals.entities[globals.cursorEntityId].transformComponent->scale[0] = 3.0f;
                 
             }
-        }
-        
+        } 
   
         // Create cursor
         if(!cursorExist){
