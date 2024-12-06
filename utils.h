@@ -20,10 +20,12 @@
 #define TEXT_COLOR_CYAN "\033[1;36m"
 #define TEXT_COLOR_MAGENTA "\033[1;35m"
 #define TEXT_COLOR_ORANGE "\033[1;33m"
+#define TEXT_COLOR hexToColor("#bbbcc4")
 
 // Common colors
-#define GRAY_COLOR hexToColor("#333333")
-#define DARK_GRAY_COLOR hexToColor("#1A1A1A")
+#define GRAY_COLOR hexToColor("#3d3f45")
+#define DARK_GRAY_COLOR hexToColor("#2f3137")
+#define DARK_INPUT_FIELD hexToColor("#26272C")
 
 SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight);
 UIVector2 convertSDLToUI(SDLVector2 v, int screenWidth, int screenHeight);

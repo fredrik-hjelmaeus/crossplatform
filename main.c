@@ -99,6 +99,8 @@ struct Globals globals = {
     .render=true,
     .gpuFontData={0,0,0,0,0,0,GL_TRIANGLES},
     .charScale=0.5f,
+    .fontSize=26,
+    .textColor={187.0/255.0,188.0/255.0,196.0/255.0,1.0},
     .unitScale=100.0f, // 1 unit = 1 cm 
     .culling=false,
     .drawCallsCounter=0,
@@ -737,7 +739,7 @@ void render(){
                             &globals.gpuFontData, 
                             globals.entities[i].uiComponent->text, 
                             result[0],result[1],
-                            globals.charScale,(Color){1.0f, 1.0f, 0.0f});
+                            globals.charScale,globals.textColor);
                     }
                 }
         }
@@ -776,7 +778,7 @@ void initOpenGLWindow(){
  * And then you can render text using renderText.
  */
 void initFont(){
-    setupFontTextures("./Assets/ARIAL.TTF",48);
+    setupFontTextures("./Assets/ARIAL.TTF",globals.fontSize);
     setupFontMesh(&globals.gpuFontData);
     setupFontMaterial(&globals.gpuFontData,width,height);
 }
@@ -839,15 +841,26 @@ void initScene(){
     .diffuseMapOpacity = 1.0f,                  // used
     .specularMap = containerTwoSpecularMap,      // used
     };
-    struct Material uiMaterial = {
+    struct Material textureUIMatExample = { // Saved as example of how to use a texture with ui element.
         .active = 1,
-        .name = "uiMaterial",
+        .name = "textureUIMatExample",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
         .diffuse = (Color){0.5f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
         .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
         .shininess = 4.0f,                           // NOT used
         .diffuseMap = containerTwoMap,               // used
         .diffuseMapOpacity = 1.0f,                    // used
+        .specularMap = containerTwoSpecularMap,      // NOT used
+    };
+    struct Material textInputUiMat = { // Saved as example of how to use a texture with ui element.
+        .active = 1,
+        .name = "textInputUiMat",
+        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
+        .diffuse = DARK_INPUT_FIELD,  // used when diffuseMapOpacity lower than 1.0
+        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
+        .shininess = 4.0f,                           // NOT used
+        .diffuseMap = containerTwoMap,               // used
+        .diffuseMapOpacity = 0.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
     };
     struct Material flatColorUiDarkGrayMat = {
@@ -931,7 +944,7 @@ void initScene(){
  
   // UI Settings Panel
   ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
-  ui_createTextInput(flatColorUiGrayMat, (vec3){200.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange);
+  ui_createTextInput(textInputUiMat, (vec3){565.0f, 65.0f, 1.0f}, (vec3){200.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange);
     //ui_slider(flatColorUiDarkGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider",onSliderChange);
     //ui_colorPicker(flatColorUiDarkGrayMat, (vec3){545.0f, 105.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "ColorPicker",onColorPickerChange);
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});

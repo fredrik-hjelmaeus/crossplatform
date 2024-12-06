@@ -384,11 +384,13 @@ void hoverAndClickSystem(){
                          if(strlen(globals.entities[i].uiComponent->text) > 0){
                                // printf("no action,disable actions\n");
                             } 
+                        Material *material = getMaterial(globals.entities[i].materialComponent->materialIndex);
                         globals.entities[i].uiComponent->hovered = 0;
                         globals.entities[i].uiComponent->clicked = 0;
-                        globals.entities[i].materialComponent->diffuseMapOpacity = getMaterial(globals.entities[i].materialComponent->materialIndex)->diffuseMapOpacity;
-                        globals.entities[i].materialComponent->diffuse.r = 0.0f;
-                        globals.entities[i].materialComponent->diffuse.g= 0.0f;
+                        globals.entities[i].materialComponent->diffuseMapOpacity = material->diffuseMapOpacity;
+                        globals.entities[i].materialComponent->diffuse.r = material->diffuse.r;
+                        globals.entities[i].materialComponent->diffuse.g = material->diffuse.g;
+                        globals.entities[i].materialComponent->diffuse.b = material->diffuse.b;
                     }
             }
         }
@@ -498,7 +500,7 @@ void textCursorSystem(){
             sdlVec.x = closestLetter.position.x;
             sdlVec.y = closestLetter.position.y;         
             UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
-            globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+            globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
         }
         
     }else{

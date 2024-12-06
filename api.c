@@ -26,7 +26,7 @@ void createMesh(
     Entity* entity,
     bool saveMaterial // save material to global list
     ){
-
+ 
     entity->meshComponent->active = 1;
 
     // vertex data
@@ -543,6 +543,7 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
     entity->uiComponent->uiNeedsUpdate = 1;
     entity->uiComponent->onChange = onChange;
     entity->uiComponent->type = UITYPE_INPUT;
+
     
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 

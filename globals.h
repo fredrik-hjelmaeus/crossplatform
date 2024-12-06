@@ -40,6 +40,8 @@ struct Globals {
     bool mouseDragged;
     bool drawBoundingBoxes;
     Character characters[128];
+    int fontSize;
+    Color textColor;
     bool render;
     GpuData gpuFontData;
     float unitScale;
