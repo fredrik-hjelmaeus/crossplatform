@@ -15,9 +15,6 @@ void moveCursor(float x){
  * @brief UI input system
  * Handles input on UI elements.
  * TODO: memory leak, we are not deallocating the textCopy memory.
- * TODO: Support !?#
- * TODO: Support arrow keys for moving cursor
- * TODO: Support selecting text
  * TODO: Support remove selected text part
  * TODO: Support copy/paste
  * TODO: Support undo/redo
@@ -28,6 +25,7 @@ void moveCursor(float x){
  * TODO: Support input focus indicator
  * TODO: Support values change from outside the input field
  * TODO: Support input field disabled state
+ * TODO: Home button should put cursor on index 0
  * BUG:  Empty field bugs out on input
  * BUG:  Too far typing to into the right of input field bugs out
  * BUG:  BackSpace in middle of a text should remove left character
@@ -44,7 +42,7 @@ void uiInputSystem(){
             if(strcmp(key, "Left") == 0){
                if(isSelectionActive){
                     globals.cursorSelectionActive = false;
-                    ClosestLetter letter = getCharacterByIndexIndex(0);
+                    ClosestLetter letter = getCharacterByIndex(0);
                     SDLVector2 sdlVec;
                     sdlVec.x = letter.position.x;
                     sdlVec.y = letter.position.y;
@@ -52,20 +50,20 @@ void uiInputSystem(){
                     moveCursor(uiLetterPos.x);
                }else {
                     ClosestLetter cursorLetter = findCharacterUnderCursor(width,height);
-                    ClosestLetter letter = getCharacterByIndexIndex(cursorLetter.characterIndex);
+                    ClosestLetter letter = getCharacterByIndex(cursorLetter.characterIndex);
                     SDLVector2 sdlVec;
                     sdlVec.x = letter.position.x - letter.charWidth;
                     sdlVec.y = letter.position.y;
                     UIVector2 uiLetterPos = convertSDLToUI(sdlVec,width,height);
                     moveCursor(uiLetterPos.x);
                }
-                return;
+               return;
             }
             if(strcmp(key, "Right") == 0){
                 if(isSelectionActive){
                     globals.cursorSelectionActive = false;
                     int textLength = strlen(globals.entities[globals.focusedEntityId].uiComponent->text);
-                    ClosestLetter letter = getCharacterByIndexIndex(textLength);
+                    ClosestLetter letter = getCharacterByIndex(textLength);
                     SDLVector2 sdlVec;
                     sdlVec.x = letter.position.x;
                     sdlVec.y = letter.position.y;
@@ -92,6 +90,17 @@ void uiInputSystem(){
             }
             if(strcmp(key, "Delete") == 0){
                 ASSERT(globals.focusedEntityId != -1, "No focused entity");
+
+                if(isSelectionActive){
+                    ClosestLetter letter = getCharacterByIndex(globals.cursorTextSelection[0]);
+                    SDLVector2 sdlVec;
+                    sdlVec.x = letter.position.x;
+                    sdlVec.y = letter.position.y;
+                    UIVector2 uiLetterPos = convertSDLToUI(sdlVec,width,height);
+                    moveCursor(uiLetterPos.x);
+                    deleteTextRange(globals.cursorTextSelection[0],globals.cursorTextSelection[1]);
+                    return;
+                }
                 handleDeleteButton(width,height);
                 return;
             }
@@ -399,23 +408,25 @@ void textCursorSystem(){
                 
                 // click and drag to select text
                 if(globals.mouseDragged){
-        
+                   
                     // Find closest letter to cursor on dragstart
                     if(globals.cursorDragStart == -1.0f){
-                        ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                        ClosestLetter closestStartLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                        addIndexToCursorTextSelection((unsigned int)closestStartLetter.characterIndex);
                         SDLVector2 sdlVec;
-                        sdlVec.x = closestLetter.position.x;
-                        sdlVec.y = closestLetter.position.y;         
+                        sdlVec.x = closestStartLetter.position.x;
+                        sdlVec.y = closestStartLetter.position.y;         
                         UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
                         moveCursor(uiVec.x);
                         globals.cursorDragStart = uiVec.x;
                     }
 
                     // Find closest letter to cursor on dragend
-                    ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                    ClosestLetter closestEndLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                    addIndexToCursorTextSelection((unsigned int)closestEndLetter.characterIndex);
                     SDLVector2 sdlVec;
-                    sdlVec.x = closestLetter.position.x;
-                    sdlVec.y = closestLetter.position.y;         
+                    sdlVec.x = closestEndLetter.position.x;
+                    sdlVec.y = closestEndLetter.position.y;         
                     UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
                     moveCursor(uiVec.x);
                     
@@ -475,7 +486,6 @@ void textCursorSystem(){
             }else{
                 
                 // Set mouse cursor scale to normal scale
-               // float halfScale = globals.entities[globals.cursorEntityId].transformComponent->scale[0] * 0.5f;
                 globals.entities[globals.cursorEntityId].transformComponent->scale[0] = 3.0f;
                 
             }
