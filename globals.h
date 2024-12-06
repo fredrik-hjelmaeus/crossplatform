@@ -64,6 +64,7 @@ struct Globals {
     bool cursorSelectionActive;
     bool deselectCondition;
     float cursorDragStart;
+    unsigned int cursorTextSelection[2];
 };
 
 extern struct Globals globals;

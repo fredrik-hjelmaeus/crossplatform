@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "api.h"
 
-ClosestLetter getCharacterByIndexIndex(int index){
+ClosestLetter getCharacterByIndex(int index){
 
     const char* text = globals.entities[globals.focusedEntityId].uiComponent->text;
     if(index > strlen(text)){
@@ -43,6 +43,50 @@ ClosestLetter getCharacterByIndexIndex(int index){
     return closestLetter;
 }
 
+void deleteTextRange(unsigned int startIndex, unsigned int endIndex){
+    char* text = globals.entities[globals.focusedEntityId].uiComponent->text;
+    char* newText = (char*)arena_Alloc(&globals.assetArena, 99 * sizeof(char));
+    
+    int length = strlen(text);
+    if(length == 0){
+        return;
+    }
+    if(startIndex > length || endIndex > length){
+        return;
+    }
+    if(startIndex > endIndex){
+        return;
+    }
+    int j = 0;
+    for(int i = 0; i < length; i++){
+       if(i >= startIndex && i < endIndex){
+         continue;
+       }
+       newText[j] = text[i];
+       j++;
+    }
+    newText[j] = '\0';
+    globals.entities[globals.focusedEntityId].uiComponent->text = newText;
+    globals.cursorSelectionActive = false;
+    globals.cursorTextSelection[0] = 0;
+    globals.cursorTextSelection[1] = 0;
+}
+
+
+void addIndexToCursorTextSelection(unsigned int index){
+    // On the first call, initialize both to the index
+    if (globals.cursorTextSelection[0] == 0 && globals.cursorTextSelection[1] == 0) {
+        globals.cursorTextSelection[0] = index;
+        globals.cursorTextSelection[1] = index;
+        return;
+    }
+
+    if (index < globals.cursorTextSelection[0]) {
+        globals.cursorTextSelection[0] = index;
+    } else if (index > globals.cursorTextSelection[1]) {
+        globals.cursorTextSelection[1] = index;
+    }
+}
 /**
  * @brief Get the closest letter position in the text to the given mouse X position.
  * 
@@ -165,6 +209,7 @@ void handleDeleteButton(int width,int height){
     if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) == 0){
         return;
     }
+
     ClosestLetter closestLetter = findCharacterUnderCursor(width,height);
                  
     // Remove the letter to the left of the cursor

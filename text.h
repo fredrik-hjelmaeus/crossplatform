@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-ClosestLetter getCharacterByIndexIndex(int index);
+ClosestLetter getCharacterByIndex(int index);
 ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX);
 void selectAllText(int width, int height);
 void handleDeleteButton(int width,int height);
@@ -14,6 +14,8 @@ bool isLeftShiftPressed();
 char toUpperCase(char c);
 char toLowerCase(char c);
 char specialLeftShiftHandling(char c);
+void deleteTextRange(unsigned int startIndex, unsigned int endIndex);
+void addIndexToCursorTextSelection(unsigned int index);
 
 
 #endif

@@ -116,7 +116,8 @@ struct Globals globals = {
     .cursorEntityId=-1,
     .cursorBlinkTime=0.5f,
     .cursorSelectionActive=false,
-    .cursorDragStart=-1.0f
+    .cursorDragStart=-1.0f,
+    .cursorTextSelection={0,0}
     
 };
 
