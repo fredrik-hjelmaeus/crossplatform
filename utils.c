@@ -388,7 +388,6 @@ int findTrailingSpaces(const char* str){
  */
 char* obj_handleFilePath(const char* filepath){
 
-
     char* newPath = (char*)arena_Alloc(&globals.assetArena, (strlen(filepath) + 1) * sizeof(char));
     if(isupper(filepath[0]) && filepath[1] == ':'){
         strcpy(newPath,"/mnt/");
@@ -494,6 +493,7 @@ void obj_parseMaterial(const char *filepath){
            char* token = strtok(mtlLine, " ");
            token = strtok(NULL, " ");
            token[strlen(token)] = '\0';
+           // TODO: Does this clash with addMaterial-fn ?
            globals.materials[globals.materialsCount].active = true;
            globals.materials[globals.materialsCount].name = (char*)arena_Alloc(&globals.assetArena, (strlen(token) + 1) * sizeof(char));
            strcpy(globals.materials[globals.materialsCount].name, token);
@@ -520,7 +520,7 @@ void obj_parseMaterial(const char *filepath){
         //Ks, specular color
         if(strncmp(mtlLine, "Ks", 2) == 0){
             sscanf(mtlLine, "Ks %f %f %f", &globals.materials[globals.materialsCount-1].specular.r, &globals.materials[globals.materialsCount-1].specular.g, &globals.materials[globals.materialsCount-1].specular.b);
-            //printf("specular color %f %f %f \n",globals.materials[globals.materialsCount-1].specular.r, globals.materials[globals.materialsCount-1].specular.g, globals.materials[globals.materialsCount-1].specular.b);
+            printf("specular color %f %f %f \n",globals.materials[globals.materialsCount-1].specular.r, globals.materials[globals.materialsCount-1].specular.g, globals.materials[globals.materialsCount-1].specular.b);
             continue;
         }
         //Ke, emissive color
@@ -587,18 +587,22 @@ void obj_parseMaterial(const char *filepath){
         //  keyword and the "filename". 
         //  map_Ka -options args filename
         if(obj_processTextureMap(mtlLine,"map_Ka", &globals.materials[globals.materialsCount-1].ambientMap)){
+            globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_AMBIENTMAP_ENABLED;
             continue;
         }
         //map_Kd   lemur.tga
         if(obj_processTextureMap(mtlLine,"map_Kd", &globals.materials[globals.materialsCount-1].diffuseMap)){
+            globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
             continue;
         }
         //map_Ks   lemur.tga   specular color map
         if(obj_processTextureMap(mtlLine,"map_Ks", &globals.materials[globals.materialsCount-1].specularMap)){
+            globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_SPECULARMAP_ENABLED;
             continue;
         }
         //map_Ns   lemur_spec.tga specular intensity map
         if(obj_processTextureMap(mtlLine,"map_Ns", &globals.materials[globals.materialsCount-1].shininessMap)){
+            globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_SHININESSMAP_ENABLED;
             continue;
         }
         //map_d    lemur_alpha.tga (alpha)

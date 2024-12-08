@@ -488,7 +488,7 @@ void textCursorSystem(){
             }else{
                 
                 // Set mouse cursor scale to normal scale
-                globals.entities[globals.cursorEntityId].transformComponent->scale[0] = 3.0f;
+                globals.entities[globals.cursorEntityId].transformComponent->scale[0] = 1.5f;
                 
             }
         } 
@@ -500,7 +500,7 @@ void textCursorSystem(){
             sdlVec.x = closestLetter.position.x;
             sdlVec.y = closestLetter.position.y;         
             UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
-            globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){3.0f, 25.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+            globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){1.5f, (float)globals.fontSize*0.75f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
         }
         
     }else{

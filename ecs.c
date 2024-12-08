@@ -139,6 +139,10 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->diffuseMap = 0;
     materialComponent->specularMap = 0;
     materialComponent->materialIndex = -1;
+    materialComponent->material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
+    materialComponent->material_flags |= MATERIAL_SPECULARMAP_ENABLED;
+    materialComponent->material_flags |= MATERIAL_AMBIENTMAP_ENABLED;
+    materialComponent->material_flags |= MATERIAL_SHININESSMAP_ENABLED;
 }
 
 void initializeUIComponent(UIComponent* uiComponent){

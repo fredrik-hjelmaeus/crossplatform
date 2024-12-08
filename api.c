@@ -146,8 +146,29 @@ void createMesh(
     entity->materialComponent->specularMap = material->specularMap;
     if(saveMaterial){
         entity->materialComponent->materialIndex = addMaterial(*material);
+    }else {
+        // TODO: temp fix for createObjects. The do not set shininess correctly atm.
+        entity->materialComponent->shininess = 32.0f;
     }
-
+    // TODO: Implement these when we need them.
+   /*  if(!material->ambientMap){
+        // Clear flag
+        material->material_flags &= ~MATERIAL_AMBIENTMAP_ENABLED;
+        // ALT: Toggle the flag: flags ^= FLAG_ENABLED;
+    }
+    if(!material->shininessMap){
+        material->material_flags &= ~MATERIAL_SHININESSMAP_ENABLED;
+    }
+    if(!material->specularMap){
+        material->material_flags &= ~MATERIAL_SPECULARMAP_ENABLED;
+    } */
+    if(material->diffuseMap == 0){
+        material->material_flags &= ~MATERIAL_DIFFUSEMAP_ENABLED; 
+        printf("material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED %d \n",material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED);
+    }
+    
+    entity->materialComponent->material_flags = material->material_flags;
+ 
     entity->meshComponent->gpuData->drawMode = drawMode;
     
     setupMesh(  entity->meshComponent->vertices, 
@@ -544,7 +565,6 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
     entity->uiComponent->onChange = onChange;
     entity->uiComponent->type = UITYPE_INPUT;
 
-    
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
     // Bounding box, reuses the vertices from the rectangle

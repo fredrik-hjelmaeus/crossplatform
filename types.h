@@ -117,6 +117,18 @@ typedef struct Texture {
     char* type;
 } Texture;
 
+#define MATERIAL_DIFFUSEMAP_ENABLED   (1 << 0) // 0b00000001
+#define MATERIAL_SPECULARMAP_ENABLED  (1 << 1) // 0b00000010
+#define MATERIAL_AMBIENTMAP_ENABLED   (1 << 2) // 0b00000100
+#define MATERIAL_SHININESSMAP_ENABLED (1 << 3) // 0b00001000
+
+typedef enum {
+    DIFFUSEMAP_ENABLED   = 1 << 0,
+    SPECULARMAP_ENABLED  = 1 << 1,
+    AMBIENTMAP_ENABLED   = 1 << 2,
+    SHININESSMAP_ENABLED = 1 << 3,
+} Material_flags;
+
 typedef struct Material {
     bool active;
     char* name;
@@ -131,6 +143,7 @@ typedef struct Material {
     GLuint specularMap;
     GLuint shininessMap;
     GLuint ambientMap;
+    unsigned int material_flags;
   //  Texture* normalMap;
     float ior;
     GLuint alpha;
@@ -299,6 +312,7 @@ typedef struct MaterialComponent {
     GLuint diffuseMap;
     GLfloat diffuseMapOpacity;
     GLuint specularMap;
+    unsigned int material_flags;
   //  Texture* normalMap;
 } MaterialComponent;
 

@@ -297,6 +297,14 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, material->diffuseMap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "material.diffuse"), 0);
+    
+    GLint hasDiffuseMapLocation = glGetUniformLocation(buffer->shaderProgram, "material.hasDiffuseMap");
+    if (material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED) {
+        // To enable texturing
+        glUniform1i(hasDiffuseMapLocation, 1);
+    }else{
+        glUniform1i(hasDiffuseMapLocation, 0);
+    }
 
     // Assign specularMap to texture2 slot
     glActiveTexture(GL_TEXTURE1);
@@ -371,7 +379,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityOne->lightComponent->outerCutOff);
     }
-   Entity spotLightEntityTwo_ = globals.lights[1];
+  Entity spotLightEntityTwo_ = globals.lights[1];
    Entity* spotLightEntityTwo = &spotLightEntityTwo_;
     if(spotLightEntityTwo != NULL && spotLightEntityTwo->lightComponent != NULL){
  
@@ -514,9 +522,9 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         // Set the light outerCutOff uniform
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityFour->lightComponent->outerCutOff);
-    }
+    } 
 
-    // Diretional light
+    // Directional light
    Entity directionalLightEntity_ = globals.lights[4];
    Entity* directionalLightEntity = &directionalLightEntity_;
     if(directionalLightEntity != NULL && directionalLightEntity->lightComponent != NULL){
@@ -577,6 +585,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         // Set the light quadratic uniform
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[0].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
+        
     }
     Entity pointLightEntityTwo_ = globals.lights[6];
     Entity* pointLightEntityTwo = &pointLightEntityTwo_;
@@ -620,7 +629,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
 
         // Set lightColor uniform
         GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
-        glUniform3f(lightColorLocation, 0.0f,1.0f,0.0f);
+        glUniform3f(lightColorLocation, 1.0f,1.0f,0.0f);
 
         // Set the light ambient uniform
         GLint plAmbientLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[2].ambient");
@@ -656,7 +665,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
 
         // Set lightColor uniform
         GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
-        glUniform3f(lightColorLocation, 0.0f,1.0f,0.0f);
+        glUniform3f(lightColorLocation, 0.0f,1.0f,1.0f);
 
         // Set the light ambient uniform
         GLint plAmbientLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[3].ambient");
