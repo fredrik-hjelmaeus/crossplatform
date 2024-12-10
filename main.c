@@ -113,6 +113,7 @@ struct Globals globals = {
     .lights={0},
     .lightsCount=0,
     .focusedEntityId=-1,
+    .blinnMode=false,
 
     // Cursor
     .cursorEntityId=-1,
@@ -484,6 +485,12 @@ void handleKeyInput(){
                 globals.views.main.camera->isOrthographic = 0;
                 globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
             }
+            if(strcmp(key, "I") == 0){
+                globals.blinnMode = 1;
+            }
+            if(strcmp(key, "U") == 0){
+                globals.blinnMode = 0;
+            }
 }
 
 /**
@@ -817,8 +824,7 @@ void initScene(){
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
    GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
 
-   
-   
+
     //ObjGroup* truck = obj_loadFile("./Assets/truck.obj"); // Not supported atm, need .obj group support.
     ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
   /*    ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
@@ -833,8 +839,8 @@ void initScene(){
     struct Material objectMaterial = {
     .active = 1,
     .name = "objectMaterial",
-    .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
-    .diffuse = (Color){1.0f, 0.0f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
+    .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // NOT used,controlled from lightmaterial
+    .diffuse = (Color){0.5f, 0.0f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0 (may not be true anymore)
     .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
     .shininess = 32.0f,                           // used
     .diffuseMap = containerTwoMap,               // used
@@ -888,9 +894,9 @@ void initScene(){
     struct Material lightMaterial = {
         .active = 1,
         .name = "lightMaterial",
-        .ambient = (Color){0.1f, 0.1f, 0.1f, 1.0f},  // used
-        .diffuse = (Color){0.1f, 0.1f, 0.1f, 1.0f},  // used
-        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // used
+        .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used       <-- ambient strength & tint
+        .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used       <-- diffuse strength & tint
+        .specular = (Color){1.0f,1.0f, 1.0f, 1.0f}, // used        <-- specular strength & tint
         .shininess = 32.0f,                         // NOT used
         .diffuseMap = containerMap,                  // NOT used
         .diffuseMapOpacity = 1.0f,                  // NOT used
@@ -899,22 +905,22 @@ void initScene(){
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-    createObject(&cornell_box->objData[0],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[1],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[2],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[3],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[4],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[5],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[6],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[7],(vec3){2.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    createObject(&cornell_box->objData[0],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[1],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[2],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[3],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[4],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[5],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[6],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[7],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
  
-    createObject(&textured_objects->objData[0],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-   createObject(&textured_objects->objData[1],(vec3){0.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    createObject(&textured_objects->objData[0],(vec3){-5.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    createObject(&textured_objects->objData[1],(vec3){-5.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
    
- // createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   // createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
-   // createObject(VIEWPORT_MAIN,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   //  createObject(VIEWPORT_MAIN,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    //createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    //createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    //createObject(VIEWPORT_MAIN,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    //createObject(VIEWPORT_MAIN,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
@@ -932,8 +938,8 @@ void initScene(){
     createLight(lightMaterial,(vec3){-8.7f, 0.2f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);    
 
     // Primitives
-    //createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){90.0f, 0.0f, 0.0f});
-    //createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){-90.0f, 0.0f, 0.0f});
+    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
 
 
@@ -943,17 +949,18 @@ void initScene(){
    // TODO: implement rotation, it is atm not affecting. 
  
   // UI Settings Panel
-   /*  ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
+    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
     ui_createTextInput(textInputUiMat, (vec3){565.0f, 65.0f, 1.0f}, (vec3){200.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange);
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 55.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",onButtonClick);
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  */
+    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
     
     //ui_slider(flatColorUiDarkGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider",onSliderChange);
     //ui_colorPicker(flatColorUiDarkGrayMat, (vec3){545.0f, 105.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "ColorPicker",onColorPickerChange);
     //ui_checkbox
+    //ui_open_file (texture,obj-model,.fh-packfile,)
 
 
  //ui_createRectangle(uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});

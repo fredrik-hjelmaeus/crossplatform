@@ -162,9 +162,8 @@ void createMesh(
     if(!material->specularMap){
         material->material_flags &= ~MATERIAL_SPECULARMAP_ENABLED;
     } */
-    if(material->diffuseMap == 0){
+    if(material->diffuseMap == 0){ //|| material->diffuseMapOpacity == 0.0
         material->material_flags &= ~MATERIAL_DIFFUSEMAP_ENABLED; 
-        printf("material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED %d \n",material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED);
     }
     
     entity->materialComponent->material_flags = material->material_flags;
@@ -428,6 +427,9 @@ void createCube(Material material,vec3 position,vec3 scale,vec3 rotation){
     };
 
     Entity* entity = addEntity(MODEL);
+
+    material.diffuseMapOpacity = 1.0;
+    material.material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
     
     createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
      
@@ -448,6 +450,9 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
     0, 1, 2, // First triangle
     2, 3, 0  // Second triangle
     };
+
+    material.diffuseMapOpacity = 1.0;
+    material.material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
    
     Entity* entity = addEntity(MODEL);
 

@@ -592,6 +592,7 @@ void obj_parseMaterial(const char *filepath){
         }
         //map_Kd   lemur.tga
         if(obj_processTextureMap(mtlLine,"map_Kd", &globals.materials[globals.materialsCount-1].diffuseMap)){
+            globals.materials[globals.materialsCount-1].diffuseMapOpacity = 1.0;
             globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
             continue;
         }

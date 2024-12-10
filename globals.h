@@ -59,6 +59,7 @@ struct Globals {
     int focusedEntityId;
     float charScale;
     bool mouseDoubleClick;
+    bool blinnMode;
 
     // Cursor
     int cursorEntityId;

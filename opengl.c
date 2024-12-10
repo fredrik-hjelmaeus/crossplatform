@@ -297,13 +297,19 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, material->diffuseMap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "material.diffuse"), 0);
+
     
     GLint hasDiffuseMapLocation = glGetUniformLocation(buffer->shaderProgram, "material.hasDiffuseMap");
     if (material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED) {
-        // To enable texturing
         glUniform1i(hasDiffuseMapLocation, 1);
     }else{
         glUniform1i(hasDiffuseMapLocation, 0);
+    }
+    GLint isBlinnLocation = glGetUniformLocation(buffer->shaderProgram, "blinn");
+    if(material->material_flags & MATERIAL_BLINN_ENABLED || globals.blinnMode){
+        glUniform1i(isBlinnLocation,1);
+    }else {
+        glUniform1i(isBlinnLocation,0);    
     }
 
     // Assign specularMap to texture2 slot

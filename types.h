@@ -121,12 +121,14 @@ typedef struct Texture {
 #define MATERIAL_SPECULARMAP_ENABLED  (1 << 1) // 0b00000010
 #define MATERIAL_AMBIENTMAP_ENABLED   (1 << 2) // 0b00000100
 #define MATERIAL_SHININESSMAP_ENABLED (1 << 3) // 0b00001000
+#define MATERIAL_BLINN_ENABLED        (1 << 4) // 0b00010000
 
 typedef enum {
     DIFFUSEMAP_ENABLED   = 1 << 0,
     SPECULARMAP_ENABLED  = 1 << 1,
     AMBIENTMAP_ENABLED   = 1 << 2,
     SHININESSMAP_ENABLED = 1 << 3,
+    BLINN_ENABLED =        1 << 4,
 } Material_flags;
 
 typedef struct Material {
