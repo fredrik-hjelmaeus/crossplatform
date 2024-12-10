@@ -114,6 +114,7 @@ struct Globals globals = {
     .lightsCount=0,
     .focusedEntityId=-1,
     .blinnMode=false,
+    .gamma=false,
 
     // Cursor
     .cursorEntityId=-1,
@@ -490,6 +491,9 @@ void handleKeyInput(){
             }
             if(strcmp(key, "U") == 0){
                 globals.blinnMode = 0;
+            }
+            if(strcmp(key, "G") == 0){
+                globals.gamma = !globals.gamma;
             }
 }
 

@@ -62,6 +62,7 @@ uniform SpotLight spotLights[4];
 uniform PointLight pointLights[4];
 uniform vec3 viewPos;
 uniform bool blinn;
+uniform bool gamma;
 
 // function prototypes
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
@@ -92,8 +93,10 @@ void main()
     for(int i = 0; i < NR_SPOT_LIGHTS; i++)
         result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir);        
       
-   
-    FragColor = vec4(result, 1.0);
+    
+    if(gamma)
+        result = pow(result, vec3(1.0/2.2));
+    FragColor = vec4(result, 1.0f);
 }
 
 // calculates the color when using a spot light.
@@ -120,7 +123,8 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     }
     // attenuation
     float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));   
+    float gammaDistanceAttenuation = gamma ? distance * distance : distance;
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * gammaDistanceAttenuation);    
     
     // spotlight intensity
     float theta = dot(lightDir, normalize(-light.direction)); 
@@ -158,7 +162,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = 0.0;//pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    float spec = 0.0;
     if(blinn)
     {
         // Blinn
@@ -197,7 +201,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = 0.0;//pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    float spec = 0.0;
     if(blinn)
     {
         // Blinn
@@ -212,7 +216,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     }
     // attenuation
     float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+    float gammaDistanceAttenuation = gamma ? distance * distance : distance;
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * gammaDistanceAttenuation);    
     // combine results
     vec3 ambient = vec3(0.0);
     vec3 diffuse = vec3(0.0);

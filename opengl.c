@@ -311,6 +311,12 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     }else {
         glUniform1i(isBlinnLocation,0);    
     }
+    GLint gammaLocation = glGetUniformLocation(buffer->shaderProgram, "gamma");
+    if(globals.gamma){
+        glUniform1i(gammaLocation,1);
+    }else {
+        glUniform1i(gammaLocation,0);    
+    }
 
     // Assign specularMap to texture2 slot
     glActiveTexture(GL_TEXTURE1);
@@ -761,9 +767,10 @@ GLuint setupTexture(TextureData textureData){
         return 0;
     }
     if(textureData.channels == 4){
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureData.width, textureData.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data);
+        glTexImage2D(GL_TEXTURE_2D, 0, globals.gamma ? GL_SRGB8_ALPHA8 : GL_RGBA, textureData.width, textureData.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data);
     }
     if(textureData.channels == 3){
+        glTexImage2D(GL_TEXTURE_2D, 0, globals.gamma ? GL_SRGB : GL_RGB, textureData.width, textureData.height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData.data);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureData.width, textureData.height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData.data);
     }
     glGenerateMipmap(GL_TEXTURE_2D);

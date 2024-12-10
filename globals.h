@@ -60,6 +60,7 @@ struct Globals {
     float charScale;
     bool mouseDoubleClick;
     bool blinnMode;
+    bool gamma;
 
     // Cursor
     int cursorEntityId;
