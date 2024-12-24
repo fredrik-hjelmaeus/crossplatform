@@ -15,7 +15,6 @@ void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPa
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
 GLuint setupTexture(TextureData textureData);
 
-void setupFontMaterial(GpuData* buffer,int width,int height);
 void setupFontTextures(char* fontPath,int fontSize);
 void setupFontMesh(GpuData *buffer);
 void renderText(GpuData* buffer, char* text, float x, float y, float scale, Color color);
@@ -24,6 +23,13 @@ void renderPoints(GpuData* buffer, TransformComponent* transformComponent, Camer
 void setupLine(GLfloat* lines, int lineCount, GpuData* buffer);
 void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
+void renderFrameBuffer();
+void setupFrameBuffer(Vertex* vertices, int vertexCount);
+
+// Shadow maps
+void setupRenderBuffer(GpuData* buffer);
+void setupDepthMap();
+void renderDepthMap(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material);
 /**
  * @brief Generally called when view are switched
  * buffer is font gpu data

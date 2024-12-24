@@ -143,6 +143,7 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->material_flags |= MATERIAL_SPECULARMAP_ENABLED;
     materialComponent->material_flags |= MATERIAL_AMBIENTMAP_ENABLED;
     materialComponent->material_flags |= MATERIAL_SHININESSMAP_ENABLED;
+    materialComponent->isPostProcessMaterial = false; //TODO: move to material_flags?
 }
 
 void initializeUIComponent(UIComponent* uiComponent){

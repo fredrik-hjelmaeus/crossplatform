@@ -115,6 +115,12 @@ struct Globals globals = {
     .focusedEntityId=-1,
     .blinnMode=false,
     .gamma=false,
+    .depthMapBuffer={0},
+    .frameBuffer={0},
+    .depthMap=0,
+    .lightSpaceMatrix={0},
+    .postProcessBuffer={0},
+    .showDepthMap=false,
 
     // Cursor
     .cursorEntityId=-1,
@@ -236,6 +242,63 @@ void setViewportWithScissorAndClear(View view) {
     // Disable the scissor test
     glDisable(GL_SCISSOR_TEST);
 }
+
+void createLightSpace(){
+    mat4x4 lightProjection, lightView;
+    float near_plane = -1.0f, far_plane = 300.0f;
+    mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
+    mat4x4_mul(globals.lightSpaceMatrix, lightProjection, lightView);
+}
+
+bool initShadowMap(){
+   
+   GLenum none = GL_NONE;
+   // use 1K x 1K texture for shadow map
+   int shadowMapTextureWidth = 1024;
+   int shadowMapTextureHeight = 1024;
+   glGenTextures ( 1, &globals.depthMap );
+   glBindTexture ( GL_TEXTURE_2D, globals.depthMap);
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+ GL_NEAREST );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+ GL_LINEAR );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+ GL_CLAMP_TO_EDGE );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+ GL_CLAMP_TO_EDGE );
+   // set up hardware comparison
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+ GL_COMPARE_REF_TO_TEXTURE );
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC,
+ GL_LEQUAL );
+   glTexImage2D ( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,
+ shadowMapTextureWidth,
+ shadowMapTextureHeight,
+ 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT,
+ NULL );
+   glBindTexture ( GL_TEXTURE_2D, 0 );
+   GLint defaultFramebuffer = 0;
+   glGetIntegerv ( GL_FRAMEBUFFER_BINDING,
+ &defaultFramebuffer );
+   // set up fbo
+   glGenFramebuffers ( 1, &globals.depthMapBuffer.FBO );
+   glBindFramebuffer ( GL_FRAMEBUFFER, globals.depthMapBuffer.FBO );
+   glDrawBuffers ( 1, &none );
+   glFramebufferTexture2D ( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, globals.depthMap, 0 );
+
+ glActiveTexture ( GL_TEXTURE0 );
+   glBindTexture ( GL_TEXTURE_2D, globals.depthMap);
+   if ( GL_FRAMEBUFFER_COMPLETE !=
+ glCheckFramebufferStatus ( GL_FRAMEBUFFER ) )
+   {
+ return false;
+   }
+   glBindFramebuffer ( GL_FRAMEBUFFER, defaultFramebuffer );
+   return true;
+}
+
+
 
 void initProgram(){
     initWindow();
@@ -395,6 +458,7 @@ void handleKeyInput(){
             if(strcmp(key, "L") == 0) {
                 // Pressing L will write all drawcalls of a frame to disk as a pngs
                 globals.debugDrawCalls = true;
+                printf("Debug drawcalls enabled\n");
             }
             if(strcmp(key, "B") == 0) {
                 globals.drawBoundingBoxes = !globals.drawBoundingBoxes;
@@ -494,6 +558,9 @@ void handleKeyInput(){
             }
             if(strcmp(key, "G") == 0){
                 globals.gamma = !globals.gamma;
+            }
+            if(strcmp(key, "H") == 0){
+                globals.showDepthMap = !globals.showDepthMap;
             }
 }
 
@@ -625,12 +692,239 @@ void update(){
     cameraSystem();
     uiSystem();
     uiInputSystem();
-    hoverAndClickSystem();
+    //hoverAndClickSystem();
     textCursorSystem();
    // movementSystem();
     modelSystem();
    
 }
+
+void fboFromESBook(){
+ GLuint framebuffer;
+ GLuint depthRenderbuffer;
+ GLuint texture;
+ GLint texWidth = 256, texHeight = 256;
+ GLint maxRenderbufferSize;
+ glGetIntegerv ( GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
+ // check if GL_MAX_RENDERBUFFER_SIZE is >= texWidth and texHeight
+ if ( ( maxRenderbufferSize <= texWidth ) || ( maxRenderbufferSize <= texHeight ) ) 
+{
+    printf("error\n");
+   // cannot use framebuffer objects, as we need to create
+   // a depth buffer as a renderbuffer object
+   // return with appropriate error 
+}
+ // generate the framebuffer, renderbuffer, and texture object names
+ glGenFramebuffers ( 1, &framebuffer ); 
+ glGenRenderbuffers ( 1, &depthRenderbuffer ); 
+ glGenTextures ( 1, &texture );
+ // bind texture and load the texture mip level 0
+ // texels are RGB565
+ // no texels need to be specified as we are going to draw into
+ // the texture
+ glBindTexture ( GL_TEXTURE_2D, texture );
+ glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL );
+ glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+ glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+ glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+ glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+ // bind renderbuffer and create a 16-bit depth buffer 
+ // width and height of renderbuffer = width and height of 
+ // the texture
+ glBindRenderbuffer ( GL_RENDERBUFFER, depthRenderbuffer ); 
+ glRenderbufferStorage ( GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, texWidth, texHeight );
+ // bind the framebuffer 
+ glBindFramebuffer ( GL_FRAMEBUFFER, framebuffer );
+ // specify texture as color attachment
+ glFramebufferTexture2D ( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0 );
+ // specify depth_renderbuffer as depth attachment 
+ glFramebufferRenderbuffer ( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER, depthRenderbuffer);
+ // check for framebuffer complete
+ GLenum status = glCheckFramebufferStatus ( GL_FRAMEBUFFER );
+if ( status == GL_FRAMEBUFFER_COMPLETE )
+{
+    printf("framebuffer complete\n");
+    // render to texture using FBO
+    // clear color and depth buffer
+    glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
+    glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    // Load uniforms for vertex and fragment shaders
+    // used to render to FBO. The vertex shader is the
+    // ES 1.1 vertex shader described in Example 8-8 in
+    // Chapter 8. The fragment shader outputs the color
+    // computed by the vertex shader as fragment color and
+    // is described in Example 1-2 in Chapter 1.
+    // set_fbo_texture_shader_and_uniforms( );
+    GpuData gpuData;
+    setupMaterial(&gpuData,"shaders/esdepth_vert.glsl", "shaders/esdepth_frag.glsl");
+   // glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
+    // drawing commands to the framebuffer object draw_teapot();
+     for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                if(globals.entities[i].uiComponent->active != 1){
+                      // Set shader
+                        glUseProgram(gpuData.shaderProgram);
+                        
+                        // retrieve the matrix uniform locations
+                        unsigned int modelLoc = glGetUniformLocation(gpuData.shaderProgram, "model");
+                        unsigned int viewLoc  = glGetUniformLocation(gpuData.shaderProgram, "view");
+                        unsigned int projLoc  = glGetUniformLocation(gpuData.shaderProgram, "projection");
+
+                        // pass them to the shaders 
+                        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &globals.entities[i].transformComponent->transform[0][0]);
+                        glUniformMatrix4fv(projLoc, 1, GL_FALSE, &globals.views.main.camera->projection[0][0]);
+                        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &globals.views.main.camera->view[0][0]);
+                        
+                       // glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
+                        
+                        glBindVertexArray(globals.entities[i].meshComponent->gpuData->VAO);
+                        glDrawArrays(globals.entities[i].meshComponent->gpuData->drawMode, 0, globals.entities[i].meshComponent->gpuData->vertexCount);
+                    
+                        glBindVertexArray(0);
+                        glBindTexture(GL_TEXTURE_2D, 0);
+                   // renderDepth(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
+                }
+            }
+        }
+    }
+    // render to window system-provided framebuffer 
+    glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
+    // Use texture to draw to window system-provided framebuffer. 
+    // We draw a quad that is the size of the viewport. 
+    //
+    // The vertex shader outputs the vertex position and texture 
+    // coordinates passed as inputs.
+    //
+    // The fragment shader uses the texture coordinate to sample 
+    // the texture and uses this as the per-fragment color value.
+    float quadVertices[] = {
+        // Positions    // Texture Coords
+        -1.0f,  1.0f,    0.0f, 1.0f, // Top-left
+        -1.0f, -1.0f,    0.0f, 0.0f, // Bottom-left
+        1.0f,  1.0f,    1.0f, 1.0f, // Top-right
+        1.0f, -1.0f,    1.0f, 0.0f  // Bottom-right
+    };
+    GLuint quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+
+    glBindVertexArray(quadVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+    // Position attribute
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+
+    // Texture Coord attribute
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    glBindVertexArray(0);
+
+    GpuData screenShader;
+    setupMaterial(&screenShader,"shaders/screentexture_vertex.glsl", "shaders/screentexture_fragment.glsl");
+
+    // Clear the default framebuffer
+glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+// Use the screen shader program
+glUseProgram(screenShader.shaderProgram);
+
+// Bind the framebuffer texture
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, texture); // 'texture' is the color attachment from the FBO
+glUniform1i(glGetUniformLocation(screenShader.shaderProgram, "screenTexture"), 0);
+
+// Render the quad
+glBindVertexArray(quadVAO);
+glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+glBindVertexArray(0);
+   // set_screen_shader_and_uniforms ( ); 
+   // draw_screen_quad ( ); 
+}
+ // clean up
+ glDeleteRenderbuffers ( 1, &depthRenderbuffer );
+ glDeleteFramebuffers ( 1, &framebuffer);
+ glDeleteTextures ( 1, &texture );
+ printf("done\n");
+}
+
+void test(){
+    // FBO
+    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    unsigned int depthMapFBO;
+    glGenFramebuffers(1, &depthMapFBO);
+    // create depth texture
+    unsigned int depthMap;
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // attach depth texture as FBO's depth buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthMap);
+  //  glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMap, 0, 0);
+    //glDrawBuffer(GL_NONE);
+    //glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glDrawBuffers(GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1);
+
+    GpuData depthMapBuffer;
+    setupMaterial(&depthMapBuffer,"shaders/depth_vertex.glsl", "shaders/depth_fragment.glsl");
+
+    mat4x4 lightProjection;
+    mat4x4 lightView;
+    mat4x4 lightSpaceMatrix;
+    float near_plane = 1.0f, far_plane = 7.5f;
+    mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
+    mat4x4_mul(lightSpaceMatrix, lightProjection, lightView);
+
+    glEnable(GL_DEPTH_TEST);
+
+    glUseProgram(depthMapBuffer.shaderProgram);
+    glUniformMatrix4fv(glGetUniformLocation(depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    printf("detph s\n");
+    glClear(GL_DEPTH_BUFFER_BIT);
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                if(globals.entities[i].uiComponent->active != 1){
+                      // Set shader
+                       // glUseProgram(globals.depthMapBuffer.shaderProgram);
+                        
+                        // retrieve the matrix uniform locations
+                        unsigned int modelLoc = glGetUniformLocation(depthMapBuffer.shaderProgram, "model");
+                    // unsigned int viewLoc  = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "view");
+
+                        // pass them to the shaders 
+                        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &globals.entities[i].transformComponent->transform[0][0]);
+                        
+                       // glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
+                        
+                        glBindVertexArray(globals.entities[i].meshComponent->gpuData->VAO);
+                        glDrawArrays(globals.entities[i].meshComponent->gpuData->drawMode, 0, globals.entities[i].meshComponent->gpuData->vertexCount);
+                    
+                        glBindVertexArray(0);
+                        glBindTexture(GL_TEXTURE_2D, 0);
+                   // renderDepth(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
+                }
+            }
+        }
+    }
+   
+}
+
 
 void render(){
 
@@ -668,20 +962,92 @@ void render(){
 
     // Native
 
+    // Render depth map
+  /*   if(!globals.depthMap){
+       fboFromESBook();
+       globals.depthMap = 1;
+    } */
+   // Rectangle rect = convertViewRectangleToSDLCoordinates(globals.views.full,globals.views.full.rect.height);
+   // glViewport(rect.x, rect.y, rect.width, rect.height);
+    
+    // TODO: This only inits, no update if light moves and only calc on first light.
+   // if(!globals.lightSpaceMatrix){
+     //   printf("yes\n");
+        createLightSpace();
+//    }
+   /*  glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+    glViewport(0, 0, width, height);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    // Disable color writes
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    // Enable depth testing
+    glEnable(GL_DEPTH_TEST);
+   // glActiveTexture(GL_TEXTURE0);
+   // glBindTexture(GL_TEXTURE_2D, globals.depthMap);
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                if(globals.entities[i].uiComponent->active != 1){
+                    renderDepthMap(globals.entities[i].meshComponent->gpuData, globals.entities[i].transformComponent);
+                }
+            }
+        }
+    }
+    // Re-enable color writes
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+    
+    renderFrameBuffer(); */
     // TODO: find a way to avoid having to iterate over all entities twice, once for ui and once for 3d objects.
 
-    // Render main view & 3d objects
+
+   // clear depth buffer
+   //glClear( GL_DEPTH_BUFFER_BIT );
+   // disable color rendering; only write to depth buffer
+   //glColorMask ( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
+   // reduce shadow rendering artifact
+  // glEnable ( GL_POLYGON_OFFSET_FILL );
+   //glPolygonOffset( 4.0f, 100.0f );
+
+   // Render depth map
+   setViewportAndClear(globals.views.full);
+    glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+    glEnable(GL_DEPTH_TEST);
+    // Disable color buffer writes (since we're not drawing any color)
+ //   glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+   //setFontProjection(&globals.gpuFontData,globals.views.full);
+    for(int i = 0; i < MAX_ENTITIES; i++) {
+        if(globals.entities[i].alive == 1) {
+            if(globals.entities[i].meshComponent->active == 1) {
+                if(globals.entities[i].uiComponent->active != 1){
+                    if(!globals.entities[i].materialComponent->isPostProcessMaterial){
+                        renderDepthMap(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
+                    }
+                }
+            }
+        }
+    }
+
+   // Enable color buffer writes again
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
+
+   // Render main view & 3d objects
    setViewportAndClear(globals.views.full);
    setFontProjection(&globals.gpuFontData,globals.views.full);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active != 1){
-                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
+                   if(!globals.entities[i].materialComponent->isPostProcessMaterial){
+                     renderMesh( globals.entities[i].meshComponent->gpuData, globals.entities[i].transformComponent, globals.views.main.camera,globals.entities[i].materialComponent );
+                   }
+                    
                 }
             }
         }
     }
+    
     // Render GL_LINES & GL_POINTS(particles)
     for(int i = 0; i < MAX_ENTITIES; i++){
         if((globals.entities[i].alive == 1 && globals.entities[i].lineComponent->active == 1) || globals.entities[i].pointComponent->active == 1){
@@ -754,8 +1120,10 @@ void render(){
                     }
                 }
         }
-    } 
- 
+    }  
+
+   
+    
    
     #endif
 
@@ -791,7 +1159,7 @@ void initOpenGLWindow(){
 void initFont(){
     setupFontTextures("./Assets/ARIAL.TTF",globals.fontSize);
     setupFontMesh(&globals.gpuFontData);
-    setupFontMaterial(&globals.gpuFontData,width,height);
+    setupMaterial(&globals.gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
 }
 
 #ifdef __EMSCRIPTEN__
@@ -820,6 +1188,13 @@ void initScene(){
 
    // Assets
    initFont();
+   //createFramebuffer();
+   setupMaterial(&globals.depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
+  // setupDepthMap(&globals.depthMapBuffer);
+   setupRenderBuffer(&globals.depthMapBuffer);
+   //initShadowMap();
+   //setupMaterial(&globals.depthMapBuffer,"shaders/depth_vertex.glsl", "shaders/depth_fragment.glsl");
+  
  //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
    TextureData containerTextureData = loadTexture("./Assets/container.jpg");
    GLuint containerMap = setupTexture(containerTextureData);
@@ -861,6 +1236,18 @@ void initScene(){
         .diffuseMap = containerTwoMap,               // used
         .diffuseMapOpacity = 1.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
+    };
+    struct Material depthMapMaterial = { // Saved as example of how to use a texture with ui element.
+        .active = 1,
+        .name = "depthMapMaterial",
+        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
+        .diffuse = (Color){0.0f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
+        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
+        .shininess = 4.0f,                           // NOT used
+        .diffuseMap = containerTwoMap,               // used
+        .diffuseMapOpacity = 1.0f,                    // used
+        .specularMap = containerTwoSpecularMap,      // NOT used
+        .isPostProcessMaterial = true,
     };
     struct Material textInputUiMat = { // Saved as example of how to use a texture with ui element.
         .active = 1,
@@ -909,18 +1296,18 @@ void initScene(){
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-    createObject(&cornell_box->objData[0],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+/*     createObject(&cornell_box->objData[0],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[1],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[2],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[3],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[4],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[5],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[6],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[7],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    createObject(&cornell_box->objData[7],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */
  
-    createObject(&textured_objects->objData[0],(vec3){-5.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-    createObject(&textured_objects->objData[1],(vec3){-5.0f, -2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
-   
+    createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, 1.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    createObject(&textured_objects->objData[1],(vec3){5.0f, 2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    createPoint((vec3){-5.0f, -5.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
     //createObject(VIEWPORT_MAIN,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -931,9 +1318,9 @@ void initScene(){
     //createObject(VIEWPORT_MAIN,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
 
     // lights
-    createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
-    createLight(lightMaterial,(vec3){5.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, -0.0f},DIRECTIONAL);
+    createLight(lightMaterial,(vec3){1.01f,5.01f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, -0.0f},DIRECTIONAL);
     createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
+    createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
     createLight(lightMaterial,(vec3){3.0f, 2.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){0.0f, 1.0f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
@@ -942,8 +1329,8 @@ void initScene(){
     createLight(lightMaterial,(vec3){-8.7f, 0.2f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);    
 
     // Primitives
-    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){5.0f, 5.0f, 5.0f}, (vec3){-90.0f, 0.0f, 0.0f});
-    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
+  //  createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
 
 
@@ -952,8 +1339,8 @@ void initScene(){
    // z position will be z-depth, much like in DOM in web.Use this to control draw order.
    // TODO: implement rotation, it is atm not affecting. 
  
-  // UI Settings Panel
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
+    // UI Settings Panel
+  /*   ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
     ui_createTextInput(textInputUiMat, (vec3){565.0f, 65.0f, 1.0f}, (vec3){200.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange);
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 55.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -961,6 +1348,9 @@ void initScene(){
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
     
+    // Frame buffer quad
+    ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); */
+
     //ui_slider(flatColorUiDarkGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider",onSliderChange);
     //ui_colorPicker(flatColorUiDarkGrayMat, (vec3){545.0f, 105.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "ColorPicker",onColorPickerChange);
     //ui_checkbox
@@ -1034,6 +1424,8 @@ int main(int argc, char **argv) {
     uiCamera->right = (float)width/2.0f;
     uiCamera->bottom = -(float)height/2.0f;
     uiCamera->top = (float)height/2.0f;
+    uiCamera->near = -10.0f; // Set the near plane distance
+    uiCamera->far = 10.0f;   // Set the far plane distance
     globals.views.ui.camera = uiCamera;
     
     Camera* mainCamera = initCamera();

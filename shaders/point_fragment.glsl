@@ -11,4 +11,5 @@ uniform vec4 pointColor;
 void main()
 {
     FragColor = vec4(pointColor);
+   // gl_pointSize = 10.0;
 }

@@ -66,6 +66,82 @@ void setupPoints(GLfloat *positions, int numPoints, GpuData *buffer)
     glBindVertexArray(0);
 }
 
+
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderFrameBuffer()
+{
+    // debugDepthQuad.use();
+     glUseProgram(globals.frameBuffer.shaderProgram);
+        //debugDepthQuad.setFloat("near_plane", near_plane);
+        //debugDepthQuad.setFloat("far_plane", far_plane);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, globals.depthMap);
+
+        // Set the 'depthMap' sampler uniform to use texture unit 0
+GLuint depthMapLoc = glGetUniformLocation(globals.frameBuffer.shaderProgram, "depthMap");
+glUniform1i(depthMapLoc, 0);
+
+     if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+            // positions        // texture Coords
+            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+
+
+/*     glUseProgram(globals.frameBuffer.shaderProgram);
+   // glActiveTexture(GL_TEXTURE0);
+   // glBindTexture(GL_TEXTURE_2D, globals.depthMap);
+   // glUniform1i(glGetUniformLocation(globals.frameBuffer.shaderProgram, "depthMap"), 0);
+
+    // Render a fullscreen quad
+    glBindVertexArray(globals.frameBuffer.VAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0); */
+}
+
+void setupFrameBuffer(Vertex* vertices,int vertexCount)
+{
+    printf("setup\n");
+  /*   glGenVertexArrays(1, globals.frameBuffer.VAO);
+    glGenBuffers(1, &globals.frameBuffer.VBO);
+    glBindVertexArray(globals.frameBuffer.VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, globals.frameBuffer.VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); */
+
+        /* glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); */
+}
+
 /** 
  * @brief Setup buffer to render a mesh.
 */
@@ -289,10 +365,12 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         fprintf(stderr, "Error: camera is NULL\n");
         return;
     }
+
+    
      
     // Set shader
     glUseProgram(buffer->shaderProgram);
- 
+
     // Assign diffuseMap to texture1 slot
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, material->diffuseMap);
@@ -300,6 +378,25 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
 
     
     GLint hasDiffuseMapLocation = glGetUniformLocation(buffer->shaderProgram, "material.hasDiffuseMap");
+        if(material->isPostProcessMaterial){
+            if(!globals.showDepthMap){
+                return;
+            }
+       // printf("shader quad that use/show depthmap texture %d \n",buffer->shaderProgram);
+       // glUniform1i(hasDiffuseMapLocation, 1);
+       // material->diffuseMap = globals.depthMap;
+      //  material->specularMap = globals.depthMap;
+     /*    material->ambient.r = 1.0f;
+        material->ambient.g = 1.0f;
+        material->ambient.b = 1.0f;
+        material->ambient.a = 1.0f; */
+        //material->diffuseMapOpacity = 1.0f;
+       // material->diffuseMapOpacity = 1.0f;
+       /*  material->diffuse.r = 1.0f;
+        material->diffuse.g = 1.0f;
+        material->diffuse.b = 1.0f; */
+      // return;
+    }
     if (material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED) {
         glUniform1i(hasDiffuseMapLocation, 1);
     }else{
@@ -323,6 +420,11 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glBindTexture(GL_TEXTURE_2D, material->specularMap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "material.specular"), 1);
 
+    // Assign depthMap to texture3 slot
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, globals.depthMap);
+    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "shadowMap"), 2);
+
     // Set diffuseMapOpacity uniform
     glUniform1f(glGetUniformLocation(buffer->shaderProgram, "material.diffuseMapOpacity"), material->diffuseMapOpacity);
 
@@ -343,7 +445,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glUniform4f(specularLocation, material->specular.r, material->specular.g, material->specular.b, material->specular.a);
 
     // Spotlights
-   Entity spotLightEntityOne_ = globals.lights[0];
+   Entity spotLightEntityOne_ = globals.lights[4];
    Entity* spotLightEntityOne = &spotLightEntityOne_;
     if(spotLightEntityOne != NULL && spotLightEntityOne->lightComponent != NULL){
  
@@ -537,7 +639,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     } 
 
     // Directional light
-   Entity directionalLightEntity_ = globals.lights[4];
+   Entity directionalLightEntity_ = globals.lights[0];
    Entity* directionalLightEntity = &directionalLightEntity_;
     if(directionalLightEntity != NULL && directionalLightEntity->lightComponent != NULL){
 
@@ -707,6 +809,9 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[3].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
     }
+
+    // Set light space matrix uniform
+    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
       
     // Set viewPos uniform
     GLint viewPosLocation = glGetUniformLocation(buffer->shaderProgram, "viewPos");
@@ -732,7 +837,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
 
    // debug drawcalls
    if(globals.debugDrawCalls){
-        captureFramebuffer(globals.views.full.rect.width,globals.views.full.rect.height, globals.drawCallsCounter++);
+        captureDrawCalls(globals.views.full.rect.width,globals.views.full.rect.height, globals.drawCallsCounter++);
    }
 
    glBindVertexArray(0);
@@ -779,78 +884,7 @@ GLuint setupTexture(TextureData textureData){
     return texture;
 }
 
-void setupFontMaterial(GpuData* buffer,int width,int height){
-    // shader program
-    //unsigned int shaderProgramId;
-     #ifdef __EMSCRIPTEN__
-        char* vertexShaderSource = readFile("shaders/wasm/text_vertex_wasm.glsl");
-        char* fragmentShaderSource = readFile("shaders/wasm/text_fragment_wasm.glsl");
-    #else
-        char* vertexShaderSource = readFile("shaders/text_vertex.glsl");
-        char* fragmentShaderSource = readFile("shaders/text_fragment.glsl");
-    #endif
-    if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
-        printf("Error loading shader source\n");
-        return;
-    }
-    
-    //printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
 
-    // Compile shaders
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    if(vertexShader == 0) {
-        printf("Error creating vertex shader\n");
-        return;
-    }
-    glShaderSource(vertexShader, 1, (const GLchar* const*)&vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // Check for shader compile errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s\n", infoLog);
-    }
-
-    // Fragment shader
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    if(fragmentShader == 0) {
-        printf("Error creating fragment shader\n");
-        return;
-    }
-    glShaderSource(fragmentShader, 1, (const GLchar* const*)&fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
- 
-    // Check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
-    }
-   
-    // free memory of shader sources
-    free(vertexShaderSource);
-    free(fragmentShaderSource);
-    
-    // Link shaders
-    buffer->shaderProgram = glCreateProgram();
-
-    glAttachShader(buffer->shaderProgram, vertexShader);
-    glAttachShader(buffer->shaderProgram, fragmentShader);
-    glLinkProgram(buffer->shaderProgram);
-
-   
-    //printf("Shader program: %d\n", buffer->shaderProgram);
-
-    // Check for linking errors
-    glGetProgramiv(buffer->shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(buffer->shaderProgram, 512, NULL, infoLog);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
-    }
-}
 void setupFontMesh(GpuData *buffer){
     glGenVertexArrays(1, &buffer->VAO);
     glGenBuffers(1, &buffer->VBO);
@@ -869,6 +903,7 @@ void setFontProjection(GpuData *buffer,View view){
     mat4x4_ortho(projection, 0.0f, view.rect.width, 0.0f, view.rect.height, -1.0f, 1.0f);
     glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);
 }
+
 void renderText(GpuData *buffer, char *text, float x, float y, float scale, Color color)
 {
     glEnable(GL_CULL_FACE);
@@ -985,5 +1020,203 @@ void setupFontTextures(char* fontPath,int fontSize){
     // Clean up FreeType library
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
+
+}
+
+/**
+ * Setups a Framebuffer for rendering the depth map
+ */
+void setupRenderBuffer(GpuData *buffer)
+{
+    // Renderbuffer setup
+    glGenRenderbuffers(1, &buffer->RBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, buffer->RBO);
+
+    GLint maxRenderbufferSize = 0;
+    glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
+    ASSERT(maxRenderbufferSize >= width && maxRenderbufferSize >= height, "Error: Framebuffer size is too small");
+
+    glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,width,height); 
+
+    // Framebuffer setup
+    glGenFramebuffers(1, &buffer->FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
+    
+    // Texture setup
+    glGenTextures ( 1, &globals.depthMap );
+    glBindTexture (GL_TEXTURE_2D, globals.depthMap);
+    glTexImage2D (GL_TEXTURE_2D, 0 , GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // GL_LINEAR for smoother shadows
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // GL_LINEAR
+
+    // Renderbuffer attached to framebuffer
+   // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer->RBO);
+
+    // Specify texture as color attachment
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, globals.depthMap, 0);
+
+    // Specify depth_renderbuffer as depth attachment
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer->RBO);
+
+    // Check for framebuffer complete
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    ASSERT(status == GL_FRAMEBUFFER_COMPLETE, "Error: Framebuffer is not complete");
+
+   /*  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); */
+
+}
+void setupDepthMap(){
+    //----------------------
+/*     GLuint framebuffer;
+ GLuint texture;
+ GLint texWidth = 256, texHeight = 256; */
+ GLuint depthRenderbuffer;
+ GLint maxRenderbufferSize;
+ glGetIntegerv ( GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
+ // check if GL_MAX_RENDERBUFFER_SIZE is >= texWidth and texHeight
+ if ( ( maxRenderbufferSize <= width ) || ( maxRenderbufferSize <= height ) ) 
+{
+    printf("error\n");
+   // cannot use framebuffer objects, as we need to create
+   // a depth buffer as a renderbuffer object
+   // return with appropriate error 
+}
+ // generate the framebuffer, renderbuffer, and texture object names
+ glGenFramebuffers ( 1, &globals.depthMapBuffer.FBO ); 
+ glGenRenderbuffers ( 1, &depthRenderbuffer ); 
+ glGenTextures ( 1, &globals.depthMap );
+ // bind texture and load the texture mip level 0
+ // texels are RGB565
+ // no texels need to be specified as we are going to draw into
+ // the texture
+ glBindTexture ( GL_TEXTURE_2D, globals.depthMap );
+ glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL );
+ glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+ glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+ glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+ glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+ // bind renderbuffer and create a 16-bit depth buffer 
+ // width and height of renderbuffer = width and height of 
+ // the texture
+ glBindRenderbuffer ( GL_RENDERBUFFER, depthRenderbuffer ); 
+ glRenderbufferStorage ( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height );
+ // bind the framebuffer 
+ glBindFramebuffer ( GL_FRAMEBUFFER, globals.depthMapBuffer.FBO );
+ // specify texture as color attachment
+ glFramebufferTexture2D ( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, globals.depthMap, 0 );
+ // specify depth_renderbuffer as depth attachment 
+ glFramebufferRenderbuffer ( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER, depthRenderbuffer);
+ // check for framebuffer complete
+ GLenum status = glCheckFramebufferStatus ( GL_FRAMEBUFFER );
+
+    //_----------------------
+   /*  glGenFramebuffers(1, &globals.depthMapBuffer.FBO);
+    //const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+    
+    glGenTextures(1, &globals.depthMap);
+    glBindTexture(GL_TEXTURE_2D, globals.depthMap);
+
+    // TODO: put GL_DEPTH_COMPONENT in a variable, so we can switch between GL_DEPTH_COMPONENT and GL_DEPTH_COMPONENT16/24/32
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, NULL);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+   
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, globals.depthMap, 0);
+   // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, globals.depthMap, 0);
+
+  //  glDrawBuffers(GL_NONE); //not available in opengles
+  //  glReadBuffer(GL_NONE); //not available in opengles
+  
+   
+    printf("setting up depthmap framebuffer \n");
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER); */
+
+    if(status != GL_FRAMEBUFFER_COMPLETE){
+        printf("Error: Framebuffer is not complete\n");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+
+/* void renderDepthMap(GpuData* buffer, TransformComponent* transformComponent){
+    
+    // uniform mat4 lightSpaceMatrix;
+       //             uniform mat4 model;
+
+    // Set shader
+    glUseProgram(globals.depthMapBuffer.shaderProgram);
+    glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+      
+    // retrieve the matrix uniform locations
+    unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
+   // unsigned int viewLoc  = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "view");
+
+    // pass them to the shaders 
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
+    
+    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
+      
+    glBindVertexArray(buffer->VAO);
+    glDrawArrays(buffer->drawMode, 0, buffer->vertexCount);
+ 
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+} */
+
+void renderDepthMap(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material) {
+ 
+    // Check if camera is NULL
+    if (camera == NULL) {
+        fprintf(stderr, "Error: camera is NULL\n");
+        return;
+    }
+   
+    // Set shader
+    glUseProgram(globals.depthMapBuffer.shaderProgram);
+ //   printf("globals.depthMapBuffer.shaderProgram %d \n",globals.depthMapBuffer.shaderProgram);
+   
+
+    // retrieve the matrix uniform locations
+    unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
+    unsigned int viewLoc  = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "view");
+
+    // pass them to the shaders 
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &camera->view[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "projection"), 1, GL_FALSE, &camera->projection[0][0]);
+
+    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
+    // Loop through and print all matrix vvalues in lightSpaceMatrix:
+    printf("------------------\n");
+    for(int i = 0; i < 4; i++){
+        for(int j = 0; j < 4; j++){
+            printf("globals.lightSpaceMatrix[%d][%d] %f \n",i,j,globals.lightSpaceMatrix[i][j]);
+        }
+    }  
+    
+    glBindVertexArray(buffer->VAO);
+
+    glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
+   
+
+   // debug drawcalls
+   if(globals.debugDrawCalls){
+        captureDrawCalls(globals.views.full.rect.width,globals.views.full.rect.height, globals.drawCallsCounter++);
+   }
+
+   glBindVertexArray(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
 
 }

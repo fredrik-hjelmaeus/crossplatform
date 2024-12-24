@@ -144,6 +144,9 @@ void createMesh(
     entity->materialComponent->diffuseMap = material->diffuseMap;
     entity->materialComponent->diffuseMapOpacity = material->diffuseMapOpacity;
     entity->materialComponent->specularMap = material->specularMap;
+    if(material->isPostProcessMaterial){
+        entity->materialComponent->isPostProcessMaterial = true;
+    }
     if(saveMaterial){
         entity->materialComponent->materialIndex = addMaterial(*material);
     }else {
@@ -179,7 +182,12 @@ void createMesh(
     
     if(entity->lightComponent->active == 1){
         setupMaterial( entity->meshComponent->gpuData,"shaders/light_vertex.glsl", "shaders/light_fragment.glsl" );
-    }else if(entity->uiComponent->active == 1) {
+    }else if( entity->materialComponent->isPostProcessMaterial) {
+        //setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
+        setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
+        printf("post process mesh quad material id %d \n",entity->meshComponent->gpuData->shaderProgram);
+        //setupMaterial(&globals.postProcessBuffer, "shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl");
+    }else if(entity->uiComponent->active == 1){
         setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
     }else {
         setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
@@ -321,7 +329,7 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         createPoints(positions,2,entity);
         return;
     }
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+    //createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
 }
 /**
  * @brief Create a line segment between two points
@@ -458,6 +466,20 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
 
     createMesh(vertices,6,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
 }
+
+void createFramebuffer()
+{
+    GLfloat quadVertices[] = {
+        // positions        // texture Coords
+        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+         1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+         1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+    };
+    
+    setupFrameBuffer(quadVertices,4);
+    setupMaterial(&globals.frameBuffer, "shaders/framebuffer_vertex.glsl", "shaders/framebuffer_fragment.glsl");
+}
 //----------------------------------------------------------------------------------------------//
 // UI API
 //----------------------------------------------------------------------------------------------//
@@ -484,7 +506,7 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation)
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
     // Bounding box, reuses the vertices from the rectangle
-    GLuint bbIndices[] = {
+ /*    GLuint bbIndices[] = {
         0, 1, 1,2, 2,3 ,3,0, 
     };
     Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
@@ -493,7 +515,7 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation)
     entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
     ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true);
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); */
 
     return entity->id;
 }

@@ -39,7 +39,7 @@ float randFloat(float rmin, float rmax);
 bool isPointInsideRect(Rectangle rect, vec2 point);
 Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
-void captureFramebuffer(int width, int height, int drawCallsCounter);
+void captureDrawCalls(int width, int height, int drawCallsCounter);
 float deg2rad(float degrees);
 GLuint setupTexture(TextureData textureData);
 void changeCursor(SDL_SystemCursor cursorType); 

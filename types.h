@@ -149,12 +149,15 @@ typedef struct Material {
   //  Texture* normalMap;
     float ior;
     GLuint alpha;
+    bool isPostProcessMaterial;
 } Material;
 
 typedef struct GpuData {
     GLuint VBO;
     GLuint VAO;
     GLuint EBO;
+    GLuint FBO;
+    GLuint RBO;
     GLuint shaderProgram;
     GLuint numIndicies;
     GLuint vertexCount;
@@ -315,6 +318,7 @@ typedef struct MaterialComponent {
     GLfloat diffuseMapOpacity;
     GLuint specularMap;
     unsigned int material_flags;
+    bool isPostProcessMaterial;
   //  Texture* normalMap;
 } MaterialComponent;
 
@@ -343,4 +347,3 @@ typedef struct ClosestLetter {
 } ClosestLetter;
 
 #endif // TYPES_H
-

@@ -61,6 +61,12 @@ struct Globals {
     bool mouseDoubleClick;
     bool blinnMode;
     bool gamma;
+    GLuint depthMap;
+    mat4x4 lightSpaceMatrix;
+    GpuData depthMapBuffer; // used to store depthmap shader
+    GpuData frameBuffer; // used to store framebuffer shader
+    GpuData postProcessBuffer; // used to store framebuffer shader
+    bool showDepthMap;
 
     // Cursor
     int cursorEntityId;

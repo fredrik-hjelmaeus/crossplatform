@@ -181,8 +181,8 @@ void uiInputSystem(){
  */
 void movementSystem(){
     // rotate model logic (temporary)
-    //float degrees = 15.5f * globals.delta_time;
-   // float radians = degrees * M_PI / 180.0f;
+    float degrees = 15.5f * globals.delta_time;
+    float radians = degrees * M_PI / 180.0f;
 
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
@@ -205,13 +205,14 @@ void movementSystem(){
                         //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                    // }
                 }
-                if(globals.entities[i].lightComponent->active == 1){
-                   // globals.entities[i].transformComponent->rotation[1] = radians;
+                if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0].id){
+                    
+                    globals.entities[i].transformComponent->rotation[1] = radians;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                   // float offset = 2.0 * sin(1.0 * globals.delta_time);
-                  //  globals.entities[i].lightComponent->direction[0] = offset;
+                    float offset = 2.0 * sin(1.0 * globals.delta_time);
+                  // globals.entities[i].lightComponent->direction[0] = offset;
                     //printf("offset %f\n", offset);
-                   // globals.entities[i].transformComponent->position[0] = offset;
+                    globals.entities[i].transformComponent->position[1] = offset;
                 }
                 //globals.entities[i].transformComponent->rotation[1] += radians; //<- This is an example of acceleration.
            }
