@@ -323,10 +323,15 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         vec3 result;
         vec3 normalized_direction;
         vec3_norm(&normalized_direction,direction);
-        vec3_add(&result,normalized_direction,position);
-        createLine(position,result,entity);
-        GLfloat positions[] = {  position[0], position[1], position[2] ,  result[0], result[1], result[2]  };
+        float scalar = 10.0f;
+        vec3 scaled_direction;
+        vec3_scale(scaled_direction, normalized_direction, scalar);
+        // multiply normalized direction with a float here
+        vec3_add(&result, scaled_direction, position);
+        createLine(position, result, entity);
+        GLfloat positions[] = { position[0], position[1], position[2] , result[0], result[1], result[2] };
         createPoints(positions,2,entity);
+        createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
         return;
     }
     //createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);

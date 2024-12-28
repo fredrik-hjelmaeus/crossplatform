@@ -34,3 +34,4 @@ void initializePointComponent(PointComponent* pointComponent);
 void initializeMatrix4(float (*matrix)[4][4]);
 
 #endif
+

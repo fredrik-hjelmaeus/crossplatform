@@ -8,7 +8,8 @@ ClosestLetter getCharacterByIndex(int index){
 
     const char* text = globals.entities[globals.focusedEntityId].uiComponent->text;
     if(index > strlen(text)){
-        return;
+        printf("unhandled path");
+        exit(1);
     }
     float x = (float)globals.entities[globals.focusedEntityId].uiComponent->boundingBox.x; 
     float y = (float)globals.entities[globals.focusedEntityId].uiComponent->boundingBox.y 

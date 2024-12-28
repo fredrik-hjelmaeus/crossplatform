@@ -4,6 +4,7 @@
 #include "types.h"
 
 //------
+void createPoints(GLfloat* positions,int numPoints, Entity* entity);
 /**
  * @brief Create a mesh
  * Main function to create a mesh. 
@@ -80,3 +81,4 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
 void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange);
 
 #endif // API_H
+

@@ -7,6 +7,8 @@
 #include "camera.h"
 #include "api.h"
 
+void deleteEntity(Entity* entity);
+
 void moveCursor(float x){
     globals.entities[globals.cursorEntityId].transformComponent->position[0] = x;
     globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
@@ -403,7 +405,7 @@ void textCursorSystem(){
     
     if(globals.focusedEntityId != -1){
         bool cursorExist = globals.cursorEntityId != -1;
-        bool onBlur = !isPointInsideRect(globals.entities[globals.focusedEntityId].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos});
+     //   bool onBlur = !isPointInsideRect(globals.entities[globals.focusedEntityId].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos});
 
         if(cursorExist){
             
@@ -435,7 +437,7 @@ void textCursorSystem(){
                     
                     // Draw selection
                     globals.cursorSelectionActive = true;
-                    float rectangleStartPos = globals.cursorDragStart - (uiVec.x * 0.5);
+                   // float rectangleStartPos = globals.cursorDragStart - (uiVec.x * 0.5);
                     float selectionWidth = uiVec.x - globals.cursorDragStart;
 
                     // Set cursor to be a new width & position 

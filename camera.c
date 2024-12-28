@@ -20,7 +20,7 @@ Camera* initCamera() {
     memcpy(camera->up, up, sizeof(vec3));
     memcpy(camera->target, target, sizeof(vec3));
     // Initialize other fields as needed
-    camera->speed = 0.01f;
+    camera->speed = 0.05f;
     camera->viewMatrixNeedsUpdate = 1;
     camera->projectionMatrixNeedsUpdate = 1;
     camera->fov = 45.0f;

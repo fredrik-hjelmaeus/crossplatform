@@ -8,3 +8,4 @@ Camera* initCamera();
 void updateCamera(Camera* camera);
 
 #endif // CAMERA_H
+

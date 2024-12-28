@@ -1199,12 +1199,12 @@ void renderDepthMap(GpuData* buffer,TransformComponent* transformComponent, Came
 
     glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
     // Loop through and print all matrix vvalues in lightSpaceMatrix:
-    printf("------------------\n");
+  /*   printf("------------------\n");
     for(int i = 0; i < 4; i++){
         for(int j = 0; j < 4; j++){
             printf("globals.lightSpaceMatrix[%d][%d] %f \n",i,j,globals.lightSpaceMatrix[i][j]);
         }
-    }  
+    }   */
     
     glBindVertexArray(buffer->VAO);
 

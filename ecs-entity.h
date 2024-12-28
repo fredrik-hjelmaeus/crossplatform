@@ -10,3 +10,4 @@ void deleteEntity(Entity* entity);
 // get entities by tag
 
 #endif // ECS_ENTITY_H
+

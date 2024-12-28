@@ -44,6 +44,7 @@
 #endif
 
 // Prototypes
+void createPoint(vec3 position);
 void onButtonClick();
 void onTextInputChange();
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
@@ -247,6 +248,11 @@ void createLightSpace(){
     mat4x4 lightProjection, lightView;
     float near_plane = -1.0f, far_plane = 300.0f;
     mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+  /*   printf(" globals.lights[0].transformComponent->position \n");
+    printf("x %f ", globals.lights[0].transformComponent->position[0]);
+    printf("y %f ", globals.lights[0].transformComponent->position[1]);
+    printf("z %f ", globals.lights[0].transformComponent->position[2]); */
+
     mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
     mat4x4_mul(globals.lightSpaceMatrix, lightProjection, lightView);
 }
@@ -259,22 +265,14 @@ bool initShadowMap(){
    int shadowMapTextureHeight = 1024;
    glGenTextures ( 1, &globals.depthMap );
    glBindTexture ( GL_TEXTURE_2D, globals.depthMap);
-   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
- GL_NEAREST );
-   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
- GL_LINEAR );
-   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
- GL_CLAMP_TO_EDGE );
-   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
- GL_CLAMP_TO_EDGE );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
    // set up hardware comparison
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
- GL_COMPARE_REF_TO_TEXTURE );
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC,
- GL_LEQUAL );
-   glTexImage2D ( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,
- shadowMapTextureWidth,
- shadowMapTextureHeight,
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,GL_COMPARE_REF_TO_TEXTURE );
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC,GL_LEQUAL );
+   glTexImage2D ( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,shadowMapTextureWidth,shadowMapTextureHeight,
  0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT,
  NULL );
    glBindTexture ( GL_TEXTURE_2D, 0 );
@@ -974,7 +972,7 @@ void render(){
    // if(!globals.lightSpaceMatrix){
      //   printf("yes\n");
         createLightSpace();
-//    }
+   //    }
    /*  glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
     glViewport(0, 0, width, height);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -1002,20 +1000,20 @@ void render(){
 
 
    // clear depth buffer
-   //glClear( GL_DEPTH_BUFFER_BIT );
+   // glClear( GL_DEPTH_BUFFER_BIT );
    // disable color rendering; only write to depth buffer
-   //glColorMask ( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
+   // glColorMask ( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
    // reduce shadow rendering artifact
-  // glEnable ( GL_POLYGON_OFFSET_FILL );
-   //glPolygonOffset( 4.0f, 100.0f );
+   // glEnable ( GL_POLYGON_OFFSET_FILL );
+   // glPolygonOffset( 4.0f, 100.0f );
 
    // Render depth map
    setViewportAndClear(globals.views.full);
-    glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
-    glEnable(GL_DEPTH_TEST);
-    // Disable color buffer writes (since we're not drawing any color)
- //   glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-   //setFontProjection(&globals.gpuFontData,globals.views.full);
+   glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+   glEnable(GL_DEPTH_TEST);
+   // Disable color buffer writes (since we're not drawing any color)
+   // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+   // setFontProjection(&globals.gpuFontData,globals.views.full);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
@@ -1213,7 +1211,7 @@ void initScene(){
     ObjGroup* triangleVolumes = obj_loadFile("./Assets/triangle_volumes.obj");
     ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");
     ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   */
-    ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
+ //  ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
  
     struct Material objectMaterial = {
     .active = 1,
@@ -1296,7 +1294,7 @@ void initScene(){
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-/*     createObject(&cornell_box->objData[0],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+/*  createObject(&cornell_box->objData[0],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[1],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[2],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[3],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
@@ -1305,8 +1303,8 @@ void initScene(){
     createObject(&cornell_box->objData[6],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[7],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */
  
-    createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, 1.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-    createObject(&textured_objects->objData[1],(vec3){5.0f, 2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    //createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, 1.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    //createObject(&textured_objects->objData[1],(vec3){5.0f, 2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
     createPoint((vec3){-5.0f, -5.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
@@ -1318,7 +1316,7 @@ void initScene(){
     //createObject(VIEWPORT_MAIN,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
 
     // lights
-    createLight(lightMaterial,(vec3){1.01f,5.01f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, -0.0f},DIRECTIONAL);
+    createLight(lightMaterial,(vec3){1.0f,5.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, -0.0f},DIRECTIONAL);
     createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
     createLight(lightMaterial,(vec3){3.0f, 2.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
@@ -1330,7 +1328,7 @@ void initScene(){
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
-  //  createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
 
 
