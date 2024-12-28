@@ -539,7 +539,7 @@ void modelSystem(){
                     mat4x4_translate(model, globals.entities[i].transformComponent->position[0],globals.entities[i].transformComponent->position[1],globals.entities[i].transformComponent->position[2]);
 
                     // set model scale
-                    mat4x4_scale_aniso(model, model, globals.entities[i].transformComponent->scale[0],globals.entities[i].transformComponent->scale[1],globals.entities[i].transformComponent->scale[2]);
+                    mat4x4_scale_aniso(model, (const float (*)[4])model, globals.entities[i].transformComponent->scale[0],globals.entities[i].transformComponent->scale[1],globals.entities[i].transformComponent->scale[2]);
                 
                     // rotate model on x, y, and z axes
                     // The cast on model tells the compiler that you're aware of the 

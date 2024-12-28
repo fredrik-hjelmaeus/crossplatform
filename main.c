@@ -48,20 +48,6 @@ void createPoint(vec3 position);
 void onButtonClick();
 void onTextInputChange();
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
-void createMesh(
-    GLfloat* verts,
-    GLuint num_of_vertex, 
-    GLuint* indices, // atm plug in some dummy-data if not used.
-    GLuint numIndicies, // atm just set to 0 if not used.
-    vec3 position,
-    vec3 scale,
-    vec3 rotation,
-    Material* material,
-    GLenum drawMode,
-    VertexDataType vertexDataType,
-    Entity* entity,
-    bool saveMaterial
-    );
 Camera* initCamera();
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -111,7 +97,7 @@ struct Globals globals = {
     .materialsCount=0,
     .materialsCapacity=15,
     .objDataCapacity=10,
-    .lights={0},
+    .lights={{0}},
     .lightsCount=0,
     .focusedEntityId=-1,
     .blinnMode=false,
@@ -119,7 +105,7 @@ struct Globals globals = {
     .depthMapBuffer={0},
     .frameBuffer={0},
     .depthMap=0,
-    .lightSpaceMatrix={0},
+    .lightSpaceMatrix={{0}},
     .postProcessBuffer={0},
     .showDepthMap=false,
 
@@ -254,7 +240,7 @@ void createLightSpace(){
     printf("z %f ", globals.lights[0].transformComponent->position[2]); */
 
     mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
-    mat4x4_mul(globals.lightSpaceMatrix, lightProjection, lightView);
+    mat4x4_mul(globals.lightSpaceMatrix, (const float (*)[4])lightProjection, (const float (*)[4])lightView);
 }
 
 bool initShadowMap(){
@@ -643,8 +629,8 @@ void input() {
               float y_ui =   y_ndc * ((float)height * 0.5);  */
               //printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
               //printf("Mouse moved to %f, %f\n", mouseX, mouseY);
-            SDLVector2 sdlMouseCoords = {xpos, ypos};
-            UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
+           // SDLVector2 sdlMouseCoords = {xpos, ypos};
+           // UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
            //printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
             // END TEMP CODE------------------
 
@@ -884,7 +870,7 @@ void test(){
     float near_plane = 1.0f, far_plane = 7.5f;
     mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
     mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
-    mat4x4_mul(lightSpaceMatrix, lightProjection, lightView);
+    mat4x4_mul(lightSpaceMatrix, (const float (*)[4])lightProjection, (const float (*)[4])lightView);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -1203,15 +1189,15 @@ void initScene(){
 
 
     //ObjGroup* truck = obj_loadFile("./Assets/truck.obj"); // Not supported atm, need .obj group support.
-    ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
+   // ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
   /*    ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
     ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
     ObjGroup* objExample = obj_loadFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
     ObjGroup* sphere = obj_loadFile("./Assets/blender_sphere3.obj");
     ObjGroup* triangleVolumes = obj_loadFile("./Assets/triangle_volumes.obj");
-    ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");
-    ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   */
- //  ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
+    ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");*/
+    ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   
+   ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
  
     struct Material objectMaterial = {
     .active = 1,
@@ -1224,7 +1210,7 @@ void initScene(){
     .diffuseMapOpacity = 1.0f,                  // used
     .specularMap = containerTwoSpecularMap,      // used
     };
-    struct Material textureUIMatExample = { // Saved as example of how to use a texture with ui element.
+   /*  struct Material textureUIMatExample = { // Saved as example of how to use a texture with ui element.
         .active = 1,
         .name = "textureUIMatExample",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
@@ -1234,8 +1220,8 @@ void initScene(){
         .diffuseMap = containerTwoMap,               // used
         .diffuseMapOpacity = 1.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
-    };
-    struct Material depthMapMaterial = { // Saved as example of how to use a texture with ui element.
+    }; */
+   /*  struct Material depthMapMaterial = { // Saved as example of how to use a texture with ui element.
         .active = 1,
         .name = "depthMapMaterial",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
@@ -1246,8 +1232,8 @@ void initScene(){
         .diffuseMapOpacity = 1.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
         .isPostProcessMaterial = true,
-    };
-    struct Material textInputUiMat = { // Saved as example of how to use a texture with ui element.
+    }; */
+   /*  struct Material textInputUiMat = { // Saved as example of how to use a texture with ui element.
         .active = 1,
         .name = "textInputUiMat",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
@@ -1257,8 +1243,8 @@ void initScene(){
         .diffuseMap = containerTwoMap,               // used
         .diffuseMapOpacity = 0.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
-    };
-    struct Material flatColorUiDarkGrayMat = {
+    }; */
+  /*   struct Material flatColorUiDarkGrayMat = {
         .active = 1,
         .name = "flatColorUiDarkGrayMat",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
@@ -1268,8 +1254,8 @@ void initScene(){
         .diffuseMap = containerTwoMap,               // used
         .diffuseMapOpacity = 0.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
-    };
-    struct Material flatColorUiGrayMat = {
+    }; */
+   /*  struct Material flatColorUiGrayMat = {
         .active = 1,
         .name = "flatColorUiGrayMat",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
@@ -1279,7 +1265,7 @@ void initScene(){
         .diffuseMap = containerTwoMap,               // used
         .diffuseMapOpacity = 0.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
-    };
+    }; */
     struct Material lightMaterial = {
         .active = 1,
         .name = "lightMaterial",
@@ -1303,8 +1289,8 @@ void initScene(){
     createObject(&cornell_box->objData[6],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[7],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */
  
-    //createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, 1.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-    //createObject(&textured_objects->objData[1],(vec3){5.0f, 2.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    createObject(&textured_objects->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    createObject(&textured_objects->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
     createPoint((vec3){-5.0f, -5.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
@@ -1313,7 +1299,7 @@ void initScene(){
     //createObject(VIEWPORT_MAIN,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
-    //createObject(VIEWPORT_MAIN,&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
+  // createObject(&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
 
     // lights
     createLight(lightMaterial,(vec3){1.0f,5.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, -0.0f},DIRECTIONAL);
@@ -1462,9 +1448,9 @@ int main(int argc, char **argv) {
 //------------------------------------------------------
 // TODO: Move these to api.c after we used them.
 void createPoint(vec3 position){
-    GLfloat vertices[] = {
+   /*  GLfloat vertices[] = {
         position[0], position[1], position[2],  1.0f, 1.0f, 1.0f, 0.0f, 0.0f
-    };
+    }; */
 }
 void createPoints(GLfloat* positions,int numPoints, Entity* entity){
     entity->pointComponent->active = 1;

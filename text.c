@@ -23,14 +23,14 @@ ClosestLetter getCharacterByIndex(int index){
     closestLetter.position = (Vector2){0.0f, 0.0f};
 
     for (unsigned char c = 0; c <= index; c++) {
-        Character ch = globals.characters[text[c]];
+        Character ch = globals.characters[(unsigned char)text[c]];
 
         // Calculate the position of the current character
         xpos = x + (float)ch.Bearing[0] * scale;
         ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
 
-        float w = (float)ch.Size[0] * scale;
-        float h = (float)ch.Size[1] * scale;    
+      //  float w = (float)ch.Size[0] * scale;
+      //  float h = (float)ch.Size[1] * scale;    
         
         // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
         lastShift = (float)(ch.Advance >> 6) * scale;
@@ -112,18 +112,18 @@ ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
     }
         
     for (unsigned char c = 0; c < strlen(text); c++) {
-        Character ch = globals.characters[text[c]];
+        Character ch = globals.characters[(unsigned char)text[c]];
 
         // Calculate the position of the current character
         xpos = x + (float)ch.Bearing[0] * scale;
         ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
 
         float w = (float)ch.Size[0] * scale;
-        float h = (float)ch.Size[1] * scale;    
+      //  float h = (float)ch.Size[1] * scale;    
        
         // Check if the mouse is closer to the current character than the previous closest character
         float testxpos = absValue(mouseX - xpos);
-        float testbestCharX = absValue(mouseX - bestCharX);
+       // float testbestCharX = absValue(mouseX - bestCharX);
            
         if(testxpos > bestCharX){
             // Previous character was the closest,so we remove the last character width from the xpos.

@@ -24,7 +24,7 @@ void setupLine(GLfloat* lines, int lineCount, GpuData* buffer);
 void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
 void renderFrameBuffer();
-void setupFrameBuffer(Vertex* vertices, int vertexCount);
+void setupFrameBuffer(GLfloat* vertices, int vertexCount);
 
 // Shadow maps
 void setupRenderBuffer(GpuData* buffer);

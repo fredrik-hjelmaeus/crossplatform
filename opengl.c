@@ -118,7 +118,7 @@ glUniform1i(depthMapLoc, 0);
     glBindVertexArray(0); */
 }
 
-void setupFrameBuffer(Vertex* vertices,int vertexCount)
+void setupFrameBuffer(GLfloat* vertices,int vertexCount)
 {
     printf("setup\n");
   /*   glGenVertexArrays(1, globals.frameBuffer.VAO);
@@ -916,7 +916,7 @@ void renderText(GpuData *buffer, char *text, float x, float y, float scale, Colo
 
     // iterate through all characters
     for (unsigned char c = 0; c < strlen(text); c++) {
-        Character ch = globals.characters[text[c]];
+        Character ch = globals.characters[(unsigned char)text[c]];
       
         float xpos = x + (float)ch.Bearing[0] * scale;
         float ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;

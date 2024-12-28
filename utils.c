@@ -392,7 +392,7 @@ char* obj_handleFilePath(const char* filepath){
     char* newPath = (char*)arena_Alloc(&globals.assetArena, (strlen(filepath) + 1) * sizeof(char));
     if(isupper(filepath[0]) && filepath[1] == ':'){
         strcpy(newPath,"/mnt/");
-        char* lower = tolower(filepath[0]);
+        char lower = tolower(filepath[0]);
         newPath[5] = lower;
         int index = 5;
        
@@ -521,7 +521,7 @@ void obj_parseMaterial(const char *filepath){
         //Ks, specular color
         if(strncmp(mtlLine, "Ks", 2) == 0){
             sscanf(mtlLine, "Ks %f %f %f", &globals.materials[globals.materialsCount-1].specular.r, &globals.materials[globals.materialsCount-1].specular.g, &globals.materials[globals.materialsCount-1].specular.b);
-            printf("specular color %f %f %f \n",globals.materials[globals.materialsCount-1].specular.r, globals.materials[globals.materialsCount-1].specular.g, globals.materials[globals.materialsCount-1].specular.b);
+           // printf("specular color %f %f %f \n",globals.materials[globals.materialsCount-1].specular.r, globals.materials[globals.materialsCount-1].specular.g, globals.materials[globals.materialsCount-1].specular.b);
             continue;
         }
         //Ke, emissive color
