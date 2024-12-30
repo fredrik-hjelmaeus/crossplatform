@@ -209,12 +209,13 @@ void movementSystem(){
                 }
                 if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0].id){
                     
-                    globals.entities[i].transformComponent->rotation[1] = radians;
+                   // globals.entities[i].transformComponent->rotation[1] = radians;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                    float offset = 2.0 * sin(1.0 * globals.delta_time);
+                    float offset = 20.0 * sin(0.1 * globals.delta_time);
                   // globals.entities[i].lightComponent->direction[0] = offset;
                     //printf("offset %f\n", offset);
-                    globals.entities[i].transformComponent->position[1] = offset;
+                    globals.entities[i].transformComponent->position[0] = offset;
+                    globals.entities[i].transformComponent->position[2] = offset;
                 }
                 //globals.entities[i].transformComponent->rotation[1] += radians; //<- This is an example of acceleration.
            }

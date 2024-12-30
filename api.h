@@ -81,5 +81,3 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
 void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange);
 
 #endif // API_H
-
-

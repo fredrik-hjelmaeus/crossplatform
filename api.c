@@ -3,6 +3,19 @@
 #include "opengl.h"
 #include "ecs-entity.h"
 
+void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation){
+    entity->transformComponent->active = 1;
+    entity->transformComponent->position[0] = position[0];
+    entity->transformComponent->position[1] = position[1];
+    entity->transformComponent->position[2] = position[2];
+    entity->transformComponent->scale[0] = scale[0];
+    entity->transformComponent->scale[1] = scale[1];
+    entity->transformComponent->scale[2] = scale[2];
+    entity->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
+    entity->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
+    entity->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
+    entity->transformComponent->modelNeedsUpdate = 1;
+}
 //----------------------------------------------------------------------------------------------//
 /**
  * @brief Create a mesh
@@ -124,17 +137,7 @@ void createMesh(
     } */
 
     // transform data
-    entity->transformComponent->active = 1;
-    entity->transformComponent->position[0] = position[0];
-    entity->transformComponent->position[1] = position[1];
-    entity->transformComponent->position[2] = position[2];
-    entity->transformComponent->scale[0] = scale[0];
-    entity->transformComponent->scale[1] = scale[1];
-    entity->transformComponent->scale[2] = scale[2];
-    entity->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
-    entity->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
-    entity->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
-    entity->transformComponent->modelNeedsUpdate = 1;
+    setTransformData(entity,position,scale,rotation);
 
     // material data
     entity->materialComponent->active = 1;
@@ -378,8 +381,11 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         vec3_add(result, scaled_direction, position);
         createLine(position, result, entity);
         GLfloat positions[] = { position[0], position[1], position[2] , result[0], result[1], result[2] };
-        createPoints(positions,2,entity);
-        createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+   //     createPoints(positions,2,entity);
+        setTransformData(entity,position,scale,rotation);
+        //createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+       // createMesh(vertices,36,indices,0,result,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+        printf("directional light\n");
         return;
     }
     //createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);

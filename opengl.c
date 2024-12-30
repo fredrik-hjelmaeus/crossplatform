@@ -35,6 +35,25 @@ void setupLine(GLfloat* lines, int lineCount, GpuData* buffer) {
     glBindVertexArray(0);
 }
 
+void updateLine(LineComponent* lineComponent){
+    GLfloat lines[] = {
+        lineComponent->start[0], lineComponent->start[1], lineComponent->start[2], 
+        lineComponent->end[0], lineComponent->end[1], lineComponent->end[2]
+    };
+    // print out the line
+  //  printf("Line: %f %f %f %f %f %f\n",lines[0],lines[1],lines[2],lines[3],lines[4],lines[5]);
+
+    glBindBuffer(GL_ARRAY_BUFFER, lineComponent->gpuData->VBO);
+    
+    glBufferSubData(GL_ARRAY_BUFFER,
+                    0,
+                    sizeof(lines),  // 3 floats for position
+                    lines);          // pointer to vertex data
+                                    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    lineComponent->color = (Color){1.0f,0.0f,1.0f,1.0f};
+}
+
 /** 
  * @brief Setup buffer to render GL_POINTS. Very similar to setupMesh, 
  * only difference is that we only need position attributes & not prepared for indexed draws using a EBO.
@@ -451,7 +470,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
  
         // Set lightColor uniform
         GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
-        glUniform3f(lightColorLocation, 0.0f,0.0f,1.0f);
+        glUniform3f(lightColorLocation, 1.0f,1.0f,0.0f);
 
         // Set the light ambient uniform 
         GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].ambient");

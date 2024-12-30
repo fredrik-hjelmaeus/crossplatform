@@ -21,6 +21,7 @@ void renderText(GpuData* buffer, char* text, float x, float y, float scale, Colo
 void renderLine(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,Color lineColor);
 void renderPoints(GpuData* buffer, TransformComponent* transformComponent, Camera* camera, Color pointColor,float pointSize);
 void setupLine(GLfloat* lines, int lineCount, GpuData* buffer);
+void updateLine(LineComponent* lineComponent);
 void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
 void renderFrameBuffer();

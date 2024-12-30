@@ -232,23 +232,53 @@ void setViewportWithScissorAndClear(View view) {
 
 void createLightSpace(){
     mat4x4 lightProjection, lightView;
-    float near_plane = -1.0f, far_plane = 300.0f;
+    float near_plane = -0.05f, far_plane = 300.0f;
     mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
   /*   printf(" globals.lights[0].transformComponent->position \n");
     printf("x %f ", globals.lights[0].transformComponent->position[0]);
     printf("y %f ", globals.lights[0].transformComponent->position[1]);
     printf("z %f ", globals.lights[0].transformComponent->position[2]); */
+    vec3 dir = {
+        globals.lights[0].lightComponent->direction[0], 
+        globals.lights[0].lightComponent->direction[1], 
+        globals.lights[0].lightComponent->direction[2]
+    };
+    vec3 pos = {
+    globals.lights[0].transformComponent->position[0],
+    globals.lights[0].transformComponent->position[1],
+    globals.lights[0].transformComponent->position[2]
+};
 
-    mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
+// Construct target position: pos + dir
+vec3 target = {
+    pos[0] + dir[0],
+    pos[1] + dir[1],
+    pos[2] + dir[2]
+};
+//target[0] = 0.0f;
+//target[1] = 0.0f;
+//target[2] = 0.0f;
+    mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, dir, (vec3){0.0f, 1.0f, 0.0f});
     mat4x4_mul(globals.lightSpaceMatrix, (const float (*)[4])lightProjection, (const float (*)[4])lightView);
+
+    for(int i = 0; i < MAX_ENTITIES; i++){
+        if(globals.entities[i].alive == 1 && globals.entities[i].lightComponent->active == 1 && globals.entities[i].lightComponent->type == DIRECTIONAL){
+            
+            globals.entities[i].lineComponent->end[0] = target[0];
+            globals.entities[i].lineComponent->end[1] = target[1];
+            globals.entities[i].lineComponent->end[2] = target[2];
+         //   updateLine(globals.entities[i].lineComponent);
+
+        }
+    }
 }
 
 bool initShadowMap(){
    
    GLenum none = GL_NONE;
    // use 1K x 1K texture for shadow map
-   int shadowMapTextureWidth = 1024;
-   int shadowMapTextureHeight = 1024;
+   int shadowMapTextureWidth = 32;
+   int shadowMapTextureHeight = 32;
    glGenTextures ( 1, &globals.depthMap );
    glBindTexture ( GL_TEXTURE_2D, globals.depthMap);
    glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
@@ -678,7 +708,7 @@ void update(){
     uiInputSystem();
     //hoverAndClickSystem();
     textCursorSystem();
-   // movementSystem();
+    movementSystem();
     modelSystem();
    
 }
@@ -1289,9 +1319,9 @@ void initScene(){
     createObject(&cornell_box->objData[6],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[7],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */
  
-    createObject(&textured_objects->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-    createObject(&textured_objects->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
-    createPoint((vec3){-5.0f, -5.0f, 0.0f});
+   // createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+   // createObject(&textured_objects->objData[1],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+   // createPoint((vec3){-5.0f, -5.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
     //createObject(VIEWPORT_MAIN,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -1299,10 +1329,10 @@ void initScene(){
     //createObject(VIEWPORT_MAIN,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
-  // createObject(&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
+   createObject(&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
 
     // lights
-    createLight(lightMaterial,(vec3){1.0f,5.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, -0.0f},DIRECTIONAL);
+    createLight(lightMaterial,(vec3){0.01f,15.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
     createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
     createLight(lightMaterial,(vec3){3.0f, 2.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
@@ -1314,7 +1344,7 @@ void initScene(){
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
-    createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+ //   createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
 
 
