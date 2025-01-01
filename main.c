@@ -108,6 +108,8 @@ struct Globals globals = {
     .lightSpaceMatrix={{0}},
     .postProcessBuffer={0},
     .showDepthMap=false,
+    .shadowWidth=1024,
+    .shadowHeight=1024,
 
     // Cursor
     .cursorEntityId=-1,
@@ -204,6 +206,19 @@ void setViewportAndClear(View view){
     // Clear the viewport
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
+void setViewportForDepthMapShadowRender(View view){
+    Rectangle rect = convertViewRectangleToSDLCoordinates(view,globals.views.full.rect.height);
+   
+    // Set the viewport
+    glViewport(0, 0, globals.shadowWidth, globals.shadowHeight);
+
+     // Set the clear color
+    glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
+
+    // Clear the viewport
+    glClear(GL_DEPTH_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
 
 /**
  * @brief Set the viewport, scissor box and clear color for a view
@@ -232,7 +247,7 @@ void setViewportWithScissorAndClear(View view) {
 
 void createLightSpace(){
     mat4x4 lightProjection, lightView;
-    float near_plane = -0.05f, far_plane = 300.0f;
+    float near_plane = 0.10f, far_plane = 30.0f;
     mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
   /*   printf(" globals.lights[0].transformComponent->position \n");
     printf("x %f ", globals.lights[0].transformComponent->position[0]);
@@ -258,7 +273,16 @@ vec3 target = {
 //target[0] = 0.0f;
 //target[1] = 0.0f;
 //target[2] = 0.0f;
-    mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, dir, (vec3){0.0f, 1.0f, 0.0f});
+vec3 tempLightPos;
+tempLightPos[0] = -2.0f;
+tempLightPos[1] = 4.0f;
+tempLightPos[2] = -1.0f;
+
+tempLightPos[0] = 0.01f;
+tempLightPos[1] = 15.0f;
+tempLightPos[2] = 0.0f;
+
+    mat4x4_look_at(lightView, tempLightPos,  (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
     mat4x4_mul(globals.lightSpaceMatrix, (const float (*)[4])lightProjection, (const float (*)[4])lightView);
 
     for(int i = 0; i < MAX_ENTITIES; i++){
@@ -708,7 +732,7 @@ void update(){
     uiInputSystem();
     //hoverAndClickSystem();
     textCursorSystem();
-    movementSystem();
+   // movementSystem();
     modelSystem();
    
 }
@@ -1024,18 +1048,19 @@ void render(){
    // glPolygonOffset( 4.0f, 100.0f );
 
    // Render depth map
-   setViewportAndClear(globals.views.full);
-   glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+   setViewportForDepthMapShadowRender(globals.views.full);
    glEnable(GL_DEPTH_TEST);
    // Disable color buffer writes (since we're not drawing any color)
-   // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
    // setFontProjection(&globals.gpuFontData,globals.views.full);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active != 1){
                     if(!globals.entities[i].materialComponent->isPostProcessMaterial){
-                        renderDepthMap(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
+                        //renderDepthMap(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
+                        depthshadow_renderToDepthTexture(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent);
                     }
                 }
             }
@@ -1044,7 +1069,7 @@ void render(){
 
    // Enable color buffer writes again
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
+  // glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
 
    // Render main view & 3d objects
    setViewportAndClear(globals.views.full);
@@ -1200,14 +1225,25 @@ void emscriptenLoop() {
 */
 void initScene(){
 
+   globals.views.main.camera->position[1] = 35.0;
+   globals.views.main.camera->position[2] = 35.0;
+   printf("cam pos: %f %f %f \n",globals.views.main.camera->position[0],globals.views.main.camera->position[1],globals.views.main.camera->position[2]);
+
    // Assets
    initFont();
    //createFramebuffer();
    setupMaterial(&globals.depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
   // setupDepthMap(&globals.depthMapBuffer);
-   setupRenderBuffer(&globals.depthMapBuffer);
+ //  setupRenderBuffer(&globals.depthMapBuffer);
    //initShadowMap();
    //setupMaterial(&globals.depthMapBuffer,"shaders/depth_vertex.glsl", "shaders/depth_fragment.glsl");
+
+    // New depth shadow steps:
+    depthshadow_createFrameBuffer(&globals.depthMapBuffer);
+    depthshadow_createDepthTexture(&globals.depthMapBuffer);
+    depthshadow_configureFrameBuffer(&globals.depthMapBuffer);
+   // depthshadow_renderToDepthTexture
+
   
  //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
    TextureData containerTextureData = loadTexture("./Assets/container.jpg");
@@ -1251,7 +1287,7 @@ void initScene(){
         .diffuseMapOpacity = 1.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
     }; */
-   /*  struct Material depthMapMaterial = { // Saved as example of how to use a texture with ui element.
+     struct Material depthMapMaterial = { // Saved as example of how to use a texture with ui element.
         .active = 1,
         .name = "depthMapMaterial",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
@@ -1262,7 +1298,7 @@ void initScene(){
         .diffuseMapOpacity = 1.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
         .isPostProcessMaterial = true,
-    }; */
+    }; 
    /*  struct Material textInputUiMat = { // Saved as example of how to use a texture with ui element.
         .active = 1,
         .name = "textInputUiMat",
@@ -1332,7 +1368,7 @@ void initScene(){
    createObject(&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
 
     // lights
-    createLight(lightMaterial,(vec3){0.01f,15.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
+    createLight(lightMaterial,(vec3){0.0f,1.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
     createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
     createLight(lightMaterial,(vec3){3.0f, 2.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
@@ -1346,7 +1382,10 @@ void initScene(){
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
  //   createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
+    // Frame buffer quad
+    ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
 
+    debug_drawFrustum();
 
    // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. (controlled by the uiSystem)
    // Scale is in pixels, 100.0f is 100 pixels etc.
@@ -1362,8 +1401,7 @@ void initScene(){
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
     
-    // Frame buffer quad
-    ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); */
+    */
 
     //ui_slider(flatColorUiDarkGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider",onSliderChange);
     //ui_colorPicker(flatColorUiDarkGrayMat, (vec3){545.0f, 105.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "ColorPicker",onColorPickerChange);

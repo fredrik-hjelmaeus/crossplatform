@@ -23,6 +23,8 @@ void setupLine(GLfloat* lines, int lineCount, GpuData* buffer) {
 
     // Copy vertices to buffer
     glBufferData(GL_ARRAY_BUFFER, lineCount * sizeof(Line), lines, GL_STATIC_DRAW);
+    
+    printf("Line: %f %f %f %f %f %f\n",lines[0],lines[1],lines[2],lines[3],lines[4],lines[5]);
 
     // Position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
@@ -159,6 +161,55 @@ void setupFrameBuffer(GLfloat* vertices,int vertexCount)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); */
+}
+
+void depthshadow_createFrameBuffer(GpuData *buffer)
+{
+    GLuint depthMapFBO;
+    buffer->FBO = depthMapFBO;
+    glGenFramebuffers(1, &buffer->FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
+}
+
+void depthshadow_createDepthTexture()
+{
+    glGenTextures(1, &globals.depthMap);
+    glBindTexture(GL_TEXTURE_2D, globals.depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, globals.shadowWidth, globals.shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+
+void depthshadow_configureFrameBuffer(GpuData *buffer)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, globals.depthMap, 0);
+    //glDrawBuffer(GL_NONE);
+   // glReadBuffer(GL_NONE);
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        printf("Error: Framebuffer is not complete!\n");
+    }
+}
+
+void depthshadow_renderToDepthTexture(GpuData *buffer,TransformComponent *transformComponent)
+{
+    glUseProgram(globals.depthMapBuffer.shaderProgram);
+    unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);  
+    glBindVertexArray(buffer->VAO);
+    glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
+
+   // debug drawcalls
+   if(globals.debugDrawCalls){
+        captureDrawCalls(globals.shadowWidth,globals.shadowHeight, globals.drawCallsCounter++);
+   }
+
+   glBindVertexArray(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 /** 
@@ -403,7 +454,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
             }
        // printf("shader quad that use/show depthmap texture %d \n",buffer->shaderProgram);
        // glUniform1i(hasDiffuseMapLocation, 1);
-       // material->diffuseMap = globals.depthMap;
+        material->diffuseMap = globals.depthMap;
       //  material->specularMap = globals.depthMap;
      /*    material->ambient.r = 1.0f;
         material->ambient.g = 1.0f;
@@ -1042,6 +1093,8 @@ void setupFontTextures(char* fontPath,int fontSize){
 
 }
 
+
+
 /**
  * Setups a Framebuffer for rendering the depth map
  */
@@ -1201,6 +1254,9 @@ void renderDepthMap(GpuData* buffer,TransformComponent* transformComponent, Came
         fprintf(stderr, "Error: camera is NULL\n");
         return;
     }
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS); 
    
     // Set shader
     glUseProgram(globals.depthMapBuffer.shaderProgram);
@@ -1209,12 +1265,12 @@ void renderDepthMap(GpuData* buffer,TransformComponent* transformComponent, Came
 
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
-    unsigned int viewLoc  = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "view");
+  // unsigned int viewLoc  = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "view");
 
     // pass them to the shaders 
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &camera->view[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "projection"), 1, GL_FALSE, &camera->projection[0][0]);
+   // glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &camera->view[0][0]);
+    //glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "projection"), 1, GL_FALSE, &camera->projection[0][0]);
 
     glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
     // Loop through and print all matrix vvalues in lightSpaceMatrix:

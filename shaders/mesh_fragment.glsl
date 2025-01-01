@@ -146,7 +146,7 @@ void main()
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+    float shadow = currentDepth > closestDepth  ? 0.0 : 1.0;
 
     vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;    
     vec3 result = ambient + diffuse + specular;
@@ -155,7 +155,7 @@ void main()
     if(gamma)
         result = pow(result, vec3(1.0/2.2)); 
     FragColor = vec4(result, 1.0);
-   // FragColor = vec4(vec3(closestDepth), 1.0);
+    //FragColor = vec4(vec3(closestDepth), 1.0);
 }
 
 // calculates the color when using a spot light.

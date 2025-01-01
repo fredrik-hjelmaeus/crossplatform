@@ -255,6 +255,8 @@ typedef struct LineComponent {
     //Vertex* vertices; 
     GpuData* gpuData;
     Color color;
+    //int lineCount; see createPolyline 
+    //vec3* linePositions; see createPolyline 
     // line width (See OpenGL_ES_3.0_Programming_Guide page 205)
     // line type, dotted (GL_LINE_STIPPLE )
     // line dotted pattern ( glLineStipple)

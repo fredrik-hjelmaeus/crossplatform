@@ -425,6 +425,40 @@ void createLine(vec3 position, vec3 endPosition,Entity* entity){
     setupMaterial(entity->lineComponent->gpuData,"shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
 }
 /**
+ * @brief Create a closed poly line segment with four points
+ * @param positions
+ * @param positionCount
+ */
+/* void createPolyLine(vec3* positions, int positionCount,Entity* entity){
+    entity->lineComponent->active = 1;
+    entity->lineComponent->start[0] = position[0];
+    entity->lineComponent->start[1] = position[1];
+    entity->lineComponent->start[2] = position[2];
+    entity->lineComponent->end[0] = endPosition[0];
+    entity->lineComponent->end[1] = endPosition[1];
+    entity->lineComponent->end[2] = endPosition[2];
+    entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
+    // TODO: transform pos is start of segment, should it be mid-point?
+    entity->transformComponent->position[0] = position[0];
+    entity->transformComponent->position[1] = position[1];
+    entity->transformComponent->position[2] = position[2];
+    entity->transformComponent->scale[0] = 1.0f;
+    entity->transformComponent->scale[1] = 1.0f;
+    entity->transformComponent->scale[2] = 1.0f;
+    entity->transformComponent->rotation[0] = 0.0f;
+    entity->transformComponent->rotation[1] = 0.0f;
+    entity->transformComponent->rotation[2] = 0.0f;
+    entity->transformComponent->modelNeedsUpdate = 1;
+
+    GLfloat lines[] = {
+        position[0], position[1], position[2], 
+        endPosition[0], endPosition[1], endPosition[2]
+    };
+
+    setupLine(lines,2,entity->lineComponent->gpuData);
+    setupMaterial(entity->lineComponent->gpuData,"shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
+} */
+/**
  * @brief Create a Cube
  * Create a Cube mesh
  * @param diffuse - color of the cube
@@ -595,6 +629,114 @@ void createFramebuffer()
   
     setupFrameBuffer(quadVertices,4);
     setupMaterial(&globals.frameBuffer, "shaders/framebuffer_vertex.glsl", "shaders/framebuffer_fragment.glsl");
+}
+void debug_drawFrustum()
+{
+     //float near_plane = -0.05f, far_plane = 300.0f;
+    //mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    Entity* entity = addEntity(MODEL);
+    vec3 position;
+    vec3 scale;
+    vec3 rotation;
+    position[0] = 0.0f;
+    position[1] = 0.0f;
+    position[2] = 0.0f;
+    scale[0] = 0.0f;
+    scale[1] = 0.0f;
+    scale[2] = 0.0f;
+    rotation[0] = 0.0f;
+    rotation[1] = 0.0f;
+    rotation[2] = 0.0f;
+    
+    // Near plane top
+    entity->transformComponent->position[0] = 0;
+    entity->transformComponent->position[1] = 0;
+    entity->transformComponent->position[2] = 0;
+    entity->transformComponent->scale[0] = 1.0f;
+    entity->transformComponent->scale[1] = 1.0f;
+    entity->transformComponent->scale[2] = 1.0f;
+    entity->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
+    entity->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
+    entity->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
+    entity->transformComponent->modelNeedsUpdate = 1;
+  
+    vec3 startt;
+    vec3 endt;
+    startt[0] = 0.0f;
+    startt[1] = 10.0f;
+    startt[2] = 0.0f;
+    endt[0]   = 2.0f;
+    endt[1]   = 10.0f;
+    endt[2]   = 0.0f;
+    createLine(startt,endt,entity);
+    
+    // Near plane bottom
+    Entity* entity4 = addEntity(MODEL);
+    entity4->transformComponent->position[0] = 0;
+    entity4->transformComponent->position[1] = 0;
+    entity4->transformComponent->position[2] = 0;
+    entity4->transformComponent->scale[0] = 1.0f;
+    entity4->transformComponent->scale[1] = 1.0f;
+    entity4->transformComponent->scale[2] = 1.0f;
+    entity4->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
+    entity4->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
+    entity4->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
+    entity4->transformComponent->modelNeedsUpdate = 1;
+  
+    vec3 startb;
+    vec3 endb;
+    startb[0] = 0.0f;
+    startb[1] = 10.0f;
+    startb[2] = 1.0f;
+    endb[0]   = 2.0f;
+    endb[1]   = 10.0f;
+    endb[2]   = 1.0f;
+    createLine(startb,endb,entity4);
+   
+    // Near plane right
+    Entity* entity2 = addEntity(MODEL);
+    entity2->transformComponent->position[0] = 0;
+    entity2->transformComponent->position[1] = 0;
+    entity2->transformComponent->position[2] = 0;
+    entity2->transformComponent->scale[0]    = 1.0f;
+    entity2->transformComponent->scale[1]    = 1.0f;
+    entity2->transformComponent->scale[2]    = 1.0f;
+    entity2->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
+    entity2->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
+    entity2->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
+    entity2->transformComponent->modelNeedsUpdate = 1;
+    vec3 startr;
+    vec3 endr;
+    startr[0] = 1.0f;
+    startr[1] = 10.0f;
+    startr[2] = 0.0f;
+    endr[0] = 1.0f;
+    endr[1] = 10.0f;
+    endr[2] = 2.0f;
+    createLine(startr,endr,entity2);
+
+    // Near plane left
+    Entity* entity3 = addEntity(MODEL);
+    entity3->transformComponent->position[0] = 0;
+    entity3->transformComponent->position[1] = 0;
+    entity3->transformComponent->position[2] = 0;
+    entity3->transformComponent->scale[0]    = 1.0f;
+    entity3->transformComponent->scale[1]    = 1.0f;
+    entity3->transformComponent->scale[2]    = 1.0f;
+    entity3->transformComponent->rotation[0] = rotation[0] * M_PI / 180.0f; // convert to radians
+    entity3->transformComponent->rotation[1] = rotation[1] * M_PI / 180.0f;
+    entity3->transformComponent->rotation[2] = rotation[2] * M_PI / 180.0f;
+    entity3->transformComponent->modelNeedsUpdate = 1;
+    vec3 startl;
+    vec3 endl;
+    startl[0] = 0.0f;
+    startl[1] = 10.0f;
+    startl[2] = 0.0f;
+    endl[0] = 0.0f;
+    endl[1] = 10.0f;
+    endl[2] = 2.0f;
+    createLine(startl,endl,entity3);
+    
 }
 //----------------------------------------------------------------------------------------------//
 // UI API

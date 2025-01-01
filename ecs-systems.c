@@ -211,7 +211,7 @@ void movementSystem(){
                     
                    // globals.entities[i].transformComponent->rotation[1] = radians;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                    float offset = 20.0 * sin(0.1 * globals.delta_time);
+                    float offset = 20.0 * sin(0.5 * globals.delta_time);
                   // globals.entities[i].lightComponent->direction[0] = offset;
                     //printf("offset %f\n", offset);
                     globals.entities[i].transformComponent->position[0] = offset;

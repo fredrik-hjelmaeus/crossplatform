@@ -67,6 +67,8 @@ struct Globals {
     GpuData frameBuffer; // used to store framebuffer shader
     GpuData postProcessBuffer; // used to store framebuffer shader
     bool showDepthMap;
+    int shadowWidth;
+    int shadowHeight;
 
     // Cursor
     int cursorEntityId;
