@@ -140,21 +140,39 @@ void main()
     vec3 projCoords = FragPosLightSpace.xyz / FragPosLightSpace.w;
     // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
-    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
-    
-    // get depth of current fragment from light's perspective
-    float currentDepth = projCoords.z;
-    // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 0.0 : 1.0;
+   
 
-    vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;    
-    vec3 result = ambient + diffuse + specular;
-    result *= shadow;
-    result += ambient;
+    float shadow = 0.0;
+    float bias = 0.005;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += projCoords.z - bias > pcfDepth  ? 1.0 : 0.0;        
+        }
+    }
+    shadow /= 9.0;
+
+    vec3 result = (ambient + (1.0 - shadow) * (diffuse + specular));
     if(gamma)
         result = pow(result, vec3(1.0/2.2)); 
     FragColor = vec4(result, 1.0);
+    
+    // get depth of current fragment from light's perspective
+   // float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    //float shadow = currentDepth > closestDepth  ? 0.0 : 1.0;
+
+    //vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;    
+   /*  vec3 result = ambient + diffuse + specular;
+   // float shadow = 
+    result *= texture(shadowMap, projCoords.xyz);
+    result += ambient;
+    if(gamma)
+        result = pow(result, vec3(1.0/2.2)); 
+    FragColor = vec4(result, 1.0); */
     //FragColor = vec4(vec3(closestDepth), 1.0);
 }
 

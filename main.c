@@ -732,7 +732,7 @@ void update(){
     uiInputSystem();
     //hoverAndClickSystem();
     textCursorSystem();
-   // movementSystem();
+    movementSystem();
     modelSystem();
    
 }

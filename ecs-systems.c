@@ -191,7 +191,7 @@ void movementSystem(){
             
            if(globals.entities[i].transformComponent->active == 1){
                 // Do movement logic here:
-                
+             
                 // Example of movement logic: Rotate on y-axis on all entities that are not ui (temporary)
                 if(globals.entities[i].uiComponent->active == 1){
                   //  printf("entity %d \n", i);
@@ -206,6 +206,12 @@ void movementSystem(){
                         //globals.entities[i].transformComponent->rotation[1] = radians;
                         //globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                    // }
+                }else if(globals.entities[i].meshComponent->active == 1 && globals.entities[i].id == 0){
+                       //printf("entity %d \n", i);
+                       //float offset = 20.0 * sin(0.5 * globals.delta_time);
+                    globals.entities[i].transformComponent->rotation[1] = globals.delta_time;
+                    globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                
                 }
                 if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0].id){
                     
