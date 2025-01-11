@@ -1,26 +1,6 @@
 #include <stdio.h>
 #include <time.h>
-// macOS:
-// build setup with .sh-file
-// renderers:
-// quartz : https://developer.apple.com/library/archive/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/Introduction/Introduction.html
-// SFML: https://github.com/SFML/CSFML
-// gcc -o my_program newfile.c -I./include -L./lib -lsfml-graphics -lsfml-window -lsfml-system
-// Vulkan
-// Allegro
-// Cairo
-// opengl
-// metal
-// scenekit
-// Core Animation
-// Core Image
-// SpriteKit
-// imGui
-// GTK
-// sdl
 #include <SDL2/SDL.h>
-// Qt
-// Raylib
 #include "opengl_types.h"
 #include "types.h"
 #include "globals.h"
@@ -32,6 +12,8 @@
 #include "ecs-entity.h"
 #include "ecs-systems.h"
 #include "api.h"
+#include "assets.h"
+
 
 // Stb
 #define STB_IMAGE_IMPLEMENTATION
@@ -81,6 +63,8 @@ struct Globals globals = {
     .mouseDoubleClick=false,
     .deselectCondition=false,
     .mouseDragged=false,
+    .mouseDragStart={-10000.0f,-10000.0f},
+    .mouseDragPreviousFrame={0.0f,0.0f},
 
     .drawBoundingBoxes=false,
     .render=true,
@@ -108,15 +92,17 @@ struct Globals globals = {
     .lightSpaceMatrix={{0}},
     .postProcessBuffer={0},
     .showDepthMap=false,
-    .shadowWidth=1024,
-    .shadowHeight=1024,
+    .shadowWidth=2048,
+    .shadowHeight=2048,
 
     // Cursor
     .cursorEntityId=-1,
     .cursorBlinkTime=0.5f,
     .cursorSelectionActive=false,
     .cursorDragStart=-1.0f,
-    .cursorTextSelection={0,0}
+    .cursorTextSelection={0,0},
+
+ 
     
 };
 
@@ -247,12 +233,9 @@ void setViewportWithScissorAndClear(View view) {
 
 void createLightSpace(){
     mat4x4 lightProjection, lightView;
-    float near_plane = 0.10f, far_plane = 30.0f;
-    mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-  /*   printf(" globals.lights[0].transformComponent->position \n");
-    printf("x %f ", globals.lights[0].transformComponent->position[0]);
-    printf("y %f ", globals.lights[0].transformComponent->position[1]);
-    printf("z %f ", globals.lights[0].transformComponent->position[2]); */
+    float near_plane = 0.001f, far_plane = 60.0f;
+    mat4x4_ortho(lightProjection, -60.0f, 60.0f, -60.0f, 60.0f, near_plane, far_plane);
+  
     vec3 dir = {
         globals.lights[0].lightComponent->direction[0], 
         globals.lights[0].lightComponent->direction[1], 
@@ -270,33 +253,16 @@ vec3 target = {
     pos[1] + dir[1],
     pos[2] + dir[2]
 };
-//target[0] = 0.0f;
-//target[1] = 0.0f;
-//target[2] = 0.0f;
-vec3 tempLightPos;
-tempLightPos[0] = -2.0f;
-tempLightPos[1] = 4.0f;
-tempLightPos[2] = -1.0f;
 
-tempLightPos[0] = 0.01f;
-tempLightPos[1] = 15.0f;
-tempLightPos[2] = 0.0f;
 
-    mat4x4_look_at(lightView, tempLightPos,  (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
+
+
+    mat4x4_look_at(lightView, globals.lights[0].transformComponent->position,  (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
     mat4x4_mul(globals.lightSpaceMatrix, (const float (*)[4])lightProjection, (const float (*)[4])lightView);
 
-    for(int i = 0; i < MAX_ENTITIES; i++){
-        if(globals.entities[i].alive == 1 && globals.entities[i].lightComponent->active == 1 && globals.entities[i].lightComponent->type == DIRECTIONAL){
-            
-            globals.entities[i].lineComponent->end[0] = target[0];
-            globals.entities[i].lineComponent->end[1] = target[1];
-            globals.entities[i].lineComponent->end[2] = target[2];
-         //   updateLine(globals.entities[i].lineComponent);
-
-        }
-    }
 }
 
+// More optimal shadow map ?.
 bool initShadowMap(){
    
    GLenum none = GL_NONE;
@@ -335,8 +301,6 @@ bool initShadowMap(){
    glBindFramebuffer ( GL_FRAMEBUFFER, defaultFramebuffer );
    return true;
 }
-
-
 
 void initProgram(){
     initWindow();
@@ -589,10 +553,17 @@ void handleKeyInput(){
                 globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "I") == 0){
-                globals.blinnMode = 1;
+                if(globals.views.main.camera->mode == CAMERAMODE_ORBITAL){
+                    globals.views.main.camera->mode = CAMERAMODE_FPS;
+                }else{
+                    globals.views.main.camera->mode = CAMERAMODE_ORBITAL;
+                    globals.views.main.camera->target[0] = 0.0f;
+                    globals.views.main.camera->target[1] = 0.0f;
+                    globals.views.main.camera->target[2] = 0.0f;
+                }
             }
             if(strcmp(key, "U") == 0){
-                globals.blinnMode = 0;
+                globals.blinnMode = !globals.blinnMode;
             }
             if(strcmp(key, "G") == 0){
                 globals.gamma = !globals.gamma;
@@ -682,7 +653,7 @@ void input() {
               float x_ui =  (-1 * x_ndc) * ((float)width * 0.5);
               float y_ui =   y_ndc * ((float)height * 0.5);  */
               //printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
-              //printf("Mouse moved to %f, %f\n", mouseX, mouseY);
+          //  printf("Mouse moved to %f, %f\n", globals.mouseXpos, globals.mouseYpos);
            // SDLVector2 sdlMouseCoords = {xpos, ypos};
            // UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
            //printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
@@ -730,239 +701,12 @@ void update(){
     cameraSystem();
     uiSystem();
     uiInputSystem();
-    //hoverAndClickSystem();
+    hoverAndClickSystem();
     textCursorSystem();
     movementSystem();
     modelSystem();
    
 }
-
-void fboFromESBook(){
- GLuint framebuffer;
- GLuint depthRenderbuffer;
- GLuint texture;
- GLint texWidth = 256, texHeight = 256;
- GLint maxRenderbufferSize;
- glGetIntegerv ( GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
- // check if GL_MAX_RENDERBUFFER_SIZE is >= texWidth and texHeight
- if ( ( maxRenderbufferSize <= texWidth ) || ( maxRenderbufferSize <= texHeight ) ) 
-{
-    printf("error\n");
-   // cannot use framebuffer objects, as we need to create
-   // a depth buffer as a renderbuffer object
-   // return with appropriate error 
-}
- // generate the framebuffer, renderbuffer, and texture object names
- glGenFramebuffers ( 1, &framebuffer ); 
- glGenRenderbuffers ( 1, &depthRenderbuffer ); 
- glGenTextures ( 1, &texture );
- // bind texture and load the texture mip level 0
- // texels are RGB565
- // no texels need to be specified as we are going to draw into
- // the texture
- glBindTexture ( GL_TEXTURE_2D, texture );
- glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL );
- glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
- glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
- glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_MAG_FILTER, GL_LINEAR );
- glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_MIN_FILTER, GL_LINEAR);
- // bind renderbuffer and create a 16-bit depth buffer 
- // width and height of renderbuffer = width and height of 
- // the texture
- glBindRenderbuffer ( GL_RENDERBUFFER, depthRenderbuffer ); 
- glRenderbufferStorage ( GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, texWidth, texHeight );
- // bind the framebuffer 
- glBindFramebuffer ( GL_FRAMEBUFFER, framebuffer );
- // specify texture as color attachment
- glFramebufferTexture2D ( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0 );
- // specify depth_renderbuffer as depth attachment 
- glFramebufferRenderbuffer ( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER, depthRenderbuffer);
- // check for framebuffer complete
- GLenum status = glCheckFramebufferStatus ( GL_FRAMEBUFFER );
-if ( status == GL_FRAMEBUFFER_COMPLETE )
-{
-    printf("framebuffer complete\n");
-    // render to texture using FBO
-    // clear color and depth buffer
-    glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
-    glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    // Load uniforms for vertex and fragment shaders
-    // used to render to FBO. The vertex shader is the
-    // ES 1.1 vertex shader described in Example 8-8 in
-    // Chapter 8. The fragment shader outputs the color
-    // computed by the vertex shader as fragment color and
-    // is described in Example 1-2 in Chapter 1.
-    // set_fbo_texture_shader_and_uniforms( );
-    GpuData gpuData;
-    setupMaterial(&gpuData,"shaders/esdepth_vert.glsl", "shaders/esdepth_frag.glsl");
-   // glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
-    // drawing commands to the framebuffer object draw_teapot();
-     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active != 1){
-                      // Set shader
-                        glUseProgram(gpuData.shaderProgram);
-                        
-                        // retrieve the matrix uniform locations
-                        unsigned int modelLoc = glGetUniformLocation(gpuData.shaderProgram, "model");
-                        unsigned int viewLoc  = glGetUniformLocation(gpuData.shaderProgram, "view");
-                        unsigned int projLoc  = glGetUniformLocation(gpuData.shaderProgram, "projection");
-
-                        // pass them to the shaders 
-                        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &globals.entities[i].transformComponent->transform[0][0]);
-                        glUniformMatrix4fv(projLoc, 1, GL_FALSE, &globals.views.main.camera->projection[0][0]);
-                        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &globals.views.main.camera->view[0][0]);
-                        
-                       // glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
-                        
-                        glBindVertexArray(globals.entities[i].meshComponent->gpuData->VAO);
-                        glDrawArrays(globals.entities[i].meshComponent->gpuData->drawMode, 0, globals.entities[i].meshComponent->gpuData->vertexCount);
-                    
-                        glBindVertexArray(0);
-                        glBindTexture(GL_TEXTURE_2D, 0);
-                   // renderDepth(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
-                }
-            }
-        }
-    }
-    // render to window system-provided framebuffer 
-    glBindFramebuffer ( GL_FRAMEBUFFER, 0 );
-    // Use texture to draw to window system-provided framebuffer. 
-    // We draw a quad that is the size of the viewport. 
-    //
-    // The vertex shader outputs the vertex position and texture 
-    // coordinates passed as inputs.
-    //
-    // The fragment shader uses the texture coordinate to sample 
-    // the texture and uses this as the per-fragment color value.
-    float quadVertices[] = {
-        // Positions    // Texture Coords
-        -1.0f,  1.0f,    0.0f, 1.0f, // Top-left
-        -1.0f, -1.0f,    0.0f, 0.0f, // Bottom-left
-        1.0f,  1.0f,    1.0f, 1.0f, // Top-right
-        1.0f, -1.0f,    1.0f, 0.0f  // Bottom-right
-    };
-    GLuint quadVAO, quadVBO;
-    glGenVertexArrays(1, &quadVAO);
-    glGenBuffers(1, &quadVBO);
-
-    glBindVertexArray(quadVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-
-    // Position attribute
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-
-    // Texture Coord attribute
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-    glBindVertexArray(0);
-
-    GpuData screenShader;
-    setupMaterial(&screenShader,"shaders/screentexture_vertex.glsl", "shaders/screentexture_fragment.glsl");
-
-    // Clear the default framebuffer
-glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-// Use the screen shader program
-glUseProgram(screenShader.shaderProgram);
-
-// Bind the framebuffer texture
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, texture); // 'texture' is the color attachment from the FBO
-glUniform1i(glGetUniformLocation(screenShader.shaderProgram, "screenTexture"), 0);
-
-// Render the quad
-glBindVertexArray(quadVAO);
-glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-glBindVertexArray(0);
-   // set_screen_shader_and_uniforms ( ); 
-   // draw_screen_quad ( ); 
-}
- // clean up
- glDeleteRenderbuffers ( 1, &depthRenderbuffer );
- glDeleteFramebuffers ( 1, &framebuffer);
- glDeleteTextures ( 1, &texture );
- printf("done\n");
-}
-
-void test(){
-    // FBO
-    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-    unsigned int depthMapFBO;
-    glGenFramebuffers(1, &depthMapFBO);
-    // create depth texture
-    unsigned int depthMap;
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // attach depth texture as FBO's depth buffer
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthMap);
-  //  glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMap, 0, 0);
-    //glDrawBuffer(GL_NONE);
-    //glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //glDrawBuffers(GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1);
-
-    GpuData depthMapBuffer;
-    setupMaterial(&depthMapBuffer,"shaders/depth_vertex.glsl", "shaders/depth_fragment.glsl");
-
-    mat4x4 lightProjection;
-    mat4x4 lightView;
-    mat4x4 lightSpaceMatrix;
-    float near_plane = 1.0f, far_plane = 7.5f;
-    mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-    mat4x4_look_at(lightView, globals.lights[0].transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
-    mat4x4_mul(lightSpaceMatrix, (const float (*)[4])lightProjection, (const float (*)[4])lightView);
-
-    glEnable(GL_DEPTH_TEST);
-
-    glUseProgram(depthMapBuffer.shaderProgram);
-    glUniformMatrix4fv(glGetUniformLocation(depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &lightSpaceMatrix[0][0]);
-    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    printf("detph s\n");
-    glClear(GL_DEPTH_BUFFER_BIT);
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active != 1){
-                      // Set shader
-                       // glUseProgram(globals.depthMapBuffer.shaderProgram);
-                        
-                        // retrieve the matrix uniform locations
-                        unsigned int modelLoc = glGetUniformLocation(depthMapBuffer.shaderProgram, "model");
-                    // unsigned int viewLoc  = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "view");
-
-                        // pass them to the shaders 
-                        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &globals.entities[i].transformComponent->transform[0][0]);
-                        
-                       // glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
-                        
-                        glBindVertexArray(globals.entities[i].meshComponent->gpuData->VAO);
-                        glDrawArrays(globals.entities[i].meshComponent->gpuData->drawMode, 0, globals.entities[i].meshComponent->gpuData->vertexCount);
-                    
-                        glBindVertexArray(0);
-                        glBindTexture(GL_TEXTURE_2D, 0);
-                   // renderDepth(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
-                }
-            }
-        }
-    }
-   
-}
-
 
 void render(){
 
@@ -997,69 +741,18 @@ void render(){
         }
     }
     #else
-
-    // Native
-
-    // Render depth map
-  /*   if(!globals.depthMap){
-       fboFromESBook();
-       globals.depthMap = 1;
-    } */
-   // Rectangle rect = convertViewRectangleToSDLCoordinates(globals.views.full,globals.views.full.rect.height);
-   // glViewport(rect.x, rect.y, rect.width, rect.height);
-    
-    // TODO: This only inits, no update if light moves and only calc on first light.
-   // if(!globals.lightSpaceMatrix){
-     //   printf("yes\n");
-        createLightSpace();
-   //    }
-   /*  glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
-    glViewport(0, 0, width, height);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    // Disable color writes
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    // Enable depth testing
-    glEnable(GL_DEPTH_TEST);
-   // glActiveTexture(GL_TEXTURE0);
-   // glBindTexture(GL_TEXTURE_2D, globals.depthMap);
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active != 1){
-                    renderDepthMap(globals.entities[i].meshComponent->gpuData, globals.entities[i].transformComponent);
-                }
-            }
-        }
-    }
-    // Re-enable color writes
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); 
-    
-    renderFrameBuffer(); */
-    // TODO: find a way to avoid having to iterate over all entities twice, once for ui and once for 3d objects.
-
-
-   // clear depth buffer
-   // glClear( GL_DEPTH_BUFFER_BIT );
-   // disable color rendering; only write to depth buffer
-   // glColorMask ( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
-   // reduce shadow rendering artifact
-   // glEnable ( GL_POLYGON_OFFSET_FILL );
-   // glPolygonOffset( 4.0f, 100.0f );
-
+   // Native/Desktop
+   
    // Render depth map
+   createLightSpace();
    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, globals.depthMapBuffer.FBO);
    setViewportForDepthMapShadowRender(globals.views.full);
    glEnable(GL_DEPTH_TEST);
-   // Disable color buffer writes (since we're not drawing any color)
-    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-   // setFontProjection(&globals.gpuFontData,globals.views.full);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active != 1){
                     if(!globals.entities[i].materialComponent->isPostProcessMaterial){
-                        //renderDepthMap(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].materialComponent);
                         depthshadow_renderToDepthTexture(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent);
                     }
                 }
@@ -1069,8 +762,7 @@ void render(){
 
    // Enable color buffer writes again
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  // glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
-
+  
    // Render main view & 3d objects
    setViewportAndClear(globals.views.full);
    setFontProjection(&globals.gpuFontData,globals.views.full);
@@ -1186,7 +878,6 @@ void initOpenGLWindow(){
       exit(1);
    }
    glEnable(GL_DEPTH_TEST);
-   //printf("OpenGL context created!\n");
 }
 
 /**
@@ -1225,150 +916,70 @@ void emscriptenLoop() {
 */
 void initScene(){
 
-   globals.views.main.camera->position[1] = 35.0;
-   globals.views.main.camera->position[2] = 35.0;
-   printf("cam pos: %f %f %f \n",globals.views.main.camera->position[0],globals.views.main.camera->position[1],globals.views.main.camera->position[2]);
+   globals.views.main.camera->position[1] = 35.0f;
+   globals.views.main.camera->position[2] = 35.0f;
+   globals.views.main.camera->target[0] = 0.0f;
+    globals.views.main.camera->target[1] = 0.0f;
+    globals.views.main.camera->target[2] = 0.0f;
+    
+   
 
    // Assets
    initFont();
-   //createFramebuffer();
-   setupMaterial(&globals.depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
-  // setupDepthMap(&globals.depthMapBuffer);
- //  setupRenderBuffer(&globals.depthMapBuffer);
-   //initShadowMap();
-   //setupMaterial(&globals.depthMapBuffer,"shaders/depth_vertex.glsl", "shaders/depth_fragment.glsl");
-
-    // New depth shadow steps:
+   
+    setupMaterial(&globals.depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
+  
     depthshadow_createFrameBuffer(&globals.depthMapBuffer);
     depthshadow_createDepthTexture(&globals.depthMapBuffer);
     depthshadow_configureFrameBuffer(&globals.depthMapBuffer);
-   // depthshadow_renderToDepthTexture
+    initAssets();
 
   
  //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
-   TextureData containerTextureData = loadTexture("./Assets/container.jpg");
-   GLuint containerMap = setupTexture(containerTextureData);
-   TextureData containerTwoTextureData = loadTexture("./Assets/container2.png");
-   GLuint containerTwoMap = setupTexture(containerTwoTextureData);
-   TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
-   GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
+  
 
 
     //ObjGroup* truck = obj_loadFile("./Assets/truck.obj"); // Not supported atm, need .obj group support.
    // ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
-  /*    ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
-    ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
+      ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
+  /*  ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
     ObjGroup* objExample = obj_loadFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
     ObjGroup* sphere = obj_loadFile("./Assets/blender_sphere3.obj");
     ObjGroup* triangleVolumes = obj_loadFile("./Assets/triangle_volumes.obj");
     ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");*/
     ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   
-   ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
+    ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
  
-    struct Material objectMaterial = {
-    .active = 1,
-    .name = "objectMaterial",
-    .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // NOT used,controlled from lightmaterial
-    .diffuse = (Color){0.5f, 0.0f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0 (may not be true anymore)
-    .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
-    .shininess = 32.0f,                           // used
-    .diffuseMap = containerTwoMap,               // used
-    .diffuseMapOpacity = 1.0f,                  // used
-    .specularMap = containerTwoSpecularMap,      // used
-    };
-   /*  struct Material textureUIMatExample = { // Saved as example of how to use a texture with ui element.
-        .active = 1,
-        .name = "textureUIMatExample",
-        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
-        .diffuse = (Color){0.5f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
-        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
-        .shininess = 4.0f,                           // NOT used
-        .diffuseMap = containerTwoMap,               // used
-        .diffuseMapOpacity = 1.0f,                    // used
-        .specularMap = containerTwoSpecularMap,      // NOT used
-    }; */
-     struct Material depthMapMaterial = { // Saved as example of how to use a texture with ui element.
-        .active = 1,
-        .name = "depthMapMaterial",
-        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
-        .diffuse = (Color){0.0f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
-        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
-        .shininess = 4.0f,                           // NOT used
-        .diffuseMap = containerTwoMap,               // used
-        .diffuseMapOpacity = 1.0f,                    // used
-        .specularMap = containerTwoSpecularMap,      // NOT used
-        .isPostProcessMaterial = true,
-    }; 
-   /*  struct Material textInputUiMat = { // Saved as example of how to use a texture with ui element.
-        .active = 1,
-        .name = "textInputUiMat",
-        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
-        .diffuse = DARK_INPUT_FIELD,  // used when diffuseMapOpacity lower than 1.0
-        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
-        .shininess = 4.0f,                           // NOT used
-        .diffuseMap = containerTwoMap,               // used
-        .diffuseMapOpacity = 0.0f,                    // used
-        .specularMap = containerTwoSpecularMap,      // NOT used
-    }; */
-  /*   struct Material flatColorUiDarkGrayMat = {
-        .active = 1,
-        .name = "flatColorUiDarkGrayMat",
-        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
-        .diffuse = DARK_GRAY_COLOR,  // used when diffuseMapOpacity lower than 1.0
-        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
-        .shininess = 4.0f,                           // NOT used
-        .diffuseMap = containerTwoMap,               // used
-        .diffuseMapOpacity = 0.0f,                    // used
-        .specularMap = containerTwoSpecularMap,      // NOT used
-    }; */
-   /*  struct Material flatColorUiGrayMat = {
-        .active = 1,
-        .name = "flatColorUiGrayMat",
-        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
-        .diffuse = GRAY_COLOR,  // used when diffuseMapOpacity lower than 1.0
-        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
-        .shininess = 4.0f,                           // NOT used
-        .diffuseMap = containerTwoMap,               // used
-        .diffuseMapOpacity = 0.0f,                    // used
-        .specularMap = containerTwoSpecularMap,      // NOT used
-    }; */
-    struct Material lightMaterial = {
-        .active = 1,
-        .name = "lightMaterial",
-        .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used       <-- ambient strength & tint
-        .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used       <-- diffuse strength & tint
-        .specular = (Color){1.0f,1.0f, 1.0f, 1.0f}, // used        <-- specular strength & tint
-        .shininess = 32.0f,                         // NOT used
-        .diffuseMap = containerMap,                  // NOT used
-        .diffuseMapOpacity = 1.0f,                  // NOT used
-        .specularMap = containerMap,                 // NOT used
-    };
+  
+   
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-/*  createObject(&cornell_box->objData[0],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[1],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[2],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[3],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[4],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[5],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[6],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[7],(vec3){-5.0f, -5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */
+  /*   createObject(&cornell_box->objData[0],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[1],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[2],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[3],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[4],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[5],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[6],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(&cornell_box->objData[7],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  */  
  
-   // createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-   // createObject(&textured_objects->objData[1],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+   
    // createPoint((vec3){-5.0f, -5.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    //createObject(VIEWPORT_MAIN,&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    
     //createObject(VIEWPORT_MAIN,&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     //createObject(VIEWPORT_MAIN,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
-   createObject(&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
+    createObject(&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    createObject(&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
+    createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    createObject(&textured_objects->objData[1],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
 
     // lights
-    createLight(lightMaterial,(vec3){0.0f,1.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
+    createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
     createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
     createLight(lightMaterial,(vec3){3.0f, 2.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
@@ -1380,7 +991,7 @@ void initScene(){
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
- //   createCube(objectMaterial,(vec3){2.0f, -0.0f, -0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createCube(objectMaterial,(vec3){10.0f, 3.0f, 12.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
     // Frame buffer quad
     ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -1393,7 +1004,7 @@ void initScene(){
    // TODO: implement rotation, it is atm not affecting. 
  
     // UI Settings Panel
-  /*   ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
+    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
     ui_createTextInput(textInputUiMat, (vec3){565.0f, 65.0f, 1.0f}, (vec3){200.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange);
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 55.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -1401,7 +1012,7 @@ void initScene(){
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
     
-    */
+   
 
     //ui_slider(flatColorUiDarkGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider",onSliderChange);
     //ui_colorPicker(flatColorUiDarkGrayMat, (vec3){545.0f, 105.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "ColorPicker",onColorPickerChange);

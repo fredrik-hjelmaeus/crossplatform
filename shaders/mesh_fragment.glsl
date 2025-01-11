@@ -143,7 +143,8 @@ void main()
    
 
     float shadow = 0.0;
-    float bias = 0.005;
+    //float bias = 0.005;
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     for(int x = -1; x <= 1; ++x)
     {
@@ -154,6 +155,12 @@ void main()
         }
     }
     shadow /= 9.0;
+
+    // If beyond far_plane do not shadow
+    if(projCoords.z > 1.0)
+	{
+		shadow = 1.0;
+	} 
 
     vec3 result = (ambient + (1.0 - shadow) * (diffuse + specular));
     if(gamma)

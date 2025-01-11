@@ -44,6 +44,11 @@ typedef enum {
     unsigned int Advance;    // Offset to advance to next glyph
 } Character;
 
+typedef enum {
+    CAMERAMODE_FPS = 0,
+    CAMERAMODE_ORBITAL = 1,
+} CameraMode;
+
 typedef struct Camera {
     vec3 position;
     vec3 front;
@@ -54,6 +59,7 @@ typedef struct Camera {
     float speed;
     bool viewMatrixNeedsUpdate;
     bool projectionMatrixNeedsUpdate;
+    CameraMode mode;
 
     // Perspective
     float fov;

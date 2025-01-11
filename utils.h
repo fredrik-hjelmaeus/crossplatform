@@ -77,5 +77,13 @@ ObjGroup* obj_loadFile(const char* filepath);
 void obj_parseMaterial(const char* filepath);
 bool obj_processTextureMap(char* mtlLine,const char* mapType,GLuint* map);
 
+// Math
+void vec3_subtract(vec3 a, vec3 b, vec3* result);
+float vec3_length(vec3 v);
+
+float magnitude(vec3 v);
+float direction(vec3 v);
+float elevation(vec3 v);
+void toCartesianXYZ(float magnitude,float direction,float elevation, vec3* result);
 
 #endif // End of the UTILS_H definition

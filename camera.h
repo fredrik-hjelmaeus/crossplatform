@@ -3,6 +3,7 @@
 
 #include "types.h"    
 #include "globals.h" 
+#include "assets.h"
 
 Camera* initCamera();
 void updateCamera(Camera* camera);

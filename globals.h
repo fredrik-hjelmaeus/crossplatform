@@ -38,6 +38,8 @@ struct Globals {
     float mouseYpos;
     bool mouseLeftButtonPressed;
     bool mouseDragged;
+    vec2 mouseDragStart;
+    vec2 mouseDragPreviousFrame;
     bool drawBoundingBoxes;
     Character characters[128];
     int fontSize;
@@ -77,6 +79,8 @@ struct Globals {
     bool deselectCondition;
     float cursorDragStart;
     unsigned int cursorTextSelection[2];
+
+    
 };
 
 extern struct Globals globals;

@@ -1020,3 +1020,29 @@ Material* getMaterial(int index){
     ASSERT(index < globals.materialsCount && index >= 0, "Material index out of bounds or not assigned");
     return &globals.materials[index];
 }
+
+void vec3_subtract(vec3 a, vec3 b, vec3* result){
+    (*result)[0] = a[0] - b[0];
+    (*result)[1] = a[1] - b[1];
+    (*result)[2] = a[2] - b[2];
+}
+float vec3_length(vec3 v){
+    return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+}
+float magnitude(vec3 v){
+    return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+}
+float direction(vec3 v){
+   return atan2f(v[2],v[0]);
+}
+float elevation(vec3 v) {
+    return asinf(v[1] / magnitude(v));
+}
+
+void toCartesianXYZ(float magnitude, float direction, float elevation, vec3* result) {
+    (*result)[0] = magnitude * cos(elevation) * cos(direction);
+    (*result)[1] = magnitude * sin(elevation);
+    (*result)[2] = magnitude * cos(elevation) * sin(direction);
+}
+
+
