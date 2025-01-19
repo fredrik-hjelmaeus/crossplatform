@@ -28,6 +28,7 @@
 // Prototypes
 void createPoint(vec3 position);
 void onButtonClick();
+void togglePanel();
 void onTextInputChange();
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
 Camera* initCamera();
@@ -59,7 +60,7 @@ struct Globals globals = {
     .firstMouse=1,
     .mouseXpos=0.0f,
     .mouseYpos=0.0f,
-    .mouseLeftButtonPressed=false,
+    .mouseLeftButtonPressed=false, // mouse down check every frame
     .mouseDoubleClick=false,
     .deselectCondition=false,
     .mouseDragged=false,
@@ -193,7 +194,6 @@ void setViewportAndClear(View view){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 void setViewportForDepthMapShadowRender(View view){
-    Rectangle rect = convertViewRectangleToSDLCoordinates(view,globals.views.full.rect.height);
    
     // Set the viewport
     glViewport(0, 0, globals.shadowWidth, globals.shadowHeight);
@@ -203,7 +203,7 @@ void setViewportForDepthMapShadowRender(View view){
 
     // Clear the viewport
     glClear(GL_DEPTH_BUFFER_BIT);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
 }
 
 /**
@@ -354,10 +354,10 @@ void updateUIonViewportChange(float prevWidth, float prevHeight,float ui_percent
             globals.entities[i].transformComponent->position[1] = py;
            
             // Bounding box
-            globals.entities[i].uiComponent->boundingBox.x = globals.entities[i].transformComponent->position[0];
-            globals.entities[i].uiComponent->boundingBox.y = globals.entities[i].transformComponent->position[1];
-            globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
-            globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
+            globals.entities[i].boundingBoxComponent->boundingBox.min[0] = globals.entities[i].transformComponent->position[0];
+            globals.entities[i].boundingBoxComponent->boundingBox.min[1] = globals.entities[i].transformComponent->position[1];
+            globals.entities[i].boundingBoxComponent->boundingBox.max[0] = globals.entities[i].transformComponent->scale[0];
+            globals.entities[i].boundingBoxComponent->boundingBox.max[1] = globals.entities[i].transformComponent->scale[1];
 
             globals.entities[i].transformComponent->modelNeedsUpdate = 1;
         }
@@ -767,7 +767,7 @@ void render(){
    setViewportAndClear(globals.views.full);
    setFontProjection(&globals.gpuFontData,globals.views.full);
     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
+        if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
             if(globals.entities[i].meshComponent->active == 1) {
                 if(globals.entities[i].uiComponent->active != 1){
                    if(!globals.entities[i].materialComponent->isPostProcessMaterial){
@@ -781,7 +781,8 @@ void render(){
     
     // Render GL_LINES & GL_POINTS(particles)
     for(int i = 0; i < MAX_ENTITIES; i++){
-        if((globals.entities[i].alive == 1 && globals.entities[i].lineComponent->active == 1) || globals.entities[i].pointComponent->active == 1){
+        if((globals.entities[i].alive == 1 && globals.entities[i].lineComponent->active == 1 && globals.entities[i].visible) 
+        || (globals.entities[i].alive == 1 && globals.entities[i].pointComponent->active == 1 && globals.entities[i].visible)){
             if(globals.entities[i].lineComponent->active == 1){
               renderLine(globals.entities[i].lineComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].lineComponent->color);
             }
@@ -808,7 +809,7 @@ void render(){
 
     // Render ui scene & ui objects
     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
+        if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
             if(globals.entities[i].meshComponent->active == 1) {
                         // render ui, could be overhead with switching viewports?. profile.    
                         if(globals.drawBoundingBoxes){
@@ -828,7 +829,7 @@ void render(){
     setFontProjection(&globals.gpuFontData,globals.views.ui);
     glDisable(GL_DEPTH_TEST);
     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
+        if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
                 if(globals.entities[i].uiComponent->active == 1){
                     if(strlen(globals.entities[i].uiComponent->text) > 0){
                      
@@ -994,7 +995,7 @@ void initScene(){
     createCube(objectMaterial,(vec3){10.0f, 3.0f, 12.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
     // Frame buffer quad
-    ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
 
     debug_drawFrustum();
 
@@ -1004,13 +1005,15 @@ void initScene(){
    // TODO: implement rotation, it is atm not affecting. 
  
     // UI Settings Panel
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header",onButtonClick);
-    ui_createTextInput(textInputUiMat, (vec3){565.0f, 65.0f, 1.0f}, (vec3){200.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange);
-    ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 55.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",onButtonClick);
-    ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
+    Entity* settingsPanel = ui_createPanel(uiBoundingBoxMat,(vec3){545.0f, 5.0f, 3.0f}, (vec3){250.0f, 350.0f, 1.0f},(vec3){0.0f, 0.0f, 0.0f},NULL);
+
+    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", togglePanel, settingsPanel);
+    ui_createTextInput(textInputUiMat, (vec3){565.0f, 65.0f, 1.0f}, (vec3){200.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange,settingsPanel);
+    ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 55.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",onButtonClick,NULL);
+    ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
+    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);   
     
    
 
@@ -1167,6 +1170,38 @@ void onButtonClick() {
        }
     }
     printf("Button pressed!\n");
+}
+void togglePanel(){
+   // printf("hello");
+    BoundingBox boundary;
+    for(int i = 0; i < MAX_ENTITIES; i++){
+       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].uiComponent->clicked){
+        printf("Sclicked %d \n",globals.entities[i].id);
+        
+            if(globals.entities[i].uiComponent->parent != NULL){
+                printf("parentId %d ",globals.entities[i].uiComponent->parent->id);
+            }
+       }
+    }
+   /*  for(int i = 0; i < MAX_ENTITIES; i++){
+       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active == 1 && globals.entities[i].transformComponent->active == 1){
+      
+        if(isPointInsideRect(boundary, (vec2){ globals.entities[i].uiComponent->boundingBox.x, globals.entities[i].uiComponent->boundingBox.y}) 
+        && isPointInsideRect(boundary, (vec2){ globals.entities[i].uiComponent->boundingBox.x+globals.entities[i].uiComponent->boundingBox.x 
+        + globals.entities[i].uiComponent->boundingBox.width, globals.entities[i].uiComponent->boundingBox.y
+        + globals.entities[i].uiComponent->boundingBox.height})){
+             if(globals.entities[i].transformComponent->scale[1] > 0.0f){
+                globals.entities[i].transformComponent->scale[1] -= 0.61f;
+            }
+            globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+        }
+
+        
+           
+            
+       }
+    } */
+   // printf("Panel toggled!\n");
 }
 void onTextInputChange(){
     printf("Text input changed!\n");

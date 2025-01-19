@@ -6,6 +6,7 @@ struct Material depthMapMaterial;
 struct Material textInputUiMat;
 struct Material flatColorUiDarkGrayMat;
 struct Material flatColorUiGrayMat;
+struct Material uiBoundingBoxMat;
 
 void initAssets(){
    TextureData containerTextureData = loadTexture("./Assets/container.jpg");
@@ -72,11 +73,22 @@ void initAssets(){
         .diffuseMapOpacity = 0.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
     }; 
-     flatColorUiGrayMat = (struct Material){
+    flatColorUiGrayMat = (struct Material){
         .active = 1,
         .name = "flatColorUiGrayMat",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
         .diffuse = GRAY_COLOR,  // used when diffuseMapOpacity lower than 1.0
+        .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
+        .shininess = 4.0f,                           // NOT used
+        .diffuseMap = containerTwoMap,               // used
+        .diffuseMapOpacity = 0.0f,                    // used
+        .specularMap = containerTwoSpecularMap,      // NOT used
+    }; 
+    uiBoundingBoxMat = (struct Material){
+        .active = 1,
+        .name = "uiBoundingBoxMat",
+        .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
+        .diffuse = BOUNDINGBOX_COLOR,  // used when diffuseMapOpacity lower than 1.0
         .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used
         .shininess = 4.0f,                           // NOT used
         .diffuseMap = containerTwoMap,               // used

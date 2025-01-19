@@ -5,6 +5,7 @@ Entity* addEntity(enum Tag tag){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 0) {
             globals.entities[i].alive = 1;
+            globals.entities[i].visible = 1;
             globals.entities[i].tag = tag;
             return &globals.entities[i];
         }
@@ -26,4 +27,5 @@ void deleteEntity(Entity* entity){
     entity->lightComponent->active = 0;
     entity->lineComponent->active = 0;
     entity->pointComponent->active = 0;
+    entity->boundingBoxComponent->active = 0;
 }

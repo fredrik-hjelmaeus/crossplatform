@@ -108,7 +108,7 @@ void updateCamera(Camera* camera){
           /*   printf("changeXThisMouseDown %f \n",changeXThisMouseDown);
             printf("changeYThisMouseDown %f \n",changeYThisMouseDown);
             printf("changeXThisFrame %f \n",changeXThisFrame);
-            printf("changeYThisFrame %f \n",changeYThisFrame); */
+            printf("changeYThisFrame %f \n",changeYThisFrame);  */
          /*    if(changeXThisFrame > 0){
                 printf("right \n");
                 changeThisFrameX = -0.01;
@@ -162,7 +162,7 @@ void updateCamera(Camera* camera){
             if(globals.mouseDragStart[0] > -9999.0f){
                 float xDragOffset = globals.mouseXpos - globals.mouseDragStart[0];
                 float yDragOffset = globals.mouseYpos - globals.mouseDragStart[1];
-            //    printf("we dragged %f %f\n", xDragOffset, yDragOffset);
+                //printf("we dragged %f %f\n", xDragOffset, yDragOffset);
                 globals.mouseDragStart[0] = -10000.0f;
                 globals.mouseDragStart[1] = -10000.0f;
                 globals.mouseDragPreviousFrame[0] = 0.0f;

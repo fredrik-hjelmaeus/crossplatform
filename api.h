@@ -62,22 +62,25 @@ void debug_drawFrustum();
 // UI API
 //-------
 /**
+ * @brief Create a panel
+ * Create a panel in ui. No visibility, only a bounding box.
+ * @param material - material for bounding box
+*/
+Entity* ui_createPanel(Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent);
+/**
  * @brief Create a rectangle
  * Create a rectangle mesh
- * @param diffuse - color of the rectangle
 */
-int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation);
+int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent);
 /**
  * @brief Create a button
  * Create a button mesh in ui
- * @param diffuse - color of the rectangle
 */
-void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick);
+void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick,Entity* parent);
 /**
  * @brief Create a input field
  * Create a input mesh in ui
- * @param diffuse - color of the rectangle
 */
-void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange);
+void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange,Entity* parent);
 
 #endif // API_H

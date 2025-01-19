@@ -932,6 +932,19 @@ void changeCursor(SDL_SystemCursor cursorType) {
 //----------------------------------------
 
 /**
+ * NOTE: ATM ITS 2D ONLY, revise to 3d!
+ *  Function to check if a point is inside the rectangle.
+ * NOTE: x,y,width,height is expected to be in SDL coordinates, Where x,y is the bottom left corner of the rectangle.
+ * use convertViewRectangleToSDLCoordinates to convert view coordinates to SDL coordinates if needed.
+ * @param rect Rectangle to check against, x,y,width,height is expected to be in SDL coordinates
+ */ 
+bool isPointInsideBoundingBox(BoundingBox bb, vec2 point) {
+    bool result = ((float)point[0] >= (float)bb.min[0] && (float)point[0] <= (float)bb.max[0] &&
+            (float)point[1] >= (float)bb.min[1] && (float)point[1] <= (float)bb.max[1]);
+    return result;
+}
+/**
+ * NOTE: ATM ITS 2D ONLY, revise to 3d!
  *  Function to check if a point is inside the rectangle.
  * NOTE: x,y,width,height is expected to be in SDL coordinates, Where x,y is the bottom left corner of the rectangle.
  * use convertViewRectangleToSDLCoordinates to convert view coordinates to SDL coordinates if needed.

@@ -11,9 +11,9 @@ ClosestLetter getCharacterByIndex(int index){
         printf("unhandled path");
         exit(1);
     }
-    float x = (float)globals.entities[globals.focusedEntityId].uiComponent->boundingBox.x; 
-    float y = (float)globals.entities[globals.focusedEntityId].uiComponent->boundingBox.y 
-    + ((float)globals.entities[globals.focusedEntityId].uiComponent->boundingBox.height / 2);
+    float x = (float)globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.min[0]; 
+    float y = (float)globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.min[1] 
+    + ((float)globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.max[2] / 2);
     float scale = globals.charScale;
     float xpos = 0.0f;
     float ypos = 0.0f;
@@ -95,14 +95,14 @@ void addIndexToCursorTextSelection(unsigned int index){
  * @param mouseX The X position of the mouse in SDL coordinates.
  * @return Vector2 The position of the closest letter.
  */
-ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX){
+ClosestLetter getClosestLetterInText(UIComponent* uiComponent,BoundingBoxComponent* bbComponent, float mouseX){
     char* text = uiComponent->text;
-    float x = (float)uiComponent->boundingBox.x; 
-    float y = (float)uiComponent->boundingBox.y + ((float)uiComponent->boundingBox.height / 2);   //(float)globals.characters[0].Size[1]; 
+    float x = (float)bbComponent->boundingBox.min[0];
+    float y = (float)bbComponent->boundingBox.min[1] + ((float)bbComponent->boundingBox.max[2] / 2);   //(float)globals.characters[0].Size[1]; 
     float scale = globals.charScale; // Character size, also set when renderText is called (they should be in sync)
     float xpos = 0.0f;
     float ypos = 0.0f;
-    float bestCharX = (float)uiComponent->boundingBox.x + (float)uiComponent->boundingBox.width;
+    float bestCharX = (float)bbComponent->boundingBox.min[0] + (float)bbComponent->boundingBox.max[0];
     float lastShift = 0.0f;
     ClosestLetter closestLetter;
     closestLetter.characterIndex = 0;
@@ -172,15 +172,15 @@ void selectAllText(int width, int height){
         return;
     }
 
-   globals.cursorSelectionActive = true;
+    globals.cursorSelectionActive = true;
 
     // Calculate width of the input field
-    float xMin = globals.entities[globals.focusedEntityId].uiComponent->boundingBox.x;
-    float xMax = xMin + globals.entities[globals.focusedEntityId].uiComponent->boundingBox.width;
+    float xMin = globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.min[0];
+    float xMax = xMin + globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.max[0];
 
     // Find the first and last letter in the text using max and min x values of the input field
-    ClosestLetter firstLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, xMin );
-    ClosestLetter lastLetter =  getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, xMax );
+    ClosestLetter firstLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent,globals.entities[globals.focusedEntityId].boundingBoxComponent, xMin );
+    ClosestLetter lastLetter =  getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent,globals.entities[globals.focusedEntityId].boundingBoxComponent, xMax );
 
     // Convert to UI coordinates
     SDLVector2 firstLetterSDLpos;
@@ -230,6 +230,7 @@ ClosestLetter findCharacterUnderCursor(int width,int height){
     ASSERT(sdlVec.y >= 0, "Sdl cursor y position is negative");
     return getClosestLetterInText(
                     globals.entities[globals.focusedEntityId].uiComponent,
+                    globals.entities[globals.focusedEntityId].boundingBoxComponent,
                     sdlVec.x
     );
 }

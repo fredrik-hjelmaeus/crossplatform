@@ -26,6 +26,7 @@
 #define GRAY_COLOR hexToColor("#3d3f45")
 #define DARK_GRAY_COLOR hexToColor("#2f3137")
 #define DARK_INPUT_FIELD hexToColor("#26272C")
+#define BOUNDINGBOX_COLOR hexToColor("#f1c40f")
 
 SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight);
 UIVector2 convertSDLToUI(SDLVector2 v, int screenWidth, int screenHeight);
@@ -36,6 +37,7 @@ unsigned char* loadImage(const char* filename, int* width, int* height, int* nrC
 TextureData loadTexture(char* path);
 int randInt(int rmin, int rmax);
 float randFloat(float rmin, float rmax);
+bool isPointInsideBoundingBox(BoundingBox bb, vec2 point);
 bool isPointInsideRect(Rectangle rect, vec2 point);
 Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);

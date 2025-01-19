@@ -9,6 +9,23 @@
 
 void deleteEntity(Entity* entity);
 
+
+/**
+ * Toggle the childrens visibility between true/false
+ * NOTE: Only works in one depth atm, not recursive.
+ */
+void toggleChildrenVisibility(int entityId) {
+    Entity* p = globals.entities[entityId].uiComponent->parent;
+    if(p == NULL) return;          
+    if(p->uiComponent->active && p->uiComponent->childCount > 0) {
+        for(int i = 0; i < p->uiComponent->childCount; i++) {
+            if(entityId != p->uiComponent->children[i]){
+                globals.entities[p->uiComponent->children[i]].visible = !globals.entities[p->uiComponent->children[i]].visible;
+            }
+        }
+    }
+}
+
 void moveCursor(float x){
     globals.entities[globals.cursorEntityId].transformComponent->position[0] = x;
     globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
@@ -123,6 +140,7 @@ void uiInputSystem(){
                     SDLVector2 sdlVec = convertUIToSDL(mouseCursor,width,height);
                     ClosestLetter closestLetter = getClosestLetterInText(
                             globals.entities[globals.focusedEntityId].uiComponent,
+                            globals.entities[globals.focusedEntityId].boundingBoxComponent,
                             sdlVec.x
                     );
                     SDLVector2 closestLetterSDLpos;
@@ -249,14 +267,17 @@ void cameraSystem(){
  */
 void uiSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
+   
         if(
             globals.entities[i].alive == 1 
         && globals.entities[i].uiComponent->active 
         && globals.entities[i].transformComponent->active 
         && globals.entities[i].uiComponent->uiNeedsUpdate 
         && globals.cursorEntityId != i
+        && globals.entities[i].boundingBoxComponent->active
         ) {
-                
+        
+         
                 // Goal here: Position element in "UI" space, where start 0,0 is the center of the ui-viewport screen. 
                 // We will position the element to top left corner of the screen and treat this as 0,0 instead.
                 // If position or scale changes, this calculation won't be correct anymore.
@@ -291,10 +312,11 @@ void uiSystem(){
              //  printf("final pos: %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
                 
                 // Bounding box
-                globals.entities[i].uiComponent->boundingBox.x = requested_pos_x;
-                globals.entities[i].uiComponent->boundingBox.y = requested_pos_y;
-                globals.entities[i].uiComponent->boundingBox.width = globals.entities[i].transformComponent->scale[0];
-                globals.entities[i].uiComponent->boundingBox.height = globals.entities[i].transformComponent->scale[1];
+                //globals.entities[i].uiComponent->boundingBox.x = requested_pos_x;
+              /*   globals.entities[i].boundingBoxComponent->boundingBox.min[0] = requested_pos_x;
+                globals.entities[i].boundingBoxComponent->boundingBox.min[1] = requested_pos_y;
+                globals.entities[i].boundingBoxComponent->boundingBox.max[0] = globals.entities[i].transformComponent->scale[0];
+                globals.entities[i].boundingBoxComponent->boundingBox.max[1] = globals.entities[i].transformComponent->scale[1]; */
                 
                /*  printf("bounding box x %d\n", globals.entities[i].uiComponent->boundingBox.x);
                 printf("bounding box y %d\n", globals.entities[i].uiComponent->boundingBox.y);
@@ -303,7 +325,7 @@ void uiSystem(){
                 printf("entity id %d\n", globals.entities[i].id);
                 printf("bb entity to update %d\n", globals.entities[i].uiComponent->boundingBoxEntityId); */
                 
-
+                // TODO: I dont think this is necessary, we should be able to direct access with i.
                 // Find the bounding box entity and update with new values
                 for(int j = 0; j < MAX_ENTITIES; j++) {
                     if(globals.entities[j].alive == 1 && globals.entities[i].uiComponent->boundingBoxEntityId == globals.entities[j].id) { 
@@ -323,25 +345,24 @@ void hoverAndClickSystem(){
     int newCursor = SDL_SYSTEM_CURSOR_ARROW;
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1){
-                   
+            if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1 && globals.entities[i].boundingBoxComponent->active == 1 && globals.entities[i].materialComponent->active == 1){
+             
                     if(
                         globals.views.ui.isMousePointerWithin && 
-                        isPointInsideRect(globals.entities[i].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos})
+                        isPointInsideBoundingBox(globals.entities[i].boundingBoxComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos})
                     ){
-                       
+
                         // Left Click or just hover?
                         if(globals.mouseLeftButtonPressed){
-                            if(strlen(globals.entities[i].uiComponent->text) > 0){
-                               // printf("clicked\n");
+                           // printf("clicked entity with type: %d\n", globals.entities[i].uiComponent->type);
+                            if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_BUTTON){
+                                toggleChildrenVisibility(i);
                             }
                           
                             globals.entities[i].uiComponent->clicked = 1;
                         } else {
                             
-                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                              //  printf("hovered entity with id: %d\n", globals.entities[i].id);
-                            }
+                
                             globals.entities[i].uiComponent->hovered = 1;
                             globals.entities[i].uiComponent->clicked = 0;
                         }
@@ -355,7 +376,7 @@ void hoverAndClickSystem(){
                                 newCursor = SDL_SYSTEM_CURSOR_HAND;
                             }
                             if(strlen(globals.entities[i].uiComponent->text) > 0){
-                              // printf("hovered changes done on entity with id %d\n", globals.entities[i].id);
+                        
                                 // Appearance changes when hovered
                                globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
                                globals.entities[i].materialComponent->diffuse.r = 0.0f;
@@ -364,10 +385,10 @@ void hoverAndClickSystem(){
                         }
 
                         if(globals.entities[i].uiComponent->clicked == 1){
-                           // printf("clicked entity with id: %d\n", globals.entities[i].id);
+                           
                             if(globals.entities[i].uiComponent->type == UITYPE_INPUT){
                                 globals.focusedEntityId = globals.entities[i].id;
-                               // printf("input field on entity with id %d clicked\n", globals.entities[i].id);
+                                printf("input field on entity with id %d clicked\n", globals.entities[i].id);
                             }else {
                                 // If clicked ui element is not an input field
                                 //if(globals.focusedEntityId != globals.entities[i].id)
@@ -423,7 +444,10 @@ void textCursorSystem(){
                    
                     // Find closest letter to cursor on dragstart
                     if(globals.cursorDragStart == -1.0f){
-                        ClosestLetter closestStartLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                        ClosestLetter closestStartLetter = getClosestLetterInText(
+                            globals.entities[globals.focusedEntityId].uiComponent,
+                            globals.entities[globals.focusedEntityId].boundingBoxComponent, 
+                            globals.mouseXpos);
                         addIndexToCursorTextSelection((unsigned int)closestStartLetter.characterIndex);
                         SDLVector2 sdlVec;
                         sdlVec.x = closestStartLetter.position.x;
@@ -434,7 +458,10 @@ void textCursorSystem(){
                     }
 
                     // Find closest letter to cursor on dragend
-                    ClosestLetter closestEndLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                    ClosestLetter closestEndLetter = getClosestLetterInText(
+                        globals.entities[globals.focusedEntityId].uiComponent,
+                        globals.entities[globals.focusedEntityId].boundingBoxComponent, 
+                        globals.mouseXpos);
                     addIndexToCursorTextSelection((unsigned int)closestEndLetter.characterIndex);
                     SDLVector2 sdlVec;
                     sdlVec.x = closestEndLetter.position.x;
@@ -465,7 +492,10 @@ void textCursorSystem(){
                 // Single click, place cursor where mouse clicked
                 if(globals.mouseDoubleClick == 0 && globals.cursorSelectionActive == false){
 
-                    ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+                    ClosestLetter closestLetter = getClosestLetterInText(
+                        globals.entities[globals.focusedEntityId].uiComponent, 
+                        globals.entities[globals.focusedEntityId].boundingBoxComponent, 
+                        globals.mouseXpos);
                     SDLVector2 sdlVec;
                     sdlVec.x = closestLetter.position.x;
                     sdlVec.y = closestLetter.position.y;         
@@ -505,12 +535,15 @@ void textCursorSystem(){
   
         // Create cursor
         if(!cursorExist){
-            ClosestLetter closestLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent, globals.mouseXpos);
+            ClosestLetter closestLetter = getClosestLetterInText(
+                globals.entities[globals.focusedEntityId].uiComponent, 
+                globals.entities[globals.focusedEntityId].boundingBoxComponent, 
+                globals.mouseXpos);
             SDLVector2 sdlVec;
             sdlVec.x = closestLetter.position.x;
             sdlVec.y = closestLetter.position.y;         
             UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
-            globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){1.5f, (float)globals.fontSize*0.75f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f});
+            globals.cursorEntityId = ui_createRectangle(globals.materials[0], (vec3){uiVec.x, uiVec.y, 2.0f}, (vec3){1.5f, (float)globals.fontSize*0.75f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
         }
         
     }else{

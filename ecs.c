@@ -24,6 +24,7 @@ void initECS(){
     LightComponent* lightComponents = allocateComponentMemory(sizeof(LightComponent), "light");
     LineComponent* lineComponents = allocateComponentMemory(sizeof(LineComponent), "line");
     PointComponent* pointComponents = allocateComponentMemory(sizeof(PointComponent), "point");
+    BoundingBoxComponent* boundingBoxComponents = allocateComponentMemory(sizeof(BoundingBoxComponent), "boundingBox");
 
     // Allocate memory for MAX_ENTITIES Entity structs
     Entity* entities = (Entity*)calloc(MAX_ENTITIES, sizeof(Entity));
@@ -53,6 +54,8 @@ void initECS(){
         initializeLineComponent(entities[i].lineComponent);
         entities[i].pointComponent = &pointComponents[i];
         initializePointComponent(entities[i].pointComponent);
+        entities[i].boundingBoxComponent = &boundingBoxComponents[i];
+        initializeBoundingBoxComponent(entities[i].boundingBoxComponent);
     }
 
     globals.entities = entities;
@@ -66,6 +69,7 @@ void initECS(){
         printf("uiComponent %zu\n",sizeof(UIComponent));
         printf("lineComponent %zu\n",sizeof(LineComponent));
         printf("pointComponent %zu\n",sizeof(PointComponent));
+        printf("boundingBoxComponent %zu\n",sizeof(BoundingBoxComponent));
     }
 }
 
@@ -150,10 +154,6 @@ void initializeUIComponent(UIComponent* uiComponent){
     uiComponent->active = 0;
     uiComponent->hovered = 0;
     uiComponent->clicked = 0;
-    uiComponent->boundingBox.x = 0;
-    uiComponent->boundingBox.y = 0;
-    uiComponent->boundingBox.width = 0;
-    uiComponent->boundingBox.height = 0;
     uiComponent->text = (char*)malloc(MAX_TEXT_LENGTH * sizeof(char));
     if (uiComponent->text != NULL) {
         // Initialize the allocated memory to an empty string
@@ -164,6 +164,11 @@ void initializeUIComponent(UIComponent* uiComponent){
     uiComponent->onClick = NULL;
     uiComponent->onChange = NULL;
     uiComponent->type = UITYPE_NONE;
+    uiComponent->parent = NULL;
+    uiComponent->childCount = 0;
+    for (int i = 0; i < MAX_UI_CHILDREN; i++) {
+        uiComponent->children[i] = -1; 
+    }
 }
 
 void initializeLightComponent(LightComponent* lightComponent){
@@ -224,4 +229,15 @@ void initializePointComponent(PointComponent* pointComponent){
     pointComponent->color.b = 0.0f;
     pointComponent->color.a = 1.0f;
     pointComponent->pointSize = 1.0f;
+}
+
+void initializeBoundingBoxComponent(BoundingBoxComponent *boundingBoxComponent)
+{
+    boundingBoxComponent->active = 0;
+    boundingBoxComponent->boundingBox.min[0] = 0.0f;
+    boundingBoxComponent->boundingBox.min[1] = 0.0f;
+    boundingBoxComponent->boundingBox.min[2] = 0.0f;
+    boundingBoxComponent->boundingBox.max[0] = 0.0f;
+    boundingBoxComponent->boundingBox.max[1] = 0.0f;
+    boundingBoxComponent->boundingBox.max[2] = 0.0f;
 }

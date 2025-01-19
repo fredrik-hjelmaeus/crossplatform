@@ -4,7 +4,7 @@
 #include "types.h"
 
 ClosestLetter getCharacterByIndex(int index);
-ClosestLetter getClosestLetterInText(UIComponent* uiComponent, float mouseX);
+ClosestLetter getClosestLetterInText(UIComponent* uiComponent,BoundingBoxComponent* bbComponent, float mouseX);
 void selectAllText(int width, int height);
 void handleDeleteButton(int width,int height);
 ClosestLetter findCharacterUnderCursor(int width,int height);

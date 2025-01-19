@@ -9,6 +9,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+typedef struct Entity Entity;
 
 typedef struct Color {
     GLfloat  r;
@@ -35,6 +36,7 @@ typedef enum {
     TEXTAREA = 2,
     UITYPE_TEXT = 3,
     UITYPE_BUTTON = 4,
+    UITYPE_PANEL = 5,
 } UiType;
 
  typedef struct {
@@ -73,6 +75,11 @@ typedef struct Camera {
     float top;    // Top boundary for orthographic projection
     bool isOrthographic; // Flag to indicate if the camera is orthographic
 } Camera;
+
+typedef struct BoundingBox {
+    vec3 min;
+    vec3 max;
+} BoundingBox;
 
 typedef struct Rectangle{
     int x;      // Rectangle left position (top-left or bottom-left corner)
@@ -277,17 +284,21 @@ typedef struct PointComponent {
     Color color;
 } PointComponent;
 
+#define MAX_UI_CHILDREN 20
 typedef struct UIComponent {
     bool active;
     bool hovered;
     bool clicked;
-    Rectangle boundingBox;
+    //Rectangle boundingBox;
     int boundingBoxEntityId;
     char* text;
     bool uiNeedsUpdate;
     ButtonCallback onClick;
     OnChangeCallback onChange;
     UiType type;
+    Entity* parent;
+    int childCount;
+    int children[MAX_UI_CHILDREN];
     // padding?
     // margin?
     // offset?
@@ -298,7 +309,7 @@ typedef struct UIComponent {
     // textOverflow?
     // opacity?
     // visibility?
-} UIComponent;
+}  UIComponent;
 
 typedef struct LightComponent {
     bool active;
@@ -330,9 +341,15 @@ typedef struct MaterialComponent {
   //  Texture* normalMap;
 } MaterialComponent;
 
+typedef struct BoundingBoxComponent {
+    bool active;
+    BoundingBox boundingBox;
+} BoundingBoxComponent;
+
 typedef struct Entity {
     int id;
     bool alive;
+    bool visible;
     int tag;
     TransformComponent* transformComponent;
     GroupComponent* groupComponent;
@@ -342,6 +359,7 @@ typedef struct Entity {
     LightComponent* lightComponent;
     LineComponent* lineComponent;
     PointComponent* pointComponent;
+    BoundingBoxComponent* boundingBoxComponent;
 } Entity;
 
 typedef vec3 Point;
