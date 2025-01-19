@@ -98,7 +98,7 @@ void addIndexToCursorTextSelection(unsigned int index){
 ClosestLetter getClosestLetterInText(UIComponent* uiComponent,BoundingBoxComponent* bbComponent, float mouseX){
     char* text = uiComponent->text;
     float x = (float)bbComponent->boundingBox.min[0];
-    float y = (float)bbComponent->boundingBox.min[1] + ((float)bbComponent->boundingBox.max[2] / 2);   //(float)globals.characters[0].Size[1]; 
+    float y = (float)bbComponent->boundingBox.min[1] + (((float)bbComponent->boundingBox.max[1] - (float)bbComponent->boundingBox.min[1]) / 2);   //(float)globals.characters[0].Size[1]; 
     float scale = globals.charScale; // Character size, also set when renderText is called (they should be in sync)
     float xpos = 0.0f;
     float ypos = 0.0f;

@@ -388,7 +388,7 @@ void hoverAndClickSystem(){
                            
                             if(globals.entities[i].uiComponent->type == UITYPE_INPUT){
                                 globals.focusedEntityId = globals.entities[i].id;
-                                printf("input field on entity with id %d clicked\n", globals.entities[i].id);
+                               // printf("input field on entity with id %d clicked\n", globals.entities[i].id);
                             }else {
                                 // If clicked ui element is not an input field
                                 //if(globals.focusedEntityId != globals.entities[i].id)
@@ -538,7 +538,10 @@ void textCursorSystem(){
             ClosestLetter closestLetter = getClosestLetterInText(
                 globals.entities[globals.focusedEntityId].uiComponent, 
                 globals.entities[globals.focusedEntityId].boundingBoxComponent, 
-                globals.mouseXpos);
+                globals.mouseXpos
+            );
+            printf("closest letter position x %f\n", closestLetter.position.x);
+            printf("closest letter position y %f\n", closestLetter.position.y);
             SDLVector2 sdlVec;
             sdlVec.x = closestLetter.position.x;
             sdlVec.y = closestLetter.position.y;         

@@ -653,27 +653,21 @@ void input() {
               float x_ui =  (-1 * x_ndc) * ((float)width * 0.5);
               float y_ui =   y_ndc * ((float)height * 0.5);  */
               //printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
-          //  printf("Mouse moved to %f, %f\n", globals.mouseXpos, globals.mouseYpos);
-           // SDLVector2 sdlMouseCoords = {xpos, ypos};
-           // UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
+            printf("Mouse moved to %f, %f\n", globals.mouseXpos, globals.mouseYpos);
+            SDLVector2 sdlMouseCoords = {xpos, ypos};
+            UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
            //printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
             // END TEMP CODE------------------
 
             if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
-                
                // printf("Mouse is within main view\n ");
                 // Update the camera front vector
                 calcCameraFront(globals.views.main.camera,xpos, ypos);
                 // set view matrix needs update flag (so that we recalculate the view matrix with the new front vector)
                 globals.views.main.camera->viewMatrixNeedsUpdate = 1;
             }
-
-     
             if(isPointInsideRect(globals.views.ui.rect, (vec2){xpos, ypos})){
-                globals.views.ui.isMousePointerWithin = true; 
-              
-                
-               
+                globals.views.ui.isMousePointerWithin = true;
             }else{
                 globals.views.ui.isMousePointerWithin = false;
             }

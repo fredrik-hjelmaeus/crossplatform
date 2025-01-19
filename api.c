@@ -380,40 +380,7 @@ void createLine(vec3 position, vec3 endPosition,Entity* entity){
     setupLine(lines,2,entity->lineComponent->gpuData);
     setupMaterial(entity->lineComponent->gpuData,"shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
 }
-/**
- * @brief Create a closed poly line segment with four points
- * @param positions
- * @param positionCount
- */
-/* void createPolyLine(vec3* positions, int positionCount,Entity* entity){
-    entity->lineComponent->active = 1;
-    entity->lineComponent->start[0] = position[0];
-    entity->lineComponent->start[1] = position[1];
-    entity->lineComponent->start[2] = position[2];
-    entity->lineComponent->end[0] = endPosition[0];
-    entity->lineComponent->end[1] = endPosition[1];
-    entity->lineComponent->end[2] = endPosition[2];
-    entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
-    // TODO: transform pos is start of segment, should it be mid-point?
-    entity->transformComponent->position[0] = position[0];
-    entity->transformComponent->position[1] = position[1];
-    entity->transformComponent->position[2] = position[2];
-    entity->transformComponent->scale[0] = 1.0f;
-    entity->transformComponent->scale[1] = 1.0f;
-    entity->transformComponent->scale[2] = 1.0f;
-    entity->transformComponent->rotation[0] = 0.0f;
-    entity->transformComponent->rotation[1] = 0.0f;
-    entity->transformComponent->rotation[2] = 0.0f;
-    entity->transformComponent->modelNeedsUpdate = 1;
 
-    GLfloat lines[] = {
-        position[0], position[1], position[2], 
-        endPosition[0], endPosition[1], endPosition[2]
-    };
-
-    setupLine(lines,2,entity->lineComponent->gpuData);
-    setupMaterial(entity->lineComponent->gpuData,"shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
-} */
 /**
  * @brief Create a Cube
  * Create a Cube mesh
@@ -528,7 +495,7 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
     createMesh(vertices,6,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
 }
 
-
+// TODO: unfinished. Supposed to draw the frustum of the camera or light correctly.
 void debug_drawFrustum()
 {
      //float near_plane = -0.05f, far_plane = 300.0f;
@@ -679,21 +646,14 @@ Entity* ui_createPanel(Material material,vec3 position,vec3 scale,vec3 rotation,
 }
 int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent){
     // vertex data
-     GLfloat vertices[] = {
+    GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
      0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
      0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
     -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-}; 
-// vertex data converted using chatgpt, saved above correct data for reference
-/* Vertex vertices[] = {
-    // Position              // Color             // TexCoord  // Normal
-    {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // top right
-    {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // bottom right
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // bottom left
-    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // top left
-}; */
+    }; 
+
     //OBSOLETE index data (counterclockwise)
     GLuint indices[] = {
         0, 1, 3, // first triangle
@@ -719,7 +679,6 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,
     
     createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
-   
     return entity->id;
 }
 /**
@@ -729,21 +688,14 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,
 */
 void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick,Entity* parent){
     // vertex data
-GLfloat vertices[] = {
-    // Positions          // Colors           // Texture Coords    // Normals
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-}; 
-// vertex data converted with help of chatgpt, might be wrong so saved above correct data
-/* Vertex vertices[] = {
-    // Position              // Color             // TexCoord  // Normal
-    {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // top right
-    {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // bottom right
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // bottom left
-    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // top left
-}; */
+    GLfloat vertices[] = {
+        // Positions          // Colors           // Texture Coords    // Normals
+        0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
+        0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
+    }; 
+
     // OBSOLETE index data (counterclockwise)
     GLuint indices[] = {
         0, 1, 3, // first triangle
@@ -794,21 +746,14 @@ GLfloat vertices[] = {
 */
 void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange,Entity* parent){
     // vertex data
-         GLfloat vertices[] = {
+    GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
      0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
      0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
     -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-}; 
-// vertex data converted with help of chatgpt, might be wrong so saved above correct data
-/* Vertex vertices[] = {
-    // Position              // Color             // TexCoord  // Normal
-    {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // top right
-    {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // bottom right
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // bottom left
-    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // top left
-}; */
+    }; 
+
     // OBSOLETE index data (counterclockwise)
     GLuint indices[] = {
         0, 1, 3, // first triangle
