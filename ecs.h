@@ -5,7 +5,7 @@
 #include "types.h"
 
 // Max entities constant
-#define MAX_ENTITIES 1000
+#define MAX_ENTITIES 5000
 
 // Max text length for UI components
 #define MAX_TEXT_LENGTH 100

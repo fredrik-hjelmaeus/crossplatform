@@ -375,7 +375,7 @@ int findTrailingSpaces(const char* str){
         if((int)str[i] == 32){
             count++;
         }else{
-            printf("no trail%d\n",i);
+            printf("no trail %d\n",i);
         }
     }
     return count +1;
@@ -478,9 +478,13 @@ void obj_parseMaterial(const char *filepath){
         exit(1);
     }
 
+    int materialParsedLineCount = 0;
+
     // Parse .mtl file
     while (fgets(mtlLine, sizeof mtlLine, mtlfp) != NULL){
-        
+        materialParsedLineCount++;
+     //   printf("materialParsedLineCount: %d \n",materialParsedLineCount);
+        //printf("parsing material line: %s \n",mtlLine);
         // comment
         if((int)mtlLine[0] == 35){
             continue;
@@ -644,7 +648,9 @@ void obj_parseMaterial(const char *filepath){
     }
     fclose(mtlfp);
     
-
+    printf("------------------------------------\n");
+    printf("Material parsing done\n");
+    printf("------------------------------------\n");
 }
 
 /**
@@ -653,12 +659,12 @@ void obj_parseMaterial(const char *filepath){
  * @returns materialIndex in globals.materials or -1 if no hits
  */
 int getMaterialByName(const char* name){
-   // printf("getMaterialByName %s\n",name);
+    //printf("getMaterialByName %s\n",name);
     //printf("globals.materialsCount %d\n",globals.materialsCount);
     for(int i = 0; i < globals.materialsCount; i++){
-        //printf("globals.materials[i].name %s\n",globals.materials[i].name);
+      //  printf("globals.materials[i].name %s\n",globals.materials[i].name);
         if(strncmp(globals.materials[i].name,name,strlen(name)-1) == 0){
-          //  printf("found material %s at index %d\n",name,i);
+           // printf("found material %s at index %d\n",name,i);
             return i;
         } 
     }
@@ -706,9 +712,10 @@ ObjGroup* obj_loadFile(const char *filepath)
     int faceLineCount = 0;
 
     // Keeps track of where objects faceLineCount.
-    int faceLineCountStart[100];// = {0};// 100 is max num of object
-    int faceLineCountEnd[100];// = {0};   // 100 is max num of object
+    int faceLineCountStart[10000];// = {0};// 100 is max num of object
+    int faceLineCountEnd[10000];// = {0};   // 100 is max num of object
     //char group[100]; // Not used/implemented
+    bool grouping = false;
     
     FILE* fp;
     char line[1024];
@@ -720,7 +727,8 @@ ObjGroup* obj_loadFile(const char *filepath)
     }
     
     while (fgets(line, sizeof line, fp) != NULL){
-    // printf(TEXT_COLOR_ERROR "line %s" TEXT_COLOR_RESET "\n", line);
+   //  printf(TEXT_COLOR_ERROR "line %s" TEXT_COLOR_RESET "\n", line);
+        
         // comment
         if((int)line[0] == 35){
             continue;
@@ -739,14 +747,14 @@ ObjGroup* obj_loadFile(const char *filepath)
         }
         // o, object
         if((int)line[0] == 111){
-           // printf(TEXT_COLOR_BLUE "new object: %s" TEXT_COLOR_RESET , line);
+            printf(TEXT_COLOR_BLUE "new object: %s" TEXT_COLOR_RESET , line);
             size_t lineLength = strlen(line);
             if(lineLength >= 100){
                 printf("Error: Object name too long. Exiting..");
                 exit(1);
             }
           //  printf("--------------------\n");
-           // printf("objGroup->objectCount %d\n",objGroup->objectCount);
+            printf("objGroup->objectCount %d\n",objGroup->objectCount);
             // Object name
             objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
             for(int i = 0; i < lineLength; i++){
@@ -772,6 +780,33 @@ ObjGroup* obj_loadFile(const char *filepath)
         }
         // g, grouping, read in the groups
         if((int)line[0] == 103){
+            // printf(TEXT_COLOR_MAGENTA "new group: %s" TEXT_COLOR_RESET , line);
+             grouping = true;
+           /*  size_t lineLength = strlen(line);
+            if(lineLength >= 100){
+                printf("Error: Object name too long. Exiting..");
+                exit(1);
+            }
+            printf("objGroup->objectCount %d\n",objGroup->objectCount);
+            objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
+            for(int i = 0; i < lineLength; i++){
+                objGroup->objData[objGroup->objectCount].name[i] = line[i];
+            }  
+            objGroup->objData[objGroup->objectCount].name[lineLength-1] = '\0'; // Null terminate the string
+             faceLineCountStart[objGroup->objectCount] = faceLineCount; 
+            if(objGroup->objectCount > 0){
+                ASSERT(faceLineCount > 0, "Error: faceLineCount is 0 or less");
+                ASSERT(faceLineCount < 100000, "Error: faceLineCount is too large");
+                int pi = (int)(objGroup->objectCount-1);
+                faceLineCountEnd[pi] = faceLineCount; 
+                int num_faceLineCountCurrentObject = (int)faceLineCountEnd[pi] - (int)faceLineCountStart[pi];
+                objGroup->objData[pi].num_of_vertices =  (num_faceLineCountCurrentObject * 3);  
+            }
+            objGroup->objectCount++;
+            if(objGroup->objectCount > globals.objDataCapacity){
+                printf("Error: Too many objects ,adjust globals.objDataCapacity. Exiting..");
+                exit(1);
+            } */
          /*    for(int i = 2; i < strlen(line); i++){
                 group[i-2] = line[i];
             } */
@@ -780,6 +815,37 @@ ObjGroup* obj_loadFile(const char *filepath)
         // u, check for usemtl
         if((int)line[0] == 117){
             if(strncmp(line, "usemtl", 6) == 0){
+
+                if(grouping){
+                     size_t lineLength = strlen(line);
+                    if(lineLength >= 100){
+                        printf("Error: Object name too long. Exiting..");
+                        exit(1);
+                    }
+                    printf("usemtl objGroup->objectCount %d\n",objGroup->objectCount);
+                    objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
+                    for(int i = 0; i < lineLength; i++){
+                        objGroup->objData[objGroup->objectCount].name[i] = line[i];
+                    }  
+                    objGroup->objData[objGroup->objectCount].name[lineLength-1] = '\0'; // Null terminate the string
+                    faceLineCountStart[objGroup->objectCount] = faceLineCount; 
+                    if(objGroup->objectCount > 0){
+                        ASSERT(faceLineCount > 0, "Error: faceLineCount is 0 or less");
+                        ASSERT(faceLineCount < 100000, "Error: faceLineCount is too large");
+                        int pi = (int)(objGroup->objectCount-1);
+                        faceLineCountEnd[pi] = faceLineCount; 
+                        int num_faceLineCountCurrentObject = (int)faceLineCountEnd[pi] - (int)faceLineCountStart[pi];
+                        objGroup->objData[pi].num_of_vertices =  (num_faceLineCountCurrentObject * 3);  
+                    }
+                    objGroup->objectCount++;
+               
+                 
+                    if(objGroup->objectCount > globals.objDataCapacity){
+                        printf("Error: Too many objects ,adjust globals.objDataCapacity. Exiting..");
+                        exit(1);
+                    }
+                }
+
                // size_t lineLength = strlen(line);
                 char *token = strtok(line, " ");
                 token = strtok(NULL, " ");
