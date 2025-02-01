@@ -795,3 +795,116 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
 
     createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 }
+
+/**
+ * @brief Create a text field
+ * Create a input mesh in ui
+ * @param diffuse - color of the rectangle
+*/
+void ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent){
+    // vertex data
+    GLfloat vertices[] = {
+    // Positions          // Colors           // Texture Coords    // Normals
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
+     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
+    }; 
+
+    // OBSOLETE index data (counterclockwise)
+    GLuint indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
+
+    Entity* entity = addEntity(MODEL);
+    
+    entity->uiComponent->active = 1;
+    entity->boundingBoxComponent->active = 1;
+    entity->boundingBoxComponent->boundingBox.min[0] = position[0];
+    entity->boundingBoxComponent->boundingBox.min[1] = position[1];
+    entity->boundingBoxComponent->boundingBox.min[2] = position[2];
+    entity->boundingBoxComponent->boundingBox.max[0] = position[0] + scale[0];
+    entity->boundingBoxComponent->boundingBox.max[1] = position[1] + scale[1];
+    entity->boundingBoxComponent->boundingBox.max[2] = position[2] + scale[2];
+    entity->uiComponent->text = text;
+    entity->uiComponent->uiNeedsUpdate = 1;
+    entity->uiComponent->type = UITYPE_TEXT;
+    if(parent != NULL){
+        entity->uiComponent->parent = parent;
+        parent->uiComponent->childCount++;
+        ASSERT(parent->uiComponent->childCount <= MAX_UI_CHILDREN, "Exceeded maximum number of children");
+        parent->uiComponent->children[parent->uiComponent->childCount - 1] = entity->id;
+    }
+
+    createMesh(vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+
+    // Bounding box, reuses the vertices from the rectangle
+    GLuint bbIndices[] = {
+        0, 1, 1,2, 2,3 ,3,0, 
+    };
+    Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
+    ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
+    
+    entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
+    ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
+
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+}
+
+/**
+ * @brief Create a button
+ * Create a button mesh in ui
+ * @param diffuse - color of the rectangle
+*/
+
+void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Entity* parent){
+    // vertex data
+    GLfloat vertices[] = {
+        // Positions          // Colors           // Texture Coords    // Normals
+        0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
+        0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
+    }; 
+
+    // OBSOLETE index data (counterclockwise)
+    GLuint indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
+
+    Entity* entity = addEntity(MODEL);
+    
+    entity->uiComponent->active = 1;
+    entity->boundingBoxComponent->active = 1;
+    entity->boundingBoxComponent->boundingBox.min[0] = position[0];
+    entity->boundingBoxComponent->boundingBox.min[1] = position[1];
+    entity->boundingBoxComponent->boundingBox.min[2] = position[2];
+    entity->boundingBoxComponent->boundingBox.max[0] = position[0] + scale[0];
+    entity->boundingBoxComponent->boundingBox.max[1] = position[1] + scale[1];
+    entity->boundingBoxComponent->boundingBox.max[2] = position[2] + scale[2];
+    entity->uiComponent->uiNeedsUpdate = 1;
+    entity->uiComponent->type = UITYPE_SLIDER;
+    if(parent != NULL){
+        entity->uiComponent->parent = parent;
+        parent->uiComponent->childCount++;
+        ASSERT(parent->uiComponent->childCount <= MAX_UI_CHILDREN, "Exceeded maximum number of children");
+        parent->uiComponent->children[parent->uiComponent->childCount - 1] = entity->id;
+        
+    }
+    
+    createMesh(vertices,4,indices,6,position,scale,rotation,&mat1,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+
+    // Bounding box, reuses the vertices from the rectangle
+    GLuint bbIndices[] = {
+        0, 1, 1,2, 2,3 ,3,0, 
+    };
+    Entity* boundingBoxEntity = addEntity(BOUNDING_BOX);
+    ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
+    
+    entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
+    ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
+
+    createMesh(vertices,4,bbIndices,8,position,scale,rotation,&mat2,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+}

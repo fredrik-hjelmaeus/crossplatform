@@ -37,6 +37,7 @@ typedef enum {
     UITYPE_TEXT = 3,
     UITYPE_BUTTON = 4,
     UITYPE_PANEL = 5,
+    UITYPE_SLIDER = 6,
 } UiType;
 
  typedef struct {

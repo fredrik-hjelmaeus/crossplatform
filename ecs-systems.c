@@ -346,7 +346,10 @@ void hoverAndClickSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1 && globals.entities[i].boundingBoxComponent->active == 1 && globals.entities[i].materialComponent->active == 1){
-             
+                    if(globals.entities[i].uiComponent->type == UITYPE_TEXT){
+                        continue;
+                    }
+
                     if(
                         globals.views.ui.isMousePointerWithin && 
                         isPointInsideBoundingBox(globals.entities[i].boundingBoxComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos})
@@ -358,10 +361,15 @@ void hoverAndClickSystem(){
                             if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_BUTTON){
                                 toggleChildrenVisibility(i);
                             }
+                            if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_SLIDER){
+                                printf("slider clicked\n");
+                            }
                           
                             globals.entities[i].uiComponent->clicked = 1;
                         } else {
-                            
+                             if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_SLIDER){
+                                printf("slider hovered\n");
+                            }
                 
                             globals.entities[i].uiComponent->hovered = 1;
                             globals.entities[i].uiComponent->clicked = 0;

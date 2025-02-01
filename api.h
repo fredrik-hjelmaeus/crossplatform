@@ -82,5 +82,12 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
  * Create a input mesh in ui
 */
 void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange,Entity* parent);
+/**
+ * @brief Create a text field
+ * Create a mesh in ui
+*/
+void ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent);
+void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Entity* parent);
+
 
 #endif // API_H
