@@ -232,19 +232,20 @@ void setViewportWithScissorAndClear(View view) {
 }
 
 void createLightSpace(){
+    Entity* light = &globals.entities[globals.lights[0]];
     mat4x4 lightProjection, lightView;
     float near_plane = 0.001f, far_plane = 60.0f;
     mat4x4_ortho(lightProjection, -60.0f, 60.0f, -60.0f, 60.0f, near_plane, far_plane);
   
     vec3 dir = {
-        globals.lights[0].lightComponent->direction[0], 
-        globals.lights[0].lightComponent->direction[1], 
-        globals.lights[0].lightComponent->direction[2]
+        light->lightComponent->direction[0], 
+        light->lightComponent->direction[1], 
+        light->lightComponent->direction[2]
     };
     vec3 pos = {
-    globals.lights[0].transformComponent->position[0],
-    globals.lights[0].transformComponent->position[1],
-    globals.lights[0].transformComponent->position[2]
+    light->transformComponent->position[0],
+    light->transformComponent->position[1],
+    light->transformComponent->position[2]
 };
 
 // Construct target position: pos + dir
@@ -257,7 +258,7 @@ vec3 target = {
 
 
 
-    mat4x4_look_at(lightView, globals.lights[0].transformComponent->position,  (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
+    mat4x4_look_at(lightView, light->transformComponent->position,  (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
     mat4x4_mul(globals.lightSpaceMatrix, (const float (*)[4])lightProjection, (const float (*)[4])lightView);
 
 }
@@ -629,8 +630,10 @@ void input() {
            if(globals.cursorSelectionActive){
                 globals.deselectCondition = true;
            }
-          globals.mouseDragged = false;
-
+           globals.mouseDragged = false;
+           if(globals.focusedEntityId != -1 && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
+                globals.focusedEntityId = -1;
+           }
            
             
         }
@@ -639,7 +642,7 @@ void input() {
                 globals.mouseDragged = true;
             }
 
-            int xpos =  globals.event.motion.x;
+            int xpos = globals.event.motion.x;
             int ypos = globals.event.motion.y;
 
             globals.mouseXpos = (float)xpos;
@@ -693,9 +696,10 @@ void update(){
 
     // Systems
     cameraSystem();
-    uiSystem();
+    uiPositionSystem();
     uiInputSystem();
     hoverAndClickSystem();
+    uiSliderSystem();
     textCursorSystem();
     movementSystem();
     modelSystem();
@@ -936,15 +940,15 @@ void initScene(){
 
    // ObjGroup* truck = obj_loadFile("./Assets/truck.obj"); // Not supported atm, need .obj group support.
    // ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
-    ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
+   // ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
   /*  ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
     ObjGroup* objExample = obj_loadFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
     ObjGroup* sphere = obj_loadFile("./Assets/blender_sphere3.obj");
     ObjGroup* triangleVolumes = obj_loadFile("./Assets/triangle_volumes.obj");
     ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");*/
-    ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   
-    ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
-    ObjGroup* skp_arbetsrum = obj_loadFile("./Assets/arbetsrum_FINAL.obj");
+  //  ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   
+   // ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
+  //  ObjGroup* skp_arbetsrum = obj_loadFile("./Assets/arbetsrum_FINAL.obj");
  
   
    
@@ -968,10 +972,10 @@ void initScene(){
         createObject(&truck->objData[i],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     } */
   
-    createObject(&skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+   /*  createObject(&skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(&skp_arbetsrum->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(&skp_arbetsrum->objData[2],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(&skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); */
   
   /*   createObject(&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(&truck->objData[1],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -1015,7 +1019,7 @@ void initScene(){
 
     debug_drawFrustum();
 
-   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. (controlled by the uiSystem)
+   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. (controlled by the uiPositionSystem)
    // Scale is in pixels, 100.0f is 100 pixels etc.
    // z position will be z-depth, much like in DOM in web.Use this to control draw order.
    // TODO: implement rotation, it is atm not affecting. 
@@ -1030,7 +1034,7 @@ void initScene(){
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 35.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
     // Row 2 Slider
     ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
-    ui_createSlider(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
     ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",onTextInputChange,settingsPanel);
 
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 30.0f, 0.0f}, (vec3){5.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);

@@ -437,8 +437,6 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         fprintf(stderr, "Error: camera is NULL\n");
         return;
     }
-
-    
      
     // Set shader
     glUseProgram(buffer->shaderProgram);
@@ -517,7 +515,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glUniform4f(specularLocation, material->specular.r, material->specular.g, material->specular.b, material->specular.a);
 
     // Spotlights
-   Entity spotLightEntityOne_ = globals.lights[4];
+   Entity spotLightEntityOne_ = globals.entities[globals.lights[4]];
    Entity* spotLightEntityOne = &spotLightEntityOne_;
     if(spotLightEntityOne != NULL && spotLightEntityOne->lightComponent != NULL){
  
@@ -565,7 +563,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityOne->lightComponent->outerCutOff);
     }
-  Entity spotLightEntityTwo_ = globals.lights[1];
+  Entity spotLightEntityTwo_ = globals.entities[globals.lights[1]];
    Entity* spotLightEntityTwo = &spotLightEntityTwo_;
     if(spotLightEntityTwo != NULL && spotLightEntityTwo->lightComponent != NULL){
  
@@ -613,7 +611,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityTwo->lightComponent->outerCutOff);
     }
-   Entity spotLightEntityThree_ = globals.lights[2];
+   Entity spotLightEntityThree_ = globals.entities[globals.lights[2]];
    Entity* spotLightEntityThree = &spotLightEntityThree_;
     if(spotLightEntityThree != NULL && spotLightEntityThree->lightComponent != NULL){
  
@@ -661,7 +659,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityThree->lightComponent->outerCutOff);
     }
-   Entity spotLightEntityFour_ = globals.lights[3];
+   Entity spotLightEntityFour_ = globals.entities[globals.lights[3]];
    Entity* spotLightEntityFour = &spotLightEntityFour_;
     if(spotLightEntityFour != NULL && spotLightEntityFour->lightComponent != NULL){
  
@@ -711,7 +709,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     } 
 
     // Directional light
-   Entity directionalLightEntity_ = globals.lights[0];
+   Entity directionalLightEntity_ = globals.entities[globals.lights[0]];
    Entity* directionalLightEntity = &directionalLightEntity_;
     if(directionalLightEntity != NULL && directionalLightEntity->lightComponent != NULL){
 
@@ -736,7 +734,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         glUniform3f(lightDirLocation, directionalLightEntity->lightComponent->direction[0], directionalLightEntity->lightComponent->direction[1], directionalLightEntity->lightComponent->direction[2]);
     }
 
-    Entity pointLightEntityOne_ = globals.lights[5];
+    Entity pointLightEntityOne_ = globals.entities[globals.lights[5]];
     Entity* pointLightEntityOne = &pointLightEntityOne_;
     if(pointLightEntityOne != NULL && pointLightEntityOne->lightComponent != NULL){
 
@@ -773,7 +771,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
         
     }
-    Entity pointLightEntityTwo_ = globals.lights[6];
+    Entity pointLightEntityTwo_ = globals.entities[globals.lights[6]];
     Entity* pointLightEntityTwo = &pointLightEntityTwo_;
     if(pointLightEntityTwo != NULL && pointLightEntityTwo->lightComponent != NULL){
 
@@ -809,7 +807,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[1].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
     }
-    Entity pointLightEntityThree_ = globals.lights[7];
+    Entity pointLightEntityThree_ = globals.entities[globals.lights[7]];
     Entity* pointLightEntityThree = &pointLightEntityThree_;
     if(pointLightEntityThree != NULL && pointLightEntityThree->lightComponent != NULL){
 
@@ -845,7 +843,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[2].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
     }
-    Entity pointLightEntityFour_ = globals.lights[8];
+    Entity pointLightEntityFour_ = globals.entities[globals.lights[8]];
     Entity* pointLightEntityFour = &pointLightEntityFour_;
     if(pointLightEntityFour != NULL && pointLightEntityFour->lightComponent != NULL){
 

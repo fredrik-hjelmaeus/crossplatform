@@ -300,6 +300,8 @@ typedef struct UIComponent {
     Entity* parent;
     int childCount;
     int children[MAX_UI_CHILDREN];
+    float sliderRange;
+    int sliderRangeEntityId;
     // padding?
     // margin?
     // offset?

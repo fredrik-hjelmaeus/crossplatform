@@ -169,6 +169,8 @@ void initializeUIComponent(UIComponent* uiComponent){
     for (int i = 0; i < MAX_UI_CHILDREN; i++) {
         uiComponent->children[i] = -1; 
     }
+    uiComponent->sliderRange = 0.0f;
+    uiComponent->sliderRangeEntityId = -1;
 }
 
 void initializeLightComponent(LightComponent* lightComponent){

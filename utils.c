@@ -4,9 +4,12 @@
 #include "stb_image_write.h"
 
 
-
+/**
+ * UI x: center, UI y: center
+ * SDL left 0, SDL top 0
+ */
 SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight){
-    float sdl_x = (screenWidth / 2) - absValue(v.x);
+    float sdl_x = absValue(v.x) - (screenWidth / 2);
     float sdl_y = (screenHeight / 2) - v.y;
     return (SDLVector2){sdl_x,sdl_y};
 }
@@ -1002,7 +1005,6 @@ void changeCursor(SDL_SystemCursor cursorType) {
  *  Function to check if a point is inside the rectangle.
  * NOTE: x,y,width,height is expected to be in SDL coordinates, Where x,y is the bottom left corner of the rectangle.
  * use convertViewRectangleToSDLCoordinates to convert view coordinates to SDL coordinates if needed.
- * @param rect Rectangle to check against, x,y,width,height is expected to be in SDL coordinates
  */ 
 bool isPointInsideBoundingBox(BoundingBox bb, vec2 point) {
     bool result = ((float)point[0] >= (float)bb.min[0] && (float)point[0] <= (float)bb.max[0] &&

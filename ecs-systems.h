@@ -4,12 +4,13 @@
 
 
 void cameraSystem();
-void uiSystem();
+void uiPositionSystem();
 void movementSystem();
 void uiInputSystem();
 void hoverAndClickSystem();
 void textCursorSystem();
 void modelSystem();
 void debugSystem();
+void uiSliderSystem();
 
 #endif

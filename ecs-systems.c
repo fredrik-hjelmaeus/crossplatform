@@ -231,7 +231,7 @@ void movementSystem(){
                   //  globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                 
                 }
-                if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0].id){
+                if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0]){
                     
                    // globals.entities[i].transformComponent->rotation[1] = radians;
                     globals.entities[i].transformComponent->modelNeedsUpdate = 1;
@@ -259,13 +259,14 @@ void cameraSystem(){
 }
 
 /**
- * @brief UI system
+ * @brief UI positionSystem
  * Responsible for setting the position of the UI elements in "UI" space. 
  * UI space is top left corner of the screen is [0.0,0.0], bottom right is [width,height].
- * Newly created UI elements is spawned in center of the screen [width/2, height/2] uiSystem then is responsible for 
+ * Newly created UI elements is spawned in center of the screen [width/2, height/2] 
+ * ¨ystem then is responsible for 
  * setting the position to top left corner + the requested position.
  */
-void uiSystem(){
+void uiPositionSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
    
         if(
@@ -284,7 +285,7 @@ void uiSystem(){
                 // This calculation only works for elements that are spawned in the center of the screen.
                 
                 // Position of element on spawn:
-                float ui_viewport_half_width = (float)globals.views.ui.rect.width / 2; 
+                float ui_viewport_half_width  = (float)globals.views.ui.rect.width  / 2; 
                 float ui_viewport_half_height = (float)globals.views.ui.rect.height / 2;
               //  printf("ui_viewport_half_width %f\n", ui_viewport_half_width);
               //  printf("ui_viewport_half_height %f\n", ui_viewport_half_height);
@@ -308,7 +309,7 @@ void uiSystem(){
         
                 // move element to upper left corner and then add requested position.
                globals.entities[i].transformComponent->position[0] = (float)(ui_viewport_half_width - (scaleInPixelsX * 0.5) - requested_pos_x) * -1.0; 
-               globals.entities[i].transformComponent->position[1] =(float)(ui_viewport_half_height - (scaleInPixelsY * 0.5)) - requested_pos_y * 1.0;
+               globals.entities[i].transformComponent->position[1] = (float)(ui_viewport_half_height - (scaleInPixelsY * 0.5)) - requested_pos_y * 1.0;
              //  printf("final pos: %f %f\n", globals.entities[i].transformComponent->position[0], globals.entities[i].transformComponent->position[1]);
                 
                 // Bounding box
@@ -346,7 +347,7 @@ void hoverAndClickSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1 && globals.entities[i].boundingBoxComponent->active == 1 && globals.entities[i].materialComponent->active == 1){
-                    if(globals.entities[i].uiComponent->type == UITYPE_TEXT){
+                    if(globals.entities[i].uiComponent->type == UITYPE_TEXT || globals.entities[i].uiComponent->type == UITYPE_NONE){
                         continue;
                     }
 
@@ -357,20 +358,13 @@ void hoverAndClickSystem(){
 
                         // Left Click or just hover?
                         if(globals.mouseLeftButtonPressed){
-                           // printf("clicked entity with type: %d\n", globals.entities[i].uiComponent->type);
                             if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_BUTTON){
                                 toggleChildrenVisibility(i);
                             }
-                            if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_SLIDER){
-                                printf("slider clicked\n");
-                            }
-                          
+                  
                             globals.entities[i].uiComponent->clicked = 1;
                         } else {
-                             if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_SLIDER){
-                                printf("slider hovered\n");
-                            }
-                
+                   
                             globals.entities[i].uiComponent->hovered = 1;
                             globals.entities[i].uiComponent->clicked = 0;
                         }
@@ -380,12 +374,18 @@ void hoverAndClickSystem(){
                             if(globals.entities[i].uiComponent->type == UITYPE_INPUT){
                                 newCursor = SDL_SYSTEM_CURSOR_IBEAM;
                             }
-                            if(globals.entities[i].uiComponent->type == UITYPE_BUTTON){
+                            if(
+                               globals.entities[i].uiComponent->type == UITYPE_BUTTON 
+                            || globals.entities[i].uiComponent->type == UITYPE_SLIDER
+                            ){
                                 newCursor = SDL_SYSTEM_CURSOR_HAND;
                             }
-                            if(strlen(globals.entities[i].uiComponent->text) > 0){
+                            if(
+                                strlen(globals.entities[i].uiComponent->text) > 0 
+                                || globals.entities[i].uiComponent->type == UITYPE_SLIDER
+                            ){
                         
-                                // Appearance changes when hovered
+                               // Appearance changes when hovered
                                globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
                                globals.entities[i].materialComponent->diffuse.r = 0.0f;
                                globals.entities[i].materialComponent->diffuse.g = 0.5f;
@@ -394,20 +394,10 @@ void hoverAndClickSystem(){
 
                         if(globals.entities[i].uiComponent->clicked == 1){
                            
-                            if(globals.entities[i].uiComponent->type == UITYPE_INPUT){
+                            if(globals.entities[i].uiComponent->type == UITYPE_INPUT || globals.entities[i].uiComponent->type == UITYPE_SLIDER){
                                 globals.focusedEntityId = globals.entities[i].id;
-                               // printf("input field on entity with id %d clicked\n", globals.entities[i].id);
-                            }else {
-                                // If clicked ui element is not an input field
-                                //if(globals.focusedEntityId != globals.entities[i].id)
-                                    // Reset focused entity if there was one, same as onBlur.
-                                   // printf("onblur/defocusing entity id %d\n", globals.focusedEntityId);
-                                  //  globals.focusedEntityId = -1;
-                                
                             }
-                            if(strlen(globals.entities[i].uiComponent->text) > 0){
-                                //printf("clicked changes done\n");
-                            }
+                        
                             // Appearance changes when clicked
                             globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
                             globals.entities[i].materialComponent->diffuse.r = 0.5f;
@@ -437,9 +427,48 @@ void hoverAndClickSystem(){
     changeCursor(newCursor);
 }
 
+void uiSliderSystem(){
+    if(
+        globals.focusedEntityId != -1 
+        && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER
+        && globals.mouseDragged
+        ){
+          
+            // Draggable range
+            Entity* focusedEntity = &globals.entities[globals.focusedEntityId];
+            Entity* sliderRangeEntity = &globals.entities[focusedEntity->uiComponent->sliderRangeEntityId];
+            float minRange = sliderRangeEntity->boundingBoxComponent->boundingBox.min[0]; 
+            float maxRange = sliderRangeEntity->boundingBoxComponent->boundingBox.max[0]; 
+            float rangeX   = focusedEntity->uiComponent->sliderRange;  
+            float newMouseX = (float)globals.mouseXpos;
+            float t = (newMouseX - minRange) / rangeX;
+            if(t > 1.0f || t < 0.0f){
+                printf("out of range \n");
+            }
+            printf("t %f \n",t);
+          
+            // If within draggable range
+            if(newMouseX > minRange && newMouseX < maxRange){
+               float newPosX = absValue(newMouseX) - (width / 2);
+         
+               focusedEntity->transformComponent->position[0] = newPosX;
+               focusedEntity->transformComponent->modelNeedsUpdate = 1;
+
+               globals.entities[focusedEntity->uiComponent->boundingBoxEntityId].transformComponent->position[0] = newPosX;
+               globals.entities[focusedEntity->uiComponent->boundingBoxEntityId].transformComponent->modelNeedsUpdate = 1;
+
+               focusedEntity->boundingBoxComponent->boundingBox.min[0] = newMouseX - 10;
+               focusedEntity->boundingBoxComponent->boundingBox.max[0] = newMouseX + focusedEntity->transformComponent->scale[0] -10; 
+            } 
+    }
+}
+
 void textCursorSystem(){
     
     if(globals.focusedEntityId != -1){
+        if(globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
+            return;
+        }
         bool cursorExist = globals.cursorEntityId != -1;
      //   bool onBlur = !isPointInsideRect(globals.entities[globals.focusedEntityId].uiComponent->boundingBox, (vec2){ globals.mouseXpos, globals.mouseYpos});
 

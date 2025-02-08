@@ -47,7 +47,7 @@ struct Globals {
     bool render;
     GpuData gpuFontData;
     float unitScale;
-    Entity lights[MAX_LIGHTS];
+    int lights[MAX_LIGHTS];
     int lightsCount;
     bool culling;
     int drawCallsCounter;
