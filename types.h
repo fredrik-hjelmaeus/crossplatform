@@ -38,6 +38,7 @@ typedef enum {
     UITYPE_BUTTON = 4,
     UITYPE_PANEL = 5,
     UITYPE_SLIDER = 6,
+    UITYPE_CHECKBOX = 7,
 } UiType;
 
  typedef struct {
@@ -290,7 +291,6 @@ typedef struct UIComponent {
     bool active;
     bool hovered;
     bool clicked;
-    //Rectangle boundingBox;
     int boundingBoxEntityId;
     char* text;
     bool uiNeedsUpdate;
@@ -303,6 +303,8 @@ typedef struct UIComponent {
     float sliderRange;
     int sliderRangeEntityId;
     float sliderValue;
+    bool checked;
+    int checkedEntityId;
     // padding?
     // margin?
     // offset?

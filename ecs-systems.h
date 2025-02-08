@@ -12,5 +12,6 @@ void textCursorSystem();
 void modelSystem();
 void debugSystem();
 void uiSliderSystem();
+void uiCheckboxSystem();
 
 #endif

@@ -37,6 +37,7 @@ struct Globals {
     float mouseXpos;
     float mouseYpos;
     bool mouseLeftButtonPressed;
+    bool prevMouseLeftDown;
     bool mouseDragged;
     vec2 mouseDragStart;
     vec2 mouseDragPreviousFrame;

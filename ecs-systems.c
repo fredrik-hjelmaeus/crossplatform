@@ -245,7 +245,7 @@ void movementSystem(){
                         globals.entities[i].transformComponent->position[2] = offset * multiplicator;
                         globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                     }else {
-                        printf("skipping\n");
+                      //  printf("no slider action\n");
                     }
                    
                 }
@@ -365,7 +365,7 @@ void hoverAndClickSystem(){
                     ){
 
                         // Left Click or just hover?
-                        if(globals.mouseLeftButtonPressed){
+                        if(globals.mouseLeftButtonPressed && globals.prevMouseLeftDown == false){
                             if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_BUTTON){
                                 toggleChildrenVisibility(i);
                             }
@@ -385,12 +385,14 @@ void hoverAndClickSystem(){
                             if(
                                globals.entities[i].uiComponent->type == UITYPE_BUTTON 
                             || globals.entities[i].uiComponent->type == UITYPE_SLIDER
+                            || globals.entities[i].uiComponent->type == UITYPE_CHECKBOX
                             ){
                                 newCursor = SDL_SYSTEM_CURSOR_HAND;
                             }
                             if(
                                 strlen(globals.entities[i].uiComponent->text) > 0 
                                 || globals.entities[i].uiComponent->type == UITYPE_SLIDER
+                                || globals.entities[i].uiComponent->type == UITYPE_CHECKBOX
                             ){
                         
                                // Appearance changes when hovered
@@ -400,17 +402,19 @@ void hoverAndClickSystem(){
                             }
                         }
 
+                        // Appearance changes when mouse down (instead of hovered it should be focusedEntity ?)
+                        if(globals.entities[i].uiComponent->hovered && globals.mouseLeftButtonPressed){
+                            globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
+                            globals.entities[i].materialComponent->diffuse.r = 0.5f;
+                            globals.entities[i].materialComponent->diffuse.g = 0.0f;
+                        }
+
                         if(globals.entities[i].uiComponent->clicked == 1){
                            
                             if(globals.entities[i].uiComponent->type == UITYPE_INPUT || globals.entities[i].uiComponent->type == UITYPE_SLIDER){
                                 globals.focusedEntityId = globals.entities[i].id;
                             }
                         
-                            // Appearance changes when clicked
-                            globals.entities[i].materialComponent->diffuseMapOpacity = globals.entities[i].materialComponent->diffuseMapOpacity * 0.5f;
-                            globals.entities[i].materialComponent->diffuse.r = 0.5f;
-                            globals.entities[i].materialComponent->diffuse.g = 0.0f;
-                         
                             // Actions when clicked
                             if(globals.entities[i].uiComponent->onClick != NULL){
                                 globals.entities[i].uiComponent->onClick();
@@ -657,3 +661,25 @@ void debugSystem(){
        
 }
 
+void uiCheckboxSystem(){
+    for(int i = 0; i < MAX_ENTITIES; i++){
+        if(
+            globals.entities[i].alive 
+            && globals.entities[i].visible 
+            && globals.entities[i].uiComponent->active
+            && globals.entities[i].uiComponent->type == UITYPE_CHECKBOX
+            && globals.entities[i].uiComponent->clicked
+            ){
+                if(globals.entities[i].uiComponent->checked){
+                    globals.entities[i].uiComponent->checked = false;
+                    globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = 0.0;
+                    printf("unchecked \n");
+                }else {
+                    globals.entities[i].uiComponent->checked = true;
+                    globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = 1.0;
+
+                    printf("checked \n");
+                }
+            }
+    }
+}

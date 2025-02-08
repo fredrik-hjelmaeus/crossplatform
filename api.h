@@ -88,6 +88,7 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
 */
 void ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent);
 void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Entity* parent);
+void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Entity* parent);
 
 
 #endif // API_H

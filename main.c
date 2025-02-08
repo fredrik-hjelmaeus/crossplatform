@@ -61,6 +61,7 @@ struct Globals globals = {
     .mouseXpos=0.0f,
     .mouseYpos=0.0f,
     .mouseLeftButtonPressed=false, // mouse down check every frame
+    .prevMouseLeftDown=false,
     .mouseDoubleClick=false,
     .deselectCondition=false,
     .mouseDragged=false,
@@ -700,10 +701,11 @@ void update(){
     uiInputSystem();
     hoverAndClickSystem();
     uiSliderSystem();
+    uiCheckboxSystem();
     textCursorSystem();
     movementSystem();
     modelSystem();
-   
+    globals.prevMouseLeftDown = globals.mouseLeftButtonPressed;
 }
 
 void render(){
@@ -1033,9 +1035,12 @@ void initScene(){
     ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange,settingsPanel);
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 35.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
     // Row 2 Slider
-    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
+    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider Text Field",settingsPanel);
     ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
     ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",onTextInputChange,settingsPanel);
+    // Row 3 Checkbox
+    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
+    ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
 
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 30.0f, 0.0f}, (vec3){5.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){550.0f, 30.0f, 1.0f}, (vec3){245.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
