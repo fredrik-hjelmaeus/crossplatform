@@ -171,6 +171,7 @@ void initializeUIComponent(UIComponent* uiComponent){
     }
     uiComponent->sliderRange = 0.0f;
     uiComponent->sliderRangeEntityId = -1;
+    uiComponent->sliderValue = 0.0f;
 }
 
 void initializeLightComponent(LightComponent* lightComponent){

@@ -232,14 +232,22 @@ void movementSystem(){
                 
                 }
                 if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0]){
+                    if(globals.focusedEntityId != -1 && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
+                       float multiplicator = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
                     
-                   // globals.entities[i].transformComponent->rotation[1] = radians;
-                    globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                    float offset = 20.0 * sin(0.5 * globals.delta_time);
-                  // globals.entities[i].lightComponent->direction[0] = offset;
-                    //printf("offset %f\n", offset);
-                    globals.entities[i].transformComponent->position[0] = offset;
-                    globals.entities[i].transformComponent->position[2] = offset;
+                        printf("mul %f \n",multiplicator);
+                    
+                    // globals.entities[i].transformComponent->rotation[1] = radians;
+                        float offset = 20.0 * sin(0.5 * globals.delta_time);
+                    // globals.entities[i].lightComponent->direction[0] = offset;
+                        //printf("offset %f\n", offset);
+                        globals.entities[i].transformComponent->position[0] = offset * multiplicator;
+                        globals.entities[i].transformComponent->position[2] = offset * multiplicator;
+                        globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                    }else {
+                        printf("skipping\n");
+                    }
+                   
                 }
                 //globals.entities[i].transformComponent->rotation[1] += radians; //<- This is an example of acceleration.
            }
@@ -437,6 +445,7 @@ void uiSliderSystem(){
             // Draggable range
             Entity* focusedEntity = &globals.entities[globals.focusedEntityId];
             Entity* sliderRangeEntity = &globals.entities[focusedEntity->uiComponent->sliderRangeEntityId];
+         
             float minRange = sliderRangeEntity->boundingBoxComponent->boundingBox.min[0]; 
             float maxRange = sliderRangeEntity->boundingBoxComponent->boundingBox.max[0]; 
             float rangeX   = focusedEntity->uiComponent->sliderRange;  
@@ -446,6 +455,7 @@ void uiSliderSystem(){
                 printf("out of range \n");
             }
             printf("t %f \n",t);
+        //    printf("driver %f \n",driver);
           
             // If within draggable range
             if(newMouseX > minRange && newMouseX < maxRange){
@@ -459,6 +469,7 @@ void uiSliderSystem(){
 
                focusedEntity->boundingBoxComponent->boundingBox.min[0] = newMouseX - 10;
                focusedEntity->boundingBoxComponent->boundingBox.max[0] = newMouseX + focusedEntity->transformComponent->scale[0] -10; 
+               focusedEntity->uiComponent->sliderValue = t;
             } 
     }
 }
