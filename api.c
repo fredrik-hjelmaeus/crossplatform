@@ -877,7 +877,7 @@ void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 
 
     // Slider consist of :
     // - button rectangle you interact with.
-    vec3 btnRectangleScale = (vec3){20.0,20.0,2};
+    vec3 btnRectangleScale = {20.0,20.0,2};
     vec3 btnRectanglePosition;
     btnRectanglePosition[0] = position[0];
     btnRectanglePosition[1] = position[1];
@@ -945,8 +945,8 @@ void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec
 
    float borderLine = 4.0;
    int depth = 2;
-   vec3 newPos = (vec3){ position[0]+borderLine*0.5, position[1]+borderLine*0.5, position[2]+depth };
-   vec3 newScale = (vec3){ scale[0] - borderLine , scale[1] - borderLine , scale[2] };
+   vec3 newPos = { position[0]+borderLine*0.5, position[1]+borderLine*0.5, position[2]+depth };
+   vec3 newScale = { scale[0] - borderLine , scale[1] - borderLine , scale[2] };
    
     
     entity->uiComponent->active = 1;

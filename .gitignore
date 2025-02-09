@@ -9,3 +9,9 @@
 *.obj
 *.data
 *.mtl
+*.skp
+*.skb
+*.swp
+*.3ds
+*.jpg
+*.out
