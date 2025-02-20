@@ -9,12 +9,12 @@ layout (location = 3) in vec3 aNormal;
 out vec2 TexCoords;
 out vec3 Normal;
 out vec3 FragPos;
-out vec4 FragPosLightSpace;
+out vec4 FragPosLightSpace[9];
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform mat4 lightSpaceMatrix;
+uniform mat4 lightSpaceMatrix[9];
 
 void main()
 {
@@ -23,7 +23,9 @@ void main()
 	
 	Normal = mat3(transpose(inverse(model))) * aNormal;
 	TexCoords = vec2(aTexCoord.x, aTexCoord.y);
-	FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
+	for(int i = 0; i < 9; i++){
+		FragPosLightSpace[i] = lightSpaceMatrix[i] * vec4(FragPos, 1.0);
+	}
 	
 	//gl_Position = projection * view * vec4(aPos, 1.0);
     gl_Position = projection * view * vec4(FragPos, 1.0);

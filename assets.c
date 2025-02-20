@@ -98,7 +98,7 @@ void initAssets(){
     lightMaterial = (struct Material){
         .active = 1,
         .name = "lightMaterial",
-        .ambient = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used       <-- ambient strength & tint
+        .ambient = (Color){0.25f, 0.25f, 0.25f, 1.0f},  // used       <-- ambient strength & tint
         .diffuse = (Color){1.0f, 1.0f, 1.0f, 1.0f},  // used       <-- diffuse strength & tint
         .specular = (Color){1.0f,1.0f, 1.0f, 1.0f}, // used        <-- specular strength & tint
         .shininess = 32.0f,                         // NOT used

@@ -446,7 +446,6 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glBindTexture(GL_TEXTURE_2D, material->diffuseMap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "material.diffuse"), 0);
 
-    
     GLint hasDiffuseMapLocation = glGetUniformLocation(buffer->shaderProgram, "material.hasDiffuseMap");
         if(material->isPostProcessMaterial){
             if(!globals.showDepthMap){
@@ -719,7 +718,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
 
         // Set the light ambient uniform
         GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "dirLight.ambient");
-        glUniform3f(lightAmbientLocation, directionalLightEntity->lightComponent->ambient.r, directionalLightEntity->lightComponent->ambient.g, directionalLightEntity->lightComponent->ambient.b);
+        glUniform3f(lightAmbientLocation, directionalLightEntity->lightComponent->ambient.r, directionalLightEntity->lightComponent->ambient.g, directionalLightEntity->lightComponent->ambient.b); 
 
         // Set the light diffuse uniform
         GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "dirLight.diffuse");
@@ -881,7 +880,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     }
 
     // Set light space matrix uniform
-    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "lightSpaceMatrix"), 9, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
       
     // Set viewPos uniform
     GLint viewPosLocation = glGetUniformLocation(buffer->shaderProgram, "viewPos");

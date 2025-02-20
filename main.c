@@ -233,35 +233,14 @@ void setViewportWithScissorAndClear(View view) {
 }
 
 void createLightSpace(){
-    Entity* light = &globals.entities[globals.lights[0]];
-    mat4x4 lightProjection, lightView;
-    float near_plane = 0.001f, far_plane = 60.0f;
-    mat4x4_ortho(lightProjection, -60.0f, 60.0f, -60.0f, 60.0f, near_plane, far_plane);
-  
-    vec3 dir = {
-        light->lightComponent->direction[0], 
-        light->lightComponent->direction[1], 
-        light->lightComponent->direction[2]
-    };
-    vec3 pos = {
-    light->transformComponent->position[0],
-    light->transformComponent->position[1],
-    light->transformComponent->position[2]
-};
-
-// Construct target position: pos + dir
-vec3 target = {
-    pos[0] + dir[0],
-    pos[1] + dir[1],
-    pos[2] + dir[2]
-};
-
-
-
-
-    mat4x4_look_at(lightView, light->transformComponent->position,  (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
-    mat4x4_mul(globals.lightSpaceMatrix, (const float (*)[4])lightProjection, (const float (*)[4])lightView);
-
+    for(int i = 0; i < 9; i++){
+        Entity* light = &globals.entities[globals.lights[i]];
+        mat4x4 lightProjection, lightView;
+        float near_plane = 0.001f, far_plane = 60.0f;
+        mat4x4_ortho(lightProjection, -60.0f, 60.0f, -60.0f, 60.0f, near_plane, far_plane);
+        mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
+        mat4x4_mul(globals.lightSpaceMatrix[i], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
+    }
 }
 
 // More optimal shadow map ?.
@@ -925,8 +904,8 @@ void initScene(){
     
    
 
-   // Assets
-   initFont();
+    // Assets
+    initFont();
    
     setupMaterial(&globals.depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
   
@@ -941,7 +920,7 @@ void initScene(){
 
 
    // ObjGroup* truck = obj_loadFile("./Assets/truck.obj"); // Not supported atm, need .obj group support.
-   // ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
+  // ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
    // ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
   /*  ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
     ObjGroup* objExample = obj_loadFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
@@ -950,22 +929,22 @@ void initScene(){
     ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");*/
   //  ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   
    // ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
-  //  ObjGroup* skp_arbetsrum = obj_loadFile("./Assets/arbetsrum_FINAL.obj");
+    ObjGroup* skp_arbetsrum = obj_loadFile("./Assets/arbetsrum_FINAL.obj");
  
   
    
 
    
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-  /*
-    createObject(&cornell_box->objData[0],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+  
+  /*   createObject(&cornell_box->objData[0],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[1],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[2],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[3],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[4],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[5],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
     createObject(&cornell_box->objData[6],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[7],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  */  
+    createObject(&cornell_box->objData[7],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */
  
    
    // createPoint((vec3){-5.0f, -5.0f, 0.0f});
@@ -974,10 +953,10 @@ void initScene(){
         createObject(&truck->objData[i],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     } */
   
-   /*  createObject(&skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(&skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(&skp_arbetsrum->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(&skp_arbetsrum->objData[2],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); */
+    createObject(&skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
   /*   createObject(&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(&truck->objData[1],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -998,7 +977,6 @@ void initScene(){
    // createObject(&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
  //   createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
    // createObject(&textured_objects->objData[1],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
-    //createObject(&skp_arbetsrum->objData[0],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
     
 
     // lights
@@ -1042,6 +1020,14 @@ void initScene(){
     ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
     ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
 
+    // Row 4 List
+    float yPos = 100.0f;
+    for(int i; i < MAX_LIGHTS; i++){
+        yPos += 35.0f;
+        char* lightname = "test"; // globals.entities[globals.lights[i]].id;
+        ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, lightname , settingsPanel);
+    }
+ 
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 30.0f, 0.0f}, (vec3){5.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){550.0f, 30.0f, 1.0f}, (vec3){245.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
 
@@ -1064,10 +1050,10 @@ void initScene(){
  //ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    // TODO: create slider or input for ui using this
-   /*  printf("materials-list (%d): \n",globals.materialsCount);
+  printf("materials-list (%d): \n",globals.materialsCount);
     for(int i = 0; i < globals.materialsCount; i++){
-        printf("%s \n",globals.materials[i].name);
-         printf("shininess %f \n",globals.materials[i].shininess);
+        printf("(%d),%s \n",i,globals.materials[i].name);
+   /*       printf("shininess %f \n",globals.materials[i].shininess);
         printf("ambient.r %f \n",globals.materials[i].ambient.r);
         printf("ambient.g %f \n",globals.materials[i].ambient.g);
         printf("ambient.b %f \n",globals.materials[i].ambient.b);
@@ -1082,8 +1068,8 @@ void initScene(){
         printf("diffuseMap %d \n",globals.materials[i].diffuseMap);
         printf("ambientMap %d \n",globals.materials[i].ambientMap);
         printf("specularMap %d \n",globals.materials[i].specularMap);
-        printf("shininessMap %d \n\n",globals.materials[i].shininessMap); 
-   }   */
+        printf("shininessMap %d \n\n",globals.materials[i].shininessMap);  */
+   }   
 
 }
 
