@@ -243,46 +243,6 @@ void createLightSpace(){
     }
 }
 
-// More optimal shadow map ?.
-bool initShadowMap(){
-   
-   GLenum none = GL_NONE;
-   // use 1K x 1K texture for shadow map
-   int shadowMapTextureWidth = 32;
-   int shadowMapTextureHeight = 32;
-   glGenTextures ( 1, &globals.depthMap );
-   glBindTexture ( GL_TEXTURE_2D, globals.depthMap);
-   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-   // set up hardware comparison
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,GL_COMPARE_REF_TO_TEXTURE );
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC,GL_LEQUAL );
-   glTexImage2D ( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,shadowMapTextureWidth,shadowMapTextureHeight,
- 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT,
- NULL );
-   glBindTexture ( GL_TEXTURE_2D, 0 );
-   GLint defaultFramebuffer = 0;
-   glGetIntegerv ( GL_FRAMEBUFFER_BINDING,
- &defaultFramebuffer );
-   // set up fbo
-   glGenFramebuffers ( 1, &globals.depthMapBuffer.FBO );
-   glBindFramebuffer ( GL_FRAMEBUFFER, globals.depthMapBuffer.FBO );
-   glDrawBuffers ( 1, &none );
-   glFramebufferTexture2D ( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, globals.depthMap, 0 );
-
- glActiveTexture ( GL_TEXTURE0 );
-   glBindTexture ( GL_TEXTURE_2D, globals.depthMap);
-   if ( GL_FRAMEBUFFER_COMPLETE !=
- glCheckFramebufferStatus ( GL_FRAMEBUFFER ) )
-   {
- return false;
-   }
-   glBindFramebuffer ( GL_FRAMEBUFFER, defaultFramebuffer );
-   return true;
-}
-
 void initProgram(){
     initWindow();
     initECS();
