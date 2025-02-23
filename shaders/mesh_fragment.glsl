@@ -60,6 +60,8 @@ uniform vec3 viewPos;
 uniform bool blinn;
 uniform bool gamma;
 uniform sampler2D shadowMap;
+uniform samplerCube cubeShadowMap;
+uniform float far_plane;
 
 // function prototypes
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir,int lightIndex);
@@ -67,6 +69,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir,int 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir,int lightIndex);
 float ShadowCalculation(vec4 fragPosLightSpace);
 float calcShadow(vec4 FragPosLightSpace,vec3 normal, vec3 lightDir, sampler2D shadowMap);
+float calcCubeShadow(vec3 fragPos, vec3 lightPos,float far_plane, samplerCube shadowMap);
 
 void main()
 {   
@@ -248,26 +251,11 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir,in
     specular *= attenuation;
 
     // shadow
-    float shadow = calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap);
+    float shadow = calcCubeShadow(fragPos,light.position,far_plane,cubeShadowMap);
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
 
-/* float ShadowCalculation(vec4 fragPosLightSpace)
-{
-    // perform perspective divide
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    // transform to [0,1] range
-    projCoords = projCoords * 0.5 + 0.5;
-    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
-    // get depth of current fragment from light's perspective
-    float currentDepth = projCoords.z;
-    // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
-
-    return shadow;
-}  */
 
 float calcShadow(vec4 FragPosLightSpace,vec3 normal, vec3 lightDir, sampler2D shadowMap){
      // perform perspective divide
@@ -294,5 +282,29 @@ float calcShadow(vec4 FragPosLightSpace,vec3 normal, vec3 lightDir, sampler2D sh
 	{
 		shadow = 1.0;
 	} 
+    return shadow;
+}
+
+float calcCubeShadow(vec3 fragPos, vec3 lightPos, float far_plane,samplerCube shadowMap) {
+    vec3 fragToLight = fragPos - lightPos;
+    float currentDepth = length(fragToLight);
+
+    float shadow = 0.0;
+    float bias = 0.05;
+    int samples = 4;
+    float offset = 0.1;
+    for (int x = -samples; x <= samples; ++x) {
+        for (int y = -samples; y <= samples; ++y) {
+            for (int z = -samples; z <= samples; ++z) {
+                float closestDepth = texture(shadowMap, fragToLight + vec3(x, y, z) * offset).r;
+                closestDepth *= far_plane; // Undo mapping [0,1]
+                if (currentDepth - bias > closestDepth) {
+                    shadow += 1.0;
+                }
+            }
+        }
+    }
+    shadow /= (samples * 2 + 1) * (samples * 2 + 1) * (samples * 2 + 1);
+
     return shadow;
 }

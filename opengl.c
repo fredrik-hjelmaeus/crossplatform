@@ -87,82 +87,6 @@ void setupPoints(GLfloat *positions, int numPoints, GpuData *buffer)
     glBindVertexArray(0);
 }
 
-
-unsigned int quadVAO = 0;
-unsigned int quadVBO;
-void renderFrameBuffer()
-{
-    // debugDepthQuad.use();
-     glUseProgram(globals.frameBuffer.shaderProgram);
-        //debugDepthQuad.setFloat("near_plane", near_plane);
-        //debugDepthQuad.setFloat("far_plane", far_plane);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, globals.depthMap);
-
-        // Set the 'depthMap' sampler uniform to use texture unit 0
-GLuint depthMapLoc = glGetUniformLocation(globals.frameBuffer.shaderProgram, "depthMap");
-glUniform1i(depthMapLoc, 0);
-
-     if (quadVAO == 0)
-    {
-        float quadVertices[] = {
-            // positions        // texture Coords
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-        };
-        // setup plane VAO
-        glGenVertexArrays(1, &quadVAO);
-        glGenBuffers(1, &quadVBO);
-        glBindVertexArray(quadVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    }
-    glBindVertexArray(quadVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
-
-
-/*     glUseProgram(globals.frameBuffer.shaderProgram);
-   // glActiveTexture(GL_TEXTURE0);
-   // glBindTexture(GL_TEXTURE_2D, globals.depthMap);
-   // glUniform1i(glGetUniformLocation(globals.frameBuffer.shaderProgram, "depthMap"), 0);
-
-    // Render a fullscreen quad
-    glBindVertexArray(globals.frameBuffer.VAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0); */
-}
-
-void setupFrameBuffer(GLfloat* vertices,int vertexCount)
-{
-    printf("setup\n");
-  /*   glGenVertexArrays(1, globals.frameBuffer.VAO);
-    glGenBuffers(1, &globals.frameBuffer.VBO);
-    glBindVertexArray(globals.frameBuffer.VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, globals.frameBuffer.VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); */
-
-        /* glGenVertexArrays(1, &quadVAO);
-        glGenBuffers(1, &quadVBO);
-        glBindVertexArray(quadVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); */
-}
-
 void depthshadow_createFrameBuffer(GpuData *buffer)
 {
     GLuint depthMapFBO;
@@ -180,14 +104,29 @@ void depthshadow_createDepthTexture()
     glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // GL_CLAMP_TO_BORDER?
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // GL_CLAMP_TO_BORDER?
 }
 
-void depthshadow_configureFrameBuffer(GpuData *buffer)
+void depthshadow_createDepthCubemap()
+{
+    glGenTextures(1, &globals.depthCubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, globals.depthCubemap);
+    for (unsigned int i = 0; i < 6; ++i)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, globals.shadowWidth, globals.shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
+
+void depthshadow_configureFrameBuffer(GpuData *buffer,GLenum textureTarget, GLuint depthMap)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, globals.depthMap, 0);
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureTarget, depthMap, 0);
     //glDrawBuffer(GL_NONE);
    // glReadBuffer(GL_NONE);
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -196,22 +135,78 @@ void depthshadow_configureFrameBuffer(GpuData *buffer)
     }
 }
 
+void depthshadow_setViewportForDepthMapShadowRender(View view){
+   
+    // Set the viewport
+    glViewport(0, 0, globals.shadowWidth, globals.shadowHeight);
+
+     // Set the clear color
+    glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
+
+    // Clear the viewport
+    glClear(GL_DEPTH_BUFFER_BIT);
+    
+}
+
+static bool myTempVar = true;
+
 void depthshadow_renderToDepthTexture(GpuData *buffer,TransformComponent *transformComponent)
 {
-    glUseProgram(globals.depthMapBuffer.shaderProgram);
-    unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);  
-    glBindVertexArray(buffer->VAO);
-    glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
+    for(int i = 0; i < globals.lightsCount; i++){
+        if(myTempVar){
+            printf("light nr %d\n",i);
+            printf("entity id %d\n",globals.lights[i].entityId);
+            printf("type %d\n",globals.lights[i].type);
+        }
+       
+        switch(globals.lights[i].type){
+            case POINT:
+                for(int j = 0; j < 6; j++){
+                    depthshadow_configureFrameBuffer(buffer,GL_TEXTURE_CUBE_MAP_POSITIVE_X + j,globals.depthCubemap);
+                    depthshadow_setViewportForDepthMapShadowRender(globals.views.full);
+                    glUseProgram(globals.depthMapBuffer.shaderProgram);
+                    unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
+                    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
+                    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, (const GLfloat*)&globals.lightSpaceMatrix[globals.lights[i].lightSpaceMatrixIndex[j]][0][0]);  
+                    glBindVertexArray(buffer->VAO);
+                    glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
 
-   // debug drawcalls
-   if(globals.debugDrawCalls){
-        captureDrawCalls(globals.shadowWidth,globals.shadowHeight, globals.drawCallsCounter++);
-   }
+                    // debug drawcalls
+                    if(globals.debugDrawCalls){
+                            captureDrawCalls(globals.shadowWidth,globals.shadowHeight, globals.drawCallsCounter++);
+                    }
 
-   glBindVertexArray(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
+                    glBindVertexArray(0);
+                    glBindTexture(GL_TEXTURE_2D, 0);
+                }
+            break;
+            case SPOT:
+            case DIRECTIONAL:
+                depthshadow_configureFrameBuffer(buffer, GL_TEXTURE_2D,globals.depthMap);
+                depthshadow_setViewportForDepthMapShadowRender(globals.views.full);
+                glUseProgram(globals.depthMapBuffer.shaderProgram);
+                unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
+                glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
+                glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, (const GLfloat*)&globals.lightSpaceMatrix[globals.lights[i].lightSpaceMatrixIndex[0]][0][0]);  
+                glBindVertexArray(buffer->VAO);
+                glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
+
+                // debug drawcalls
+                if(globals.debugDrawCalls){
+                        captureDrawCalls(globals.shadowWidth,globals.shadowHeight, globals.drawCallsCounter++);
+                }
+
+                glBindVertexArray(0);
+                glBindTexture(GL_TEXTURE_2D, 0);
+            break;
+
+            default: 
+                printf("Error: Unknown light type!\n");
+            break;
+        }
+        
+    }
+    myTempVar = false;
 }
 
 /** 
@@ -494,6 +489,14 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glBindTexture(GL_TEXTURE_2D, globals.depthMap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "shadowMap"), 2);
 
+    // Assign cubeDepthMap to texture4 slot
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, globals.depthCubemap);
+    glUniform1i(glGetUniformLocation(buffer->shaderProgram, "cubeShadowMap"), 3);
+
+    // Set far plane uniform
+    glUniform1f(glGetUniformLocation(buffer->shaderProgram, "far_plane"), camera->far); // TODO, use projCoord.z instead and remove this?
+
     // Set diffuseMapOpacity uniform
     glUniform1f(glGetUniformLocation(buffer->shaderProgram, "material.diffuseMapOpacity"), material->diffuseMapOpacity);
 
@@ -513,8 +516,138 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     GLint specularLocation = glGetUniformLocation(buffer->shaderProgram, "specular");
     glUniform4f(specularLocation, material->specular.r, material->specular.g, material->specular.b, material->specular.a);
 
-    // Spotlights
-   Entity spotLightEntityOne_ = globals.entities[globals.lights[4]];
+        int spotLightCount = 0;
+        int directionalLightCount = 0;
+        int pointLightCount = 0;
+        char uniformName[64];
+    for(int i = 0; i < globals.lightsCount; i++){
+        int lightType = globals.lights[i].type;
+        Entity* lightEntity =  &globals.entities[globals.lights[i].entityId];
+        
+        if(lightType == SPOT){
+
+            // Set lightColor uniform
+            GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+            glUniform3f(lightColorLocation, 1.0f,1.0f,0.0f);
+
+            // Set the light ambient uniform 
+            sprintf(uniformName, "spotLights[%d].ambient", spotLightCount);
+            GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform3f(lightAmbientLocation, lightEntity->lightComponent->ambient.r, lightEntity->lightComponent->ambient.g, lightEntity->lightComponent->ambient.b);
+
+            // Set the light diffuse uniform
+            sprintf(uniformName, "spotLights[%d].diffuse", spotLightCount);
+            GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform3f(lightDiffuseLocation, lightEntity->lightComponent->diffuse.r, lightEntity->lightComponent->diffuse.g, lightEntity->lightComponent->diffuse.b);
+
+            // Set the light specular uniform
+            sprintf(uniformName, "spotLights[%d].specular", spotLightCount);
+            GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform3f(lightSpecularLocation, lightEntity->lightComponent->specular.r, lightEntity->lightComponent->specular.g, lightEntity->lightComponent->specular.b);
+
+            // Set the light position uniform
+            sprintf(uniformName, "spotLights[%d].position", spotLightCount);
+            GLint lightPositionLocation = glGetUniformLocation(buffer->shaderProgram,uniformName);
+            glUniform3f(lightPositionLocation, lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
+        
+            // Set the light direction uniform
+            sprintf(uniformName, "spotLights[%d].direction", spotLightCount);
+            GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform3f(lightDirLocation, lightEntity->lightComponent->direction[0], lightEntity->lightComponent->direction[1], lightEntity->lightComponent->direction[2]);
+
+            // Set the light constant uniform
+            sprintf(uniformName, "spotLights[%d].constant", spotLightCount);
+            GLint lightConstantLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform1f(lightConstantLocation, lightEntity->lightComponent->constant);
+
+            // Set the light linear uniform
+            sprintf(uniformName, "spotLights[%d].linear", spotLightCount);
+            GLint lightLinearLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform1f(lightLinearLocation, lightEntity->lightComponent->linear);
+
+            // Set the light quadratic uniform
+            sprintf(uniformName, "spotLights[%d].quadratic", spotLightCount);
+            GLint lightQuadraticLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform1f(lightQuadraticLocation, lightEntity->lightComponent->quadratic);
+
+            // Set the light cutOff uniform
+            sprintf(uniformName, "spotLights[%d].cutOff", spotLightCount);
+            GLint lightCutOffLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform1f(lightCutOffLocation, lightEntity->lightComponent->cutOff);
+
+            // Set the light outerCutOff uniform
+            sprintf(uniformName, "spotLights[%d].outerCutOff", spotLightCount);
+            GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform1f(lightOuterCutOffLocation, lightEntity->lightComponent->outerCutOff);
+
+            spotLightCount++;
+        }
+        if(lightType == DIRECTIONAL){
+             // Set lightColor uniform
+            GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+            glUniform3f(lightColorLocation, 1.0f,0.0f,0.0f);
+
+            // Set the light ambient uniform
+            GLint lightAmbientLocation = glGetUniformLocation(buffer->shaderProgram, "dirLight.ambient");
+            glUniform3f(lightAmbientLocation, lightEntity->lightComponent->ambient.r, lightEntity->lightComponent->ambient.g, lightEntity->lightComponent->ambient.b); 
+
+            // Set the light diffuse uniform
+            GLint lightDiffuseLocation = glGetUniformLocation(buffer->shaderProgram, "dirLight.diffuse");
+            glUniform3f(lightDiffuseLocation, lightEntity->lightComponent->diffuse.r, lightEntity->lightComponent->diffuse.g, lightEntity->lightComponent->diffuse.b);
+
+            // Set the light specular uniform
+            GLint lightSpecularLocation = glGetUniformLocation(buffer->shaderProgram, "dirLight.specular");
+            glUniform3f(lightSpecularLocation, lightEntity->lightComponent->specular.r, lightEntity->lightComponent->specular.g, lightEntity->lightComponent->specular.b);
+
+            // Set the light direction uniform
+            GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "dirLight.direction");
+            glUniform3f(lightDirLocation, lightEntity->lightComponent->direction[0], lightEntity->lightComponent->direction[1], lightEntity->lightComponent->direction[2]);
+        }
+        if(lightType == POINT){
+            // Set lightColor uniform
+            GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
+            glUniform3f(lightColorLocation, 0.0f,1.0f,0.0f);
+
+            // Set the light ambient uniform
+            sprintf(uniformName, "pointLights[%d].ambient", pointLightCount);
+            GLint plAmbientLoc = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform3f(plAmbientLoc, lightEntity->lightComponent->ambient.r, lightEntity->lightComponent->ambient.g, lightEntity->lightComponent->ambient.b);
+
+            // Set the light diffuse uniform
+            sprintf(uniformName, "pointLights[%d].diffuse", pointLightCount);
+            GLint plDiffuseLoc = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform3f(plDiffuseLoc, lightEntity->lightComponent->diffuse.r, lightEntity->lightComponent->diffuse.g, lightEntity->lightComponent->diffuse.b);
+
+            // Set the light specular uniform
+            sprintf(uniformName, "pointLights[%d].specular", pointLightCount);
+            GLint plSpecularLoc = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform3f(plSpecularLoc, lightEntity->lightComponent->specular.r, lightEntity->lightComponent->specular.g, lightEntity->lightComponent->specular.b);
+
+            // Set the light position uniform
+            sprintf(uniformName, "pointLights[%d].position", pointLightCount);
+            GLint plPositionLoc = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform3f(plPositionLoc, lightEntity->transformComponent->position[0], lightEntity->transformComponent->position[1], lightEntity->transformComponent->position[2]);
+
+            // Set the light constant uniform
+            sprintf(uniformName, "pointLights[%d].constant", pointLightCount);
+            GLint plConstantLoc = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform1f(plConstantLoc, lightEntity->lightComponent->constant);
+
+            // Set the light linear uniform
+            sprintf(uniformName, "pointLights[%d].linear", pointLightCount);
+            GLint plLinearLoc = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform1f(plLinearLoc, lightEntity->lightComponent->linear);
+
+            // Set the light quadratic uniform
+            sprintf(uniformName, "pointLights[%d].quadratic", pointLightCount);
+            GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, uniformName);
+            glUniform1f(plQuadraticLoc, lightEntity->lightComponent->quadratic);
+            
+            pointLightCount++;
+        }
+    } 
+   // Spotlights
+   /* Entity spotLightEntityOne_ = globals.entities[globals.lights[4].entityId];
    Entity* spotLightEntityOne = &spotLightEntityOne_;
     if(spotLightEntityOne != NULL && spotLightEntityOne->lightComponent != NULL){
  
@@ -562,7 +695,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[0].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityOne->lightComponent->outerCutOff);
     }
-  Entity spotLightEntityTwo_ = globals.entities[globals.lights[1]];
+  Entity spotLightEntityTwo_ = globals.entities[globals.lights[1].entityId];
    Entity* spotLightEntityTwo = &spotLightEntityTwo_;
     if(spotLightEntityTwo != NULL && spotLightEntityTwo->lightComponent != NULL){
  
@@ -610,7 +743,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[1].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityTwo->lightComponent->outerCutOff);
     }
-   Entity spotLightEntityThree_ = globals.entities[globals.lights[2]];
+   Entity spotLightEntityThree_ = globals.entities[globals.lights[2].entityId];
    Entity* spotLightEntityThree = &spotLightEntityThree_;
     if(spotLightEntityThree != NULL && spotLightEntityThree->lightComponent != NULL){
  
@@ -658,7 +791,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[2].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityThree->lightComponent->outerCutOff);
     }
-   Entity spotLightEntityFour_ = globals.entities[globals.lights[3]];
+   Entity spotLightEntityFour_ = globals.entities[globals.lights[3].entityId];
    Entity* spotLightEntityFour = &spotLightEntityFour_;
     if(spotLightEntityFour != NULL && spotLightEntityFour->lightComponent != NULL){
  
@@ -705,10 +838,10 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         // Set the light outerCutOff uniform
         GLint lightOuterCutOffLocation = glGetUniformLocation(buffer->shaderProgram, "spotLights[3].outerCutOff");
         glUniform1f(lightOuterCutOffLocation, spotLightEntityFour->lightComponent->outerCutOff);
-    } 
-
+    }  */
+ 
     // Directional light
-   Entity directionalLightEntity_ = globals.entities[globals.lights[0]];
+ /*   Entity directionalLightEntity_ = globals.entities[globals.lights[0].entityId];
    Entity* directionalLightEntity = &directionalLightEntity_;
     if(directionalLightEntity != NULL && directionalLightEntity->lightComponent != NULL){
 
@@ -731,9 +864,9 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         // Set the light direction uniform
         GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "dirLight.direction");
         glUniform3f(lightDirLocation, directionalLightEntity->lightComponent->direction[0], directionalLightEntity->lightComponent->direction[1], directionalLightEntity->lightComponent->direction[2]);
-    }
+    } */
 
-    Entity pointLightEntityOne_ = globals.entities[globals.lights[5]];
+   /*  Entity pointLightEntityOne_ = globals.entities[globals.lights[5].entityId];
     Entity* pointLightEntityOne = &pointLightEntityOne_;
     if(pointLightEntityOne != NULL && pointLightEntityOne->lightComponent != NULL){
 
@@ -770,7 +903,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
         
     }
-    Entity pointLightEntityTwo_ = globals.entities[globals.lights[6]];
+    Entity pointLightEntityTwo_ = globals.entities[globals.lights[6].entityId];
     Entity* pointLightEntityTwo = &pointLightEntityTwo_;
     if(pointLightEntityTwo != NULL && pointLightEntityTwo->lightComponent != NULL){
 
@@ -806,7 +939,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[1].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
     }
-    Entity pointLightEntityThree_ = globals.entities[globals.lights[7]];
+    Entity pointLightEntityThree_ = globals.entities[globals.lights[7].entityId];
     Entity* pointLightEntityThree = &pointLightEntityThree_;
     if(pointLightEntityThree != NULL && pointLightEntityThree->lightComponent != NULL){
 
@@ -842,7 +975,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[2].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
     }
-    Entity pointLightEntityFour_ = globals.entities[globals.lights[8]];
+    Entity pointLightEntityFour_ = globals.entities[globals.lights[8].entityId];
     Entity* pointLightEntityFour = &pointLightEntityFour_;
     if(pointLightEntityFour != NULL && pointLightEntityFour->lightComponent != NULL){
 
@@ -877,7 +1010,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         // Set the light quadratic uniform
         GLint plQuadraticLoc = glGetUniformLocation(buffer->shaderProgram, "pointLights[3].quadratic");
         glUniform1f(plQuadraticLoc, pointLightEntityOne->lightComponent->quadratic);
-    }
+    } */
 
     // Set light space matrix uniform
     glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "lightSpaceMatrix"), 9, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
@@ -900,7 +1033,6 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
    if(buffer->numIndicies != 0) {
         glDrawElements(buffer->drawMode ,buffer->numIndicies,GL_UNSIGNED_INT,0);
     }else {
-        //printf("vertexCount %d\n", buffer->vertexCount);
         glDrawArrays(buffer->drawMode, 0, buffer->vertexCount);
    }
 
@@ -984,9 +1116,9 @@ void renderText(GpuData *buffer, char *text, float x, float y, float scale, Colo
     glBindVertexArray(buffer->VAO);
 
     // iterate through all characters
-    for (unsigned char c = 0; c < strlen(text); c++) {
+   for (unsigned char c = 0; c < strlen(text); c++) {
         Character ch = globals.characters[(unsigned char)text[c]];
-      
+        
         float xpos = x + (float)ch.Bearing[0] * scale;
         float ypos = y - ((float)ch.Size[1] - (float)ch.Bearing[1]) * scale;
 
@@ -1050,9 +1182,6 @@ void setupFontTextures(char* fontPath,int fontSize){
      
       for (unsigned char char_code = 0; char_code < 128; char_code++) {
     
-       
-    
-        
         if (FT_Load_Char(face, char_code, FT_LOAD_RENDER))
         {
             printf("ERROR::FREETYPE: Failed to load Glyph\n");
@@ -1084,6 +1213,7 @@ void setupFontTextures(char* fontPath,int fontSize){
 
         globals.characters[char_code] = (Character){texture, {face->glyph->bitmap.width,face->glyph->bitmap.rows}, {face->glyph->bitmap_left,face->glyph->bitmap_top}, face->glyph->advance.x};
     }
+
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Clean up FreeType library
@@ -1092,205 +1222,3 @@ void setupFontTextures(char* fontPath,int fontSize){
 
 }
 
-
-
-/**
- * Setups a Framebuffer for rendering the depth map
- */
-void setupRenderBuffer(GpuData *buffer)
-{
-    // Renderbuffer setup
-    glGenRenderbuffers(1, &buffer->RBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, buffer->RBO);
-
-    GLint maxRenderbufferSize = 0;
-    glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
-    ASSERT(maxRenderbufferSize >= width && maxRenderbufferSize >= height, "Error: Framebuffer size is too small");
-
-    glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,width,height); 
-
-    // Framebuffer setup
-    glGenFramebuffers(1, &buffer->FBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
-    
-    // Texture setup
-    glGenTextures ( 1, &globals.depthMap );
-    glBindTexture (GL_TEXTURE_2D, globals.depthMap);
-    glTexImage2D (GL_TEXTURE_2D, 0 , GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // GL_LINEAR for smoother shadows
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // GL_LINEAR
-
-    // Renderbuffer attached to framebuffer
-   // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer->RBO);
-
-    // Specify texture as color attachment
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, globals.depthMap, 0);
-
-    // Specify depth_renderbuffer as depth attachment
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer->RBO);
-
-    // Check for framebuffer complete
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    ASSERT(status == GL_FRAMEBUFFER_COMPLETE, "Error: Framebuffer is not complete");
-
-   /*  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); */
-
-}
-void setupDepthMap(){
-    //----------------------
-/*     GLuint framebuffer;
- GLuint texture;
- GLint texWidth = 256, texHeight = 256; */
- GLuint depthRenderbuffer;
- GLint maxRenderbufferSize;
- glGetIntegerv ( GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
- // check if GL_MAX_RENDERBUFFER_SIZE is >= texWidth and texHeight
- if ( ( maxRenderbufferSize <= width ) || ( maxRenderbufferSize <= height ) ) 
-{
-    printf("error\n");
-   // cannot use framebuffer objects, as we need to create
-   // a depth buffer as a renderbuffer object
-   // return with appropriate error 
-}
- // generate the framebuffer, renderbuffer, and texture object names
- glGenFramebuffers ( 1, &globals.depthMapBuffer.FBO ); 
- glGenRenderbuffers ( 1, &depthRenderbuffer ); 
- glGenTextures ( 1, &globals.depthMap );
- // bind texture and load the texture mip level 0
- // texels are RGB565
- // no texels need to be specified as we are going to draw into
- // the texture
- glBindTexture ( GL_TEXTURE_2D, globals.depthMap );
- glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL );
- glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
- glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
- glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_MAG_FILTER, GL_LINEAR );
- glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_MIN_FILTER, GL_LINEAR);
- // bind renderbuffer and create a 16-bit depth buffer 
- // width and height of renderbuffer = width and height of 
- // the texture
- glBindRenderbuffer ( GL_RENDERBUFFER, depthRenderbuffer ); 
- glRenderbufferStorage ( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height );
- // bind the framebuffer 
- glBindFramebuffer ( GL_FRAMEBUFFER, globals.depthMapBuffer.FBO );
- // specify texture as color attachment
- glFramebufferTexture2D ( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, globals.depthMap, 0 );
- // specify depth_renderbuffer as depth attachment 
- glFramebufferRenderbuffer ( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER, depthRenderbuffer);
- // check for framebuffer complete
- GLenum status = glCheckFramebufferStatus ( GL_FRAMEBUFFER );
-
-    //_----------------------
-   /*  glGenFramebuffers(1, &globals.depthMapBuffer.FBO);
-    //const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
-    
-    glGenTextures(1, &globals.depthMap);
-    glBindTexture(GL_TEXTURE_2D, globals.depthMap);
-
-    // TODO: put GL_DEPTH_COMPONENT in a variable, so we can switch between GL_DEPTH_COMPONENT and GL_DEPTH_COMPONENT16/24/32
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, NULL);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-   
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, globals.depthMap, 0);
-   // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, globals.depthMap, 0);
-
-  //  glDrawBuffers(GL_NONE); //not available in opengles
-  //  glReadBuffer(GL_NONE); //not available in opengles
-  
-   
-    printf("setting up depthmap framebuffer \n");
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER); */
-
-    if(status != GL_FRAMEBUFFER_COMPLETE){
-        printf("Error: Framebuffer is not complete\n");
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-
-/* void renderDepthMap(GpuData* buffer, TransformComponent* transformComponent){
-    
-    // uniform mat4 lightSpaceMatrix;
-       //             uniform mat4 model;
-
-    // Set shader
-    glUseProgram(globals.depthMapBuffer.shaderProgram);
-    glBindFramebuffer(GL_FRAMEBUFFER, globals.depthMapBuffer.FBO);
-      
-    // retrieve the matrix uniform locations
-    unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
-   // unsigned int viewLoc  = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "view");
-
-    // pass them to the shaders 
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
-    
-    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
-      
-    glBindVertexArray(buffer->VAO);
-    glDrawArrays(buffer->drawMode, 0, buffer->vertexCount);
- 
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-} */
-
-void renderDepthMap(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material) {
- 
-    // Check if camera is NULL
-    if (camera == NULL) {
-        fprintf(stderr, "Error: camera is NULL\n");
-        return;
-    }
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS); 
-   
-    // Set shader
-    glUseProgram(globals.depthMapBuffer.shaderProgram);
- //   printf("globals.depthMapBuffer.shaderProgram %d \n",globals.depthMapBuffer.shaderProgram);
-   
-
-    // retrieve the matrix uniform locations
-    unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
-  // unsigned int viewLoc  = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "view");
-
-    // pass them to the shaders 
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
-   // glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &camera->view[0][0]);
-    //glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "projection"), 1, GL_FALSE, &camera->projection[0][0]);
-
-    glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
-    // Loop through and print all matrix vvalues in lightSpaceMatrix:
-  /*   printf("------------------\n");
-    for(int i = 0; i < 4; i++){
-        for(int j = 0; j < 4; j++){
-            printf("globals.lightSpaceMatrix[%d][%d] %f \n",i,j,globals.lightSpaceMatrix[i][j]);
-        }
-    }   */
-    
-    glBindVertexArray(buffer->VAO);
-
-    glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
-   
-
-   // debug drawcalls
-   if(globals.debugDrawCalls){
-        captureDrawCalls(globals.views.full.rect.width,globals.views.full.rect.height, globals.drawCallsCounter++);
-   }
-
-   glBindVertexArray(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-
-}

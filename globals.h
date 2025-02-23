@@ -16,6 +16,7 @@
 #endif
 
 #define MAX_LIGHTS 10
+#define MAX_LIGHTSPACES 36
 
 // Window dimensions
 static const int width = 800;  // If these change, the views defaults should be changed aswell.
@@ -48,7 +49,7 @@ struct Globals {
     bool render;
     GpuData gpuFontData;
     float unitScale;
-    int lights[MAX_LIGHTS];
+    Light lights[MAX_LIGHTS];
     int lightsCount;
     bool culling;
     int drawCallsCounter;
@@ -65,7 +66,8 @@ struct Globals {
     bool blinnMode;
     bool gamma;
     GLuint depthMap;
-    mat4x4 lightSpaceMatrix[9];
+    GLuint depthCubemap;
+    mat4x4 lightSpaceMatrix[MAX_LIGHTSPACES];
     GpuData depthMapBuffer; // used to store depthmap shader
     GpuData frameBuffer; // used to store framebuffer shader
     GpuData postProcessBuffer; // used to store framebuffer shader

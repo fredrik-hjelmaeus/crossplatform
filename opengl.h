@@ -24,17 +24,13 @@ void setupLine(GLfloat* lines, int lineCount, GpuData* buffer);
 void updateLine(LineComponent* lineComponent);
 void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
-void renderFrameBuffer();
-void setupFrameBuffer(GLfloat* vertices, int vertexCount);
-
 // Shadow maps
 void depthshadow_createFrameBuffer(GpuData* buffer);
 void depthshadow_createDepthTexture();
-void depthshadow_configureFrameBuffer(GpuData* buffer);
+void depthshadow_createDepthCubemap();
+void depthshadow_setViewportForDepthMapShadowRender(View view);
+void depthshadow_configureFrameBuffer(GpuData* buffer, GLenum textureTarget, GLuint depthMap);
 void depthshadow_renderToDepthTexture(GpuData* buffer,TransformComponent* transformComponent);
-void setupRenderBuffer(GpuData* buffer);
-void setupDepthMap();
-void renderDepthMap(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material);
 /**
  * @brief Generally called when view are switched
  * buffer is font gpu data

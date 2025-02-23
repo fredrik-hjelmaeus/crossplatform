@@ -231,7 +231,7 @@ void movementSystem(){
                   //  globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                 
                 }
-                if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0]){
+                if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0].entityId){
                     if(globals.focusedEntityId != -1 && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
                        float multiplicator = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
                     

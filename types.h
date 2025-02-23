@@ -221,6 +221,21 @@ typedef enum {
     POINT = 2
 } LightType;
 
+typedef struct Light {
+    int type;
+    int entityId;
+    int lightSpaceMatrixIndex[6];
+} Light;
+
+typedef struct Cubemap {
+    vec3 front;
+    vec3 back;
+    vec3 left;
+    vec3 right;
+    vec3 up;
+    vec3 down;
+} Cubemap;
+
 // ECS
 
 enum Tag {

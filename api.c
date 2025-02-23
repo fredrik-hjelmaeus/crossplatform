@@ -322,7 +322,8 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
     entity->lightComponent->type = type;
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
-    globals.lights[globals.lightsCount] = entity->id;
+    globals.lights[globals.lightsCount].entityId = entity->id;
+    globals.lights[globals.lightsCount].type = type;
     ASSERT(globals.lightsCount < MAX_LIGHTS, "Too many lights");
     globals.lightsCount++;
 
