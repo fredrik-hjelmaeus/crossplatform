@@ -698,6 +698,9 @@ void input() {
     }
 }
 
+static int frameCount = 0;
+static Uint32 prevTick = 0;
+
 void update(){
 
     // Time 
@@ -709,8 +712,27 @@ void update(){
         SDL_Delay(time_to_wait);
     }
 
+    // Frames per second
+    frameCount++;
+
     // Set delta time in seconds
     globals.delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
+    if(ticks/1000-prevTick != 0){
+        
+       // printf("frameCount: %d \n",frameCount);
+        char str[10];
+        sprintf(str,"FPS: %d", frameCount);
+        //printf("The number as a string is: %s\n", str);
+        SDL_SetWindowTitle(globals.window, str);
+        frameCount = 0;
+      //  printf("new second: %u \n",(Uint32)globals.delta_time);
+    }
+    prevTick = ticks/1000;
+  // printf("deltatime: %f \n",globals.delta_time);
+  // printf("ticks: %u \n",ticks);
+  // printf("ticks/1000: %u \n",ticks/1000);
+    
+   
 
     // Systems
     cameraSystem();
@@ -1058,11 +1080,15 @@ void initScene(){
     ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
     ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",onTextInputChange,settingsPanel);
     // Row 3 Checkbox
-    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
+    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Turn off all spot & point lights",settingsPanel);
     ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+    // Row 4 Checkbox
+    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 135.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Turn off shadows",settingsPanel);
+    ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 135.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+   
 
     // Row 4 List
-    float yPos = 100.0f;
+    float yPos = 135.0f;
     for(int i=0; i < MAX_LIGHTS; i++){
         yPos += 35.0f;
         char* lightname = "test"; // globals.entities[globals.lights[i]].id;

@@ -478,6 +478,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     }else {
         glUniform1i(gammaLocation,0);    
     }
+  
 
     // Assign specularMap to texture2 slot
     glActiveTexture(GL_TEXTURE1);
@@ -523,6 +524,10 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     for(int i = 0; i < globals.lightsCount; i++){
         int lightType = globals.lights[i].type;
         Entity* lightEntity =  &globals.entities[globals.lights[i].entityId];
+        
+        GLint castShadowLocation = glGetUniformLocation(buffer->shaderProgram, "castShadows");
+        glUniform1i(castShadowLocation,lightEntity->lightComponent->castShadows); 
+        
         
         if(lightType == SPOT){
 

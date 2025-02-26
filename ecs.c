@@ -194,6 +194,7 @@ void initializeLightComponent(LightComponent* lightComponent){
     lightComponent->specular.g = 0.0f;
     lightComponent->specular.b = 0.0f;
     lightComponent->specular.a = 1.0f;
+    lightComponent->castShadows = false;
 }
 
 void initializeLineComponent(LineComponent* lineComponent){

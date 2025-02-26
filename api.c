@@ -186,7 +186,7 @@ void createMesh(
     
     if(entity->lightComponent->active == 1){
         setupMaterial( entity->meshComponent->gpuData,"shaders/light_vertex.glsl", "shaders/light_fragment.glsl" );
-    }else if( entity->materialComponent->isPostProcessMaterial) {
+    }else if(entity->materialComponent->isPostProcessMaterial) {
         //setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
         setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
         printf("post process mesh quad material id %d \n",entity->meshComponent->gpuData->shaderProgram);
@@ -320,6 +320,7 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
     entity->lightComponent->cutOff = cosine;
     entity->lightComponent->outerCutOff = cosineOC;
     entity->lightComponent->type = type;
+    entity->lightComponent->castShadows = true;
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
     globals.lights[globals.lightsCount].entityId = entity->id;

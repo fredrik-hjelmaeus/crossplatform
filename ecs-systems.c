@@ -674,11 +674,25 @@ void uiCheckboxSystem(){
                     globals.entities[i].uiComponent->checked = false;
                     globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = 0.0;
                     printf("unchecked \n");
+                      for(int j = 0; j < MAX_ENTITIES; j++){
+                        if(globals.entities[j].lightComponent->active){ //&& globals.entities[j].lightComponent->type != DIRECTIONAL){
+                            printf("turning [ON] shadows %d\n", globals.entities[j].id);
+                           // globals.entities[j].visible = true;
+                            globals.entities[j].lightComponent->castShadows = true;
+                        }
+                    }
                 }else {
                     globals.entities[i].uiComponent->checked = true;
                     globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = 1.0;
 
                     printf("checked \n");
+                    for(int j = 0; j < MAX_ENTITIES; j++){
+                        if(globals.entities[j].lightComponent->active){ //&& globals.entities[j].lightComponent->type != DIRECTIONAL){
+                            printf("turning off shadows %d\n", globals.entities[j].id);
+                          //  globals.entities[j].visible = false;
+                            globals.entities[j].lightComponent->castShadows = false;
+                        }
+                    }
                 }
             }
     }

@@ -59,6 +59,7 @@ uniform PointLight pointLights[4];
 uniform vec3 viewPos;
 uniform bool blinn;
 uniform bool gamma;
+uniform bool castShadows;
 uniform sampler2D shadowMap;
 uniform samplerCube cubeShadowMap;
 uniform float far_plane;
@@ -67,7 +68,6 @@ uniform float far_plane;
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir,int lightIndex);
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir,int lightIndex);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir,int lightIndex);
-float ShadowCalculation(vec4 fragPosLightSpace);
 float calcShadow(vec4 FragPosLightSpace,vec3 normal, vec3 lightDir, sampler2D shadowMap);
 float calcCubeShadow(vec3 fragPos, vec3 lightPos,float far_plane, samplerCube shadowMap);
 
@@ -157,7 +157,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir,int 
     specular *= attenuation * intensity;
 
     // shadow
-    float shadow = calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap);
+    float shadow = castShadows ? calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap) : 1.0;
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
@@ -203,7 +203,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir,int lightIndex)
          specular = light.specular * spec * material.diffuseColor.rgb;
     }
   
-    float shadow = calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap);
+   float shadow =  castShadows ? calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap) : 1.0;
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 } 
@@ -251,7 +251,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir,in
     specular *= attenuation;
 
     // shadow
-    float shadow = calcCubeShadow(fragPos,light.position,far_plane,cubeShadowMap);
+    float shadow = castShadows ? calcCubeShadow(fragPos,light.position,far_plane,cubeShadowMap) : 1.0;
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }

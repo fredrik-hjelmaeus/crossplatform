@@ -344,6 +344,7 @@ typedef struct LightComponent {
     float quadratic;
     float cutOff;
     float outerCutOff;
+    bool castShadows;
     LightType type;
 } LightComponent;
 
