@@ -442,24 +442,11 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "material.diffuse"), 0);
 
     GLint hasDiffuseMapLocation = glGetUniformLocation(buffer->shaderProgram, "material.hasDiffuseMap");
-        if(material->isPostProcessMaterial){
-            if(!globals.showDepthMap){
-                return;
-            }
-       // printf("shader quad that use/show depthmap texture %d \n",buffer->shaderProgram);
-       // glUniform1i(hasDiffuseMapLocation, 1);
+    if(material->isPostProcessMaterial){
+        if(!globals.showDepthMap){
+            return;
+        }
         material->diffuseMap = globals.depthMap;
-      //  material->specularMap = globals.depthMap;
-     /*    material->ambient.r = 1.0f;
-        material->ambient.g = 1.0f;
-        material->ambient.b = 1.0f;
-        material->ambient.a = 1.0f; */
-        //material->diffuseMapOpacity = 1.0f;
-       // material->diffuseMapOpacity = 1.0f;
-       /*  material->diffuse.r = 1.0f;
-        material->diffuse.g = 1.0f;
-        material->diffuse.b = 1.0f; */
-      // return;
     }
     if (material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED) {
         glUniform1i(hasDiffuseMapLocation, 1);
@@ -518,19 +505,20 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     glUniform4f(specularLocation, material->specular.r, material->specular.g, material->specular.b, material->specular.a);
 
         int spotLightCount = 0;
-        int directionalLightCount = 0;
+       // int directionalLightCount = 0;
         int pointLightCount = 0;
         char uniformName[64];
     for(int i = 0; i < globals.lightsCount; i++){
         int lightType = globals.lights[i].type;
         Entity* lightEntity =  &globals.entities[globals.lights[i].entityId];
+
+      //  printf("lightEntity->lightComponent->castShadows %d %d \n",lightEntity->id,lightEntity->lightComponent->castShadows);
         
         GLint castShadowLocation = glGetUniformLocation(buffer->shaderProgram, "castShadows");
         glUniform1i(castShadowLocation,lightEntity->lightComponent->castShadows); 
         
         
         if(lightType == SPOT){
-
             // Set lightColor uniform
             GLint lightColorLocation = glGetUniformLocation(buffer->shaderProgram, "lightColor");
             glUniform3f(lightColorLocation, 1.0f,1.0f,0.0f);

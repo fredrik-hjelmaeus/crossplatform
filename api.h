@@ -76,19 +76,19 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,
  * @brief Create a button
  * Create a button mesh in ui
 */
-void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick,Entity* parent);
+void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Event onClick,Entity* parent);
 /**
  * @brief Create a input field
  * Create a input mesh in ui
 */
-void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange,Entity* parent);
+void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Event onChange,Entity* parent);
 /**
  * @brief Create a text field
  * Create a mesh in ui
 */
 void ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent);
 void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Entity* parent);
-void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Entity* parent);
+void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Event onClick,bool checked,Entity* parent);
 
 
 #endif // API_H

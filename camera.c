@@ -99,8 +99,8 @@ void updateCamera(Camera* camera){
             globals.mouseDragPreviousFrame[0] = newMouseX;
             globals.mouseDragPreviousFrame[1] = newMouseY;
 
-            float changeXThisMouseDown = (float)globals.mouseXpos - globals.mouseDragStart[0];
-            float changeYThisMouseDown = (float)globals.mouseYpos - globals.mouseDragStart[1];
+           // float changeXThisMouseDown = (float)globals.mouseXpos - globals.mouseDragStart[0];
+           // float changeYThisMouseDown = (float)globals.mouseYpos - globals.mouseDragStart[1];
 
            // float changeThisFrameX = 0.01;
           //  float changeThisFrameY = 0.01;
@@ -160,8 +160,8 @@ void updateCamera(Camera* camera){
          //   printf("changeThisFrameX %f \n",changeThisFrameX);
         }else {
             if(globals.mouseDragStart[0] > -9999.0f){
-                float xDragOffset = globals.mouseXpos - globals.mouseDragStart[0];
-                float yDragOffset = globals.mouseYpos - globals.mouseDragStart[1];
+              //  float xDragOffset = globals.mouseXpos - globals.mouseDragStart[0];
+               // float yDragOffset = globals.mouseYpos - globals.mouseDragStart[1];
                 //printf("we dragged %f %f\n", xDragOffset, yDragOffset);
                 globals.mouseDragStart[0] = -10000.0f;
                 globals.mouseDragStart[1] = -10000.0f;

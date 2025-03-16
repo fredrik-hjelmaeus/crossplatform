@@ -49,13 +49,13 @@ struct Material {
     vec4 diffuseColor;
 };
 
-#define NR_POINT_LIGHTS 4
-#define NR_SPOT_LIGHTS 4
+#define NR_POINT_LIGHTS 0
+#define NR_SPOT_LIGHTS 0
 
 uniform Material material;
 uniform DirLight dirLight;
-uniform SpotLight spotLights[4];
-uniform PointLight pointLights[4];
+uniform SpotLight spotLights[1];
+uniform PointLight pointLights[1];
 uniform vec3 viewPos;
 uniform bool blinn;
 uniform bool gamma;
@@ -84,23 +84,23 @@ void main()
     // per lamp. In the main() function we take all the calculated colors and sum them up for
     // this fragment's final color.
     // ========================================================
-   // vec3 result = vec3(0.0);
+    //vec3 result = vec3(0.0);
     int lightIndex = 0;
     // phase 1: directional lighting
     vec3 result = CalcDirLight(dirLight, norm, viewDir,lightIndex);
     lightIndex++;
 
     // phase 2: point lights
-      for(int i = 0; i < NR_POINT_LIGHTS; i++){
+    for(int i = 0; i < NR_POINT_LIGHTS; i++){
         result += CalcPointLight(pointLights[i], norm, FragPos, viewDir,lightIndex);      
         lightIndex++;
-      }
+    } 
     
     // phase 3: spot lights
-     for(int i = 0; i < NR_SPOT_LIGHTS; i++){
+    for(int i = 0; i < NR_SPOT_LIGHTS; i++){
         result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir,lightIndex);      
         lightIndex++;
-     }
+    } 
    
     if(gamma)
         result = pow(result, vec3(1.0/2.2)); 
@@ -162,11 +162,10 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir,int 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
 
-   
-
 // calculates the color when using a directional light.
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir,int lightIndex)
 {
+    //return vec3(0.0);
     vec3 lightDir = normalize(-light.direction);
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);

@@ -212,7 +212,33 @@ typedef enum {
     VERTS_COLOR_ONEUV_INDICIES = 2
 } VertexDataType;
 
-typedef void (*ButtonCallback)();
+enum EventType {
+    TOGGLE_PANEL,
+    CHANGE_X_DIRECTION,
+    TEXT_INPUT,
+    NUMBER_INPUT,
+    TOGGLE_GLOBAL_SHADOWS,
+    TOGGLE_CAST_SHADOW,
+};
+
+typedef struct Event {
+    /**
+     * Trigger entity id. Could be ui button or mouse hover.
+     */
+    int targetEntityId; 
+    /**
+     * EventType enum , used to know what logic to do.
+     */
+    int type;
+    /**
+     * Index is used in many to many situations. 
+     * For ex. a ui list of items(uiTargetEntityId's) that points to other items(index's).
+     * So usage should be uiTargetEntityId[] that you map to index[]
+     * ex: globals.entities[testEvent.index]... do something. Use type to know what.
+     */
+    int index; 
+} Event;
+
 typedef void (*OnChangeCallback)();
 
 typedef enum {
@@ -309,8 +335,8 @@ typedef struct UIComponent {
     int boundingBoxEntityId;
     char* text;
     bool uiNeedsUpdate;
-    ButtonCallback onClick;
-    OnChangeCallback onChange;
+    Event onClick;
+    Event onChange;
     UiType type;
     Entity* parent;
     int childCount;
@@ -393,5 +419,10 @@ typedef struct ClosestLetter {
     int characterIndex;
     float charWidth;
 } ClosestLetter;
+
+typedef struct LightDirChangeParams {
+    int entityId;
+    int index;
+} LightDirChangeParams;
 
 #endif // TYPES_H

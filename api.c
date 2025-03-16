@@ -341,8 +341,8 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         GLfloat positions[] = { position[0], position[1], position[2] , result[0], result[1], result[2] };
    //     createPoints(positions,2,entity);
         setTransformData(entity,position,scale,rotation);
-        //createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
-       // createMesh(vertices,36,indices,0,result,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+       //  createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+       createMesh(vertices,36,indices,0,result,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
         
         return;
     }
@@ -688,7 +688,7 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,
  * Create a button mesh in ui
  * @param diffuse - color of the rectangle
 */
-void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,ButtonCallback onClick,Entity* parent){
+void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Event onClick,Entity* parent){
     // vertex data
     GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords    // Normals
@@ -705,6 +705,7 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
     };
 
     Entity* entity = addEntity(MODEL);
+    onClick.targetEntityId = entity->id;
     
     entity->uiComponent->active = 1;
     entity->boundingBoxComponent->active = 1;
@@ -746,7 +747,7 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
  * Create a input mesh in ui
  * @param diffuse - color of the rectangle
 */
-void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,OnChangeCallback onChange,Entity* parent){
+void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Event onChange,Entity* parent){
     // vertex data
     GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
@@ -927,7 +928,7 @@ void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 
  * @brief Create a Checkbox
  * Create a button checkbox
 */
-void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Entity* parent){
+void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Event onClick,bool checked,Entity* parent){
     // vertex data
     GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords    // Normals
@@ -962,6 +963,8 @@ void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec
     entity->uiComponent->uiNeedsUpdate = 1;
     entity->uiComponent->type = UITYPE_CHECKBOX;
     entity->uiComponent->checkedEntityId = ui_createRectangle(mat2,newPos,newScale,rotation,NULL);
+    entity->uiComponent->onClick = onClick;
+    entity->uiComponent->checked = checked;
     if(parent != NULL){
         entity->uiComponent->parent = parent;
         parent->uiComponent->childCount++;

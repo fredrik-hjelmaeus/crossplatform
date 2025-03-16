@@ -202,7 +202,7 @@ void uiInputSystem(){
 void movementSystem(){
     // rotate model logic (temporary)
     float degrees = 15.5f * globals.delta_time;
-    float radians = degrees * M_PI / 180.0f;
+   // float radians = degrees * M_PI / 180.0f;
 
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
@@ -233,16 +233,21 @@ void movementSystem(){
                 }
                 if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0].entityId){
                     if(globals.focusedEntityId != -1 && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
-                       float multiplicator = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
+                       float value = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
                     
-                        printf("mul %f \n",multiplicator);
+                        printf("value %f \n",value);
+
+
+                        //////////////////////////////
+                        // I NEED A GOOD WAY TO PASS SLIDER VALUES FROM UI DOWN TO SETTING A VALUE ON SOMETHING. UI needs info !
+                        //////////////////////////////
                     
                     // globals.entities[i].transformComponent->rotation[1] = radians;
-                        float offset = 20.0 * sin(0.5 * globals.delta_time);
-                    // globals.entities[i].lightComponent->direction[0] = offset;
+                       // float offset = 20.0 * sin(0.5 * globals.delta_time);
+                         globals.entities[i].lightComponent->direction[0] = value * 10.0;
                         //printf("offset %f\n", offset);
-                        globals.entities[i].transformComponent->position[0] = offset * multiplicator;
-                        globals.entities[i].transformComponent->position[2] = offset * multiplicator;
+                      /*   globals.entities[i].transformComponent->position[0] = offset * multiplicator;
+                        globals.entities[i].transformComponent->position[2] = offset * multiplicator; */
                         globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                     }else {
                       //  printf("no slider action\n");
@@ -355,6 +360,8 @@ void hoverAndClickSystem(){
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
             if(globals.entities[i].transformComponent->active == 1 && globals.entities[i].uiComponent->active == 1 && globals.entities[i].boundingBoxComponent->active == 1 && globals.entities[i].materialComponent->active == 1){
+
+                    // UI text and non-UI is not handled by this system.
                     if(globals.entities[i].uiComponent->type == UITYPE_TEXT || globals.entities[i].uiComponent->type == UITYPE_NONE){
                         continue;
                     }
@@ -367,7 +374,14 @@ void hoverAndClickSystem(){
                         // Left Click or just hover?
                         if(globals.mouseLeftButtonPressed && globals.prevMouseLeftDown == false){
                             if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_BUTTON){
-                                toggleChildrenVisibility(i);
+                               // if(globals.entities[i].uiComponent->onClick != NULL && globals.entities[i].uiComponent->onClick.type == TOGGLE_PANEL){
+                                    if(!globals.entities[i].uiComponent->parent){
+                                        printf("no parent to toggle panel on \n");
+                                        continue;
+                                    }
+                                    printf("trying to toggle panel \n");
+                                    toggleChildrenVisibility(i);
+                              //  }
                             }
                   
                             globals.entities[i].uiComponent->clicked = 1;
@@ -416,9 +430,7 @@ void hoverAndClickSystem(){
                             }
                         
                             // Actions when clicked
-                            if(globals.entities[i].uiComponent->onClick != NULL){
-                                globals.entities[i].uiComponent->onClick();
-                            }
+                            if(globals.entities[i].uiComponent->onClick.type == TOGGLE_CAST_SHADOW) printf("toggle cast shadow \n");
                         }
                     
                     } else {
@@ -474,6 +486,9 @@ void uiSliderSystem(){
                focusedEntity->boundingBoxComponent->boundingBox.min[0] = newMouseX - 10;
                focusedEntity->boundingBoxComponent->boundingBox.max[0] = newMouseX + focusedEntity->transformComponent->scale[0] -10; 
                focusedEntity->uiComponent->sliderValue = t;
+               if(focusedEntity->uiComponent->onChange.type == CHANGE_X_DIRECTION){
+                printf("change x direction \n");
+               }
             } 
     }
 }
@@ -662,6 +677,7 @@ void debugSystem(){
 }
 
 void uiCheckboxSystem(){
+
     for(int i = 0; i < MAX_ENTITIES; i++){
         if(
             globals.entities[i].alive 
@@ -672,28 +688,38 @@ void uiCheckboxSystem(){
             ){
                 if(globals.entities[i].uiComponent->checked){
                     globals.entities[i].uiComponent->checked = false;
-                    globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = 0.0;
+                    globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = flatColorUiDarkGrayMat.diffuse.g;
                     printf("unchecked \n");
-                      for(int j = 0; j < MAX_ENTITIES; j++){
-                        if(globals.entities[j].lightComponent->active){ //&& globals.entities[j].lightComponent->type != DIRECTIONAL){
-                            printf("turning [ON] shadows %d\n", globals.entities[j].id);
-                           // globals.entities[j].visible = true;
-                            globals.entities[j].lightComponent->castShadows = true;
-                        }
-                    }
+                   
                 }else {
                     globals.entities[i].uiComponent->checked = true;
                     globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = 1.0;
-
+                    globals.shadows = true;
                     printf("checked \n");
-                    for(int j = 0; j < MAX_ENTITIES; j++){
-                        if(globals.entities[j].lightComponent->active){ //&& globals.entities[j].lightComponent->type != DIRECTIONAL){
-                            printf("turning off shadows %d\n", globals.entities[j].id);
-                          //  globals.entities[j].visible = false;
-                            globals.entities[j].lightComponent->castShadows = false;
-                        }
-                    }
+                  
                 }
             }
     }
+
+    static bool firstRun = true;
+
+    if (firstRun) {
+        for(int i = 0; i < MAX_ENTITIES; i++){
+            if(
+                globals.entities[i].alive 
+                && globals.entities[i].visible 
+                && globals.entities[i].uiComponent->active
+                && globals.entities[i].uiComponent->type == UITYPE_CHECKBOX
+            ){
+                if(globals.entities[i].uiComponent->checked){
+                    globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = 1.0;
+                }else {
+                    globals.entities[globals.entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = flatColorUiDarkGrayMat.diffuse.g;
+                   
+                }
+            }
+        }
+
+        firstRun = false;
+    } 
 }

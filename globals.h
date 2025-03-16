@@ -84,6 +84,11 @@ struct Globals {
     unsigned int cursorTextSelection[2];
 
     
+    int frameCount;
+    Uint32 prevTick;
+    bool showUI;
+    bool shadows;
+    
 };
 
 extern struct Globals globals;
@@ -92,10 +97,6 @@ extern Camera mainCamera;
 
 #define ASSET_MEMORY_SIZE 5000000
 #define UI_MEMORY_SIZE 5000000
-
-// Macro to allocate memory from the arena and cast it to the appropriate type
-// Use this to get memory
-//#define GET_MEMORY(ARENA,TYPE,COUNT) ((TYPE*)arena_Alloc(&ARENA,sizeof(TYPE) * (COUNT)))
 
 #ifdef DEV_MODE
     #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }

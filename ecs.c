@@ -150,7 +150,9 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
     materialComponent->isPostProcessMaterial = false; //TODO: move to material_flags?
 }
 
+
 void initializeUIComponent(UIComponent* uiComponent){
+    Event emptyEvent;
     uiComponent->active = 0;
     uiComponent->hovered = 0;
     uiComponent->clicked = 0;
@@ -161,8 +163,8 @@ void initializeUIComponent(UIComponent* uiComponent){
     }
     uiComponent->uiNeedsUpdate = 0;
     uiComponent->boundingBoxEntityId = -1;
-    uiComponent->onClick = NULL;
-    uiComponent->onChange = NULL;
+    uiComponent->onClick = emptyEvent;
+    uiComponent->onChange = emptyEvent;
     uiComponent->type = UITYPE_NONE;
     uiComponent->parent = NULL;
     uiComponent->childCount = 0;
@@ -194,7 +196,7 @@ void initializeLightComponent(LightComponent* lightComponent){
     lightComponent->specular.g = 0.0f;
     lightComponent->specular.b = 0.0f;
     lightComponent->specular.a = 1.0f;
-    lightComponent->castShadows = false;
+    lightComponent->castShadows = true;
 }
 
 void initializeLineComponent(LineComponent* lineComponent){

@@ -28,9 +28,12 @@
 // Prototypes
 void createPoint(vec3 position);
 void onButtonClick();
+void toggleGlobalShadows(void *params);
+void toggleShadow(int entityId);
 void togglePanel();
 void onTextInputChange();
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
+void lightDirectionChange(void *params);
 Camera* initCamera();
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -104,8 +107,11 @@ struct Globals globals = {
     .cursorSelectionActive=false,
     .cursorDragStart=-1.0f,
     .cursorTextSelection={0,0},
-
- 
+    
+    .frameCount = 0,
+    .prevTick = 0,
+    .showUI = true,
+    .shadows = true,
     
 };
 
@@ -590,6 +596,9 @@ void handleKeyInput(){
             if(strcmp(key, "H") == 0){
                 globals.showDepthMap = !globals.showDepthMap;
             }
+            if(strcmp(key, "U") == 0){
+                globals.showUI = !globals.showUI;
+            }
 }
 
 /**
@@ -698,8 +707,18 @@ void input() {
     }
 }
 
-static int frameCount = 0;
-static Uint32 prevTick = 0;
+
+void displayFps(Uint32 ticks){
+    globals.frameCount++;
+    
+    if(ticks/1000-globals.prevTick != 0){
+        char str[10];
+        sprintf(str,"FPS: %d", globals.frameCount);
+        SDL_SetWindowTitle(globals.window, str);
+        globals.frameCount = 0;
+    }
+    globals.prevTick = ticks/1000;
+}
 
 void update(){
 
@@ -712,25 +731,10 @@ void update(){
         SDL_Delay(time_to_wait);
     }
 
-    // Frames per second
-    frameCount++;
-
     // Set delta time in seconds
     globals.delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
-    if(ticks/1000-prevTick != 0){
-        
-       // printf("frameCount: %d \n",frameCount);
-        char str[10];
-        sprintf(str,"FPS: %d", frameCount);
-        //printf("The number as a string is: %s\n", str);
-        SDL_SetWindowTitle(globals.window, str);
-        frameCount = 0;
-      //  printf("new second: %u \n",(Uint32)globals.delta_time);
-    }
-    prevTick = ticks/1000;
-  // printf("deltatime: %f \n",globals.delta_time);
-  // printf("ticks: %u \n",ticks);
-  // printf("ticks/1000: %u \n",ticks/1000);
+
+   displayFps(ticks);
     
    
 
@@ -784,24 +788,26 @@ void render(){
    
    // Render depth map
    // TODO: GL_CULL_FACE to avoid Peter panning?
-   createLightSpace();
-   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, globals.depthMapBuffer.FBO);
-   
-   glEnable(GL_DEPTH_TEST);
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active != 1){
-                    if(!globals.entities[i].materialComponent->isPostProcessMaterial){
-                        depthshadow_renderToDepthTexture(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent);
+   if(globals.shadows){
+    createLightSpace();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+    
+    glEnable(GL_DEPTH_TEST);
+        for(int i = 0; i < MAX_ENTITIES; i++) {
+            if(globals.entities[i].alive == 1) {
+                if(globals.entities[i].meshComponent->active == 1) {
+                    if(globals.entities[i].uiComponent->active != 1){
+                        if(!globals.entities[i].materialComponent->isPostProcessMaterial){
+                            depthshadow_renderToDepthTexture(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent);
+                        }
                     }
                 }
             }
         }
-    }
 
-   // Enable color buffer writes again
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // Enable color buffer writes again
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   }
   
    // Render main view & 3d objects
    setViewportAndClear(globals.views.full);
@@ -848,51 +854,53 @@ void render(){
     }
 
     // Render ui scene & ui objects
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                        // render ui, could be overhead with switching viewports?. profile.    
-                        if(globals.drawBoundingBoxes){
-                            if(globals.entities[i].tag == BOUNDING_BOX){
-                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
+    if(globals.showUI){
+        for(int i = 0; i < MAX_ENTITIES; i++) {
+            if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
+                if(globals.entities[i].meshComponent->active == 1) {
+                            // render ui, could be overhead with switching viewports?. profile.    
+                            if(globals.drawBoundingBoxes){
+                                if(globals.entities[i].tag == BOUNDING_BOX){
+                                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
+                                }
+                            }else {
+                                if(globals.entities[i].uiComponent->active == 1 && globals.entities[i].tag != BOUNDING_BOX){
+                                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
+                                }
                             }
-                        }else {
-                            if(globals.entities[i].uiComponent->active == 1 && globals.entities[i].tag != BOUNDING_BOX){
-                                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
-                            }
-                        }
+                }
             }
         }
-    }
-    
-    // render ui text
-    setFontProjection(&globals.gpuFontData,globals.views.ui);
-    glDisable(GL_DEPTH_TEST);
-    for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
-                if(globals.entities[i].uiComponent->active == 1){
-                    if(strlen(globals.entities[i].uiComponent->text) > 0){
-                     
-                        // convert transform position to viewport space
-                        vec2 result;
-                        convertUIcoordinateToWindowcoordinates(
-                            globals.views.ui,
-                            globals.entities[i].transformComponent,
-                            globals.views.full.rect.height,
-                            globals.views.full.rect.width,
-                            result);
-                      
-                            // align text center vertically
-                            result[1] -= (float)globals.characters[0].Size[1] / 4.0;
-                        renderText(
-                            &globals.gpuFontData, 
-                            globals.entities[i].uiComponent->text, 
-                            result[0],result[1],
-                            globals.charScale,globals.textColor);
+        
+        // render ui text
+        setFontProjection(&globals.gpuFontData,globals.views.ui);
+        glDisable(GL_DEPTH_TEST);
+        for(int i = 0; i < MAX_ENTITIES; i++) {
+            if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
+                    if(globals.entities[i].uiComponent->active == 1){
+                        if(strlen(globals.entities[i].uiComponent->text) > 0){
+                        
+                            // convert transform position to viewport space
+                            vec2 result;
+                            convertUIcoordinateToWindowcoordinates(
+                                globals.views.ui,
+                                globals.entities[i].transformComponent,
+                                globals.views.full.rect.height,
+                                globals.views.full.rect.width,
+                                result);
+                        
+                                // align text center vertically
+                                result[1] -= (float)globals.characters[0].Size[1] / 4.0;
+                            renderText(
+                                &globals.gpuFontData, 
+                                globals.entities[i].uiComponent->text, 
+                                result[0],result[1],
+                                globals.charScale,globals.textColor);
+                        }
                     }
-                }
-        }
-    }  
+            }
+        }  
+     }
 
    
     
@@ -1044,14 +1052,15 @@ void initScene(){
 
     // lights
     createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
-    createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
-    createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
+   // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
+   // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
+ /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
     createLight(lightMaterial,(vec3){3.0f, 2.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
     createLight(lightMaterial,(vec3){0.0f, 1.0f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
-    createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
+   
     createLight(lightMaterial,(vec3){10.7f, -5.2f, -3.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
     createLight(lightMaterial,(vec3){-12.7f, 5.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
-    createLight(lightMaterial,(vec3){-8.7f, 0.2f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);    
+    createLight(lightMaterial,(vec3){-8.7f, 0.2f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); */
 
     // Primitives
     createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
@@ -1066,40 +1075,67 @@ void initScene(){
    // Scale is in pixels, 100.0f is 100 pixels etc.
    // z position will be z-depth, much like in DOM in web.Use this to control draw order.
    // TODO: implement rotation, it is atm not affecting. 
+
+    
+   
  
     // UI Settings Panel
     Entity* settingsPanel = ui_createPanel(uiBoundingBoxMat,(vec3){545.0f, 5.0f, 3.0f}, (vec3){250.0f, 350.0f, 1.0f},(vec3){0.0f, 0.0f, 0.0f},NULL);
 
+    Event togglePanel;
+    togglePanel.type = TOGGLE_PANEL;
     ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", togglePanel, settingsPanel);
 
     // Row 1 Text Input with TextField as label field.
-    ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",onTextInputChange,settingsPanel);
+    Event textInput;
+    textInput.type = TEXT_INPUT;
+    ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",textInput,settingsPanel);
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 35.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
     // Row 2 Slider
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider Text Field",settingsPanel);
     ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
-    ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",onTextInputChange,settingsPanel);
+    Event numberInput;
+    numberInput.type = NUMBER_INPUT;
+    ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",numberInput,settingsPanel);
     // Row 3 Checkbox
-    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Turn off all spot & point lights",settingsPanel);
-    ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
-    // Row 4 Checkbox
-    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 135.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Turn off shadows",settingsPanel);
-    ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 135.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Global shadows",settingsPanel);
+    Event toggleGlobalShadows;
+    toggleGlobalShadows.type = TOGGLE_GLOBAL_SHADOWS;
+    ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},toggleGlobalShadows,true,settingsPanel);
    
 
     // Row 4 List
     float yPos = 135.0f;
-    for(int i=0; i < MAX_LIGHTS; i++){
+    for(int i=0; i < globals.lightsCount; i++){
         yPos += 35.0f;
-        char* lightname = "test"; // globals.entities[globals.lights[i]].id;
-        ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, lightname , settingsPanel);
+        Event toggleShadow;
+        toggleShadow.type = TOGGLE_CAST_SHADOW;
+        toggleShadow.index = globals.lights[i].entityId;
+
+      // char* lightName[20];
+       char* textCopy = (char*)arena_Alloc(&globals.uiArena, 99 * sizeof(char));
+       sprintf(textCopy, "id: %d, type: %d", globals.lights[i].entityId,globals.lights[i].type);
+       // strcpy(lightName, "customtext"); // Copies "custom text" into the lightName array.
+       // itoa(globals.lights[i].entityId,lightName,10);
+       // lightName = 'c';
+       // sprintf(lightName,"%i", globals.lights[i].entityId); //globals.entities[globals.lights[i].entityId].id
+        ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, textCopy , settingsPanel);
+        ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, yPos, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},toggleShadow,true,settingsPanel);
     }
- 
+
+    // Row 5 Slider
+    yPos += 35.0f;
+    Event lightDirXChange;
+    lightDirXChange.type = CHANGE_X_DIRECTION;
+
+    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction x",settingsPanel);
+    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",lightDirXChange,settingsPanel);
+
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 30.0f, 0.0f}, (vec3){5.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){550.0f, 30.0f, 1.0f}, (vec3){245.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
-
-    // Bottom panel
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",onButtonClick,NULL);
+    // Bottom pane
+    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",togglePanel,NULL);
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);   
     
@@ -1254,14 +1290,34 @@ void onButtonClick() {
        if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].transformComponent->active == 1){
             globals.entities[i].transformComponent->rotation[1] += 0.01f;
             globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-            
        }
     }
     printf("Button pressed!\n");
 }
-void togglePanel(){
+void toggleGlobalShadows(void *params){
+    if(params != NULL){
+       // printf("unused param %d \n",(int)params);
+    }
+    globals.shadows = !globals.shadows;
+    printf("global shadows ? %d \n",globals.shadows);
+}
+void toggleShadow(int entityId){
+        globals.entities[entityId].lightComponent->castShadows = !globals.entities[entityId].lightComponent->castShadows;
+        printf("shadow state on entityiID %d: %d \n",entityId,globals.entities[entityId].lightComponent->castShadows);
+}
+
+void lightDirectionChange(void *params){
+    LightDirChangeParams lightDirectionChange = *(LightDirChangeParams *)params;
+    printf("entity ID %d \n",lightDirectionChange.entityId);
+    globals.entities[globals.lights[0].entityId].lightComponent->direction[lightDirectionChange.index] = globals.entities[lightDirectionChange.entityId].uiComponent->sliderValue;
+}
+
+void togglePanel(void *params){
+    if(params != NULL){
+        printf("unhandled params \n");
+    }
    // printf("hello");
-    BoundingBox boundary;
+ //   BoundingBox boundary;
     for(int i = 0; i < MAX_ENTITIES; i++){
        if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].uiComponent->clicked){
         printf("Sclicked %d \n",globals.entities[i].id);
