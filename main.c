@@ -11,6 +11,7 @@
 #include "ecs.h"
 #include "ecs-entity.h"
 #include "ecs-systems.h"
+#include "event-system.h"
 #include "api.h"
 #include "assets.h"
 
@@ -112,6 +113,9 @@ struct Globals globals = {
     .prevTick = 0,
     .showUI = true,
     .shadows = true,
+
+  //  .eventQueue    = { .events = NULL, .eventCount = 0, .eventCapacity = 10 },
+    .eventRegister = { .events = NULL, .eventCount = 0, .eventCapacity = 10 },
     
 };
 
@@ -743,6 +747,7 @@ void update(){
     uiPositionSystem();
     uiInputSystem();
     hoverAndClickSystem();
+    eventSystem();
     uiSliderSystem();
     uiCheckboxSystem();
     textCursorSystem();
@@ -1051,7 +1056,7 @@ void initScene(){
     
 
     // lights
-    createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
+    createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.01f, -1.01f, 0.01f},DIRECTIONAL);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
@@ -1082,35 +1087,32 @@ void initScene(){
     // UI Settings Panel
     Entity* settingsPanel = ui_createPanel(uiBoundingBoxMat,(vec3){545.0f, 5.0f, 3.0f}, (vec3){250.0f, 350.0f, 1.0f},(vec3){0.0f, 0.0f, 0.0f},NULL);
 
-    Event togglePanel;
-    togglePanel.type = TOGGLE_PANEL;
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", togglePanel, settingsPanel);
+   
+   /*  ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", TOGGLE_PANEL, settingsPanel);
 
-    // Row 1 Text Input with TextField as label field.
-    Event textInput;
-    textInput.type = TEXT_INPUT;
-    ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",textInput,settingsPanel);
+    ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",TEXT_INPUT,settingsPanel);
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 35.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
     // Row 2 Slider
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider Text Field",settingsPanel);
-    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
-    Event numberInput;
-    numberInput.type = NUMBER_INPUT;
-    ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",numberInput,settingsPanel);
+  //  ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider Text Field",settingsPanel);
+   // ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+   
+   
+    ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",NUMBER_INPUT,settingsPanel);
     // Row 3 Checkbox
     ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Global shadows",settingsPanel);
-    Event toggleGlobalShadows;
-    toggleGlobalShadows.type = TOGGLE_GLOBAL_SHADOWS;
-    ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},toggleGlobalShadows,true,settingsPanel);
+    ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},TOGGLE_GLOBAL_SHADOWS,true,settingsPanel);
    
 
     // Row 4 List
-    float yPos = 135.0f;
+   
     for(int i=0; i < globals.lightsCount; i++){
         yPos += 35.0f;
-        Event toggleShadow;
-        toggleShadow.type = TOGGLE_CAST_SHADOW;
-        toggleShadow.index = globals.lights[i].entityId;
+        Event toggleShadow = {
+            .type = TOGGLE_CAST_SHADOW,
+            .bPtr = &globals.entities[globals.lights[i].entityId].lightComponent->castShadows,
+            .subscriberCount = 0,
+            .subscribers = {0}
+        };
 
       // char* lightName[20];
        char* textCopy = (char*)arena_Alloc(&globals.uiArena, 99 * sizeof(char));
@@ -1120,24 +1122,42 @@ void initScene(){
        // lightName = 'c';
        // sprintf(lightName,"%i", globals.lights[i].entityId); //globals.entities[globals.lights[i].entityId].id
         ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, textCopy , settingsPanel);
-        ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, yPos, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},toggleShadow,true,settingsPanel);
-    }
-
+        ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, yPos, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},&toggleShadow,true,settingsPanel);
+    } */
     // Row 5 Slider
+    float yPos = 135.0f;
     yPos += 35.0f;
-    Event lightDirXChange;
-    lightDirXChange.type = CHANGE_X_DIRECTION;
-
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction x",settingsPanel);
-    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
-    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",lightDirXChange,settingsPanel);
+    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},CHANGE_X_DIRECTION,settingsPanel);
+    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",CHANGE_X_DIRECTION,settingsPanel);
+    // Row 6 Slider
+    yPos += 35.0f;
+    
+   
 
-    ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 30.0f, 0.0f}, (vec3){5.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
+   /*  ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction y",settingsPanel);
+    Event lightDirYsliderChange;
+    lightDirYsliderChange.type = CHANGE_Y_DIRECTION;
+    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},lightDirYsliderChange,settingsPanel);
+    Event lightDirYtextChange;
+    lightDirYtextChange.type = CHANGE_Y_DIRECTION;
+    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",lightDirYtextChange,settingsPanel);
+    // Row 7 Slider
+    yPos += 35.0f;
+    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction z",settingsPanel);
+    Event lightDirZsliderChange;
+    lightDirZsliderChange.type = CHANGE_Z_DIRECTION;
+    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},lightDirZsliderChange,settingsPanel);
+    Event lightDirZtextChange;
+    lightDirZtextChange.type = CHANGE_Z_DIRECTION;
+    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",lightDirZtextChange,settingsPanel); */
+
+  /*   ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 30.0f, 0.0f}, (vec3){5.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
     ui_createRectangle(flatColorUiDarkGrayMat, (vec3){550.0f, 30.0f, 1.0f}, (vec3){245.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
     // Bottom pane
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",togglePanel,NULL);
+    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",TOGGLE_PANEL,NULL);
     ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
-    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);   
+    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);    */
     
    
 
@@ -1177,6 +1197,8 @@ void initScene(){
 }
 
 int main(int argc, char **argv) {
+
+   
     
    /*  if(PLATFORM == "UNKNOWN") {
         printf("Platform is unknown, please set PLATFORM in the makefile\n");
@@ -1187,6 +1209,13 @@ int main(int argc, char **argv) {
     // Initialize Memory Arenas
     arena_initMemory(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
     arena_initMemory(&globals.uiArena, UI_MEMORY_SIZE * sizeof(char));
+   
+
+    //initEventQueue();
+    initEventRegister();
+    testEvents();
+    //eventSystem();
+    return 0;
 
     // Sub memory allocations
     globals.materials = arena_Alloc(&globals.assetArena, globals.materialsCapacity * sizeof(Material));

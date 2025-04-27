@@ -212,35 +212,6 @@ typedef enum {
     VERTS_COLOR_ONEUV_INDICIES = 2
 } VertexDataType;
 
-enum EventType {
-    TOGGLE_PANEL,
-    CHANGE_X_DIRECTION,
-    TEXT_INPUT,
-    NUMBER_INPUT,
-    TOGGLE_GLOBAL_SHADOWS,
-    TOGGLE_CAST_SHADOW,
-};
-
-typedef struct Event {
-    /**
-     * Trigger entity id. Could be ui button or mouse hover.
-     */
-    int targetEntityId; 
-    /**
-     * EventType enum , used to know what logic to do.
-     */
-    int type;
-    /**
-     * Index is used in many to many situations. 
-     * For ex. a ui list of items(uiTargetEntityId's) that points to other items(index's).
-     * So usage should be uiTargetEntityId[] that you map to index[]
-     * ex: globals.entities[testEvent.index]... do something. Use type to know what.
-     */
-    int index; 
-} Event;
-
-typedef void (*OnChangeCallback)();
-
 typedef enum {
     SPOT = 0,
     DIRECTIONAL = 1,
@@ -261,6 +232,43 @@ typedef struct Cubemap {
     vec3 up;
     vec3 down;
 } Cubemap;
+
+
+enum EventType {
+    EVENT_NONE,
+    TOGGLE_PANEL,
+    CHANGE_X_DIRECTION,
+    CHANGE_Y_DIRECTION,
+    CHANGE_Z_DIRECTION,
+    TEXT_INPUT,
+    NUMBER_INPUT,
+    TOGGLE_GLOBAL_SHADOWS,
+    TOGGLE_CAST_SHADOW,
+};
+
+#define MAX_SUBSCRIBERS 10
+
+typedef struct Event {
+  /**
+   * EventType enum , used to know what logic to do.
+   */
+  int eventId;
+  int type;
+  int subscribers[MAX_SUBSCRIBERS];
+  int subscriberCount;
+} Event;
+
+typedef struct EventQueue {
+  Event* events;
+  int eventCount;
+  int eventCapacity;
+} EventQueue;
+
+typedef struct EventRegister {
+    Event* events;
+    int eventCount;
+    int eventCapacity;
+} EventRegister;
 
 // ECS
 
@@ -335,8 +343,7 @@ typedef struct UIComponent {
     int boundingBoxEntityId;
     char* text;
     bool uiNeedsUpdate;
-    Event onClick;
-    Event onChange;
+    int eventType;
     UiType type;
     Entity* parent;
     int childCount;
@@ -426,3 +433,4 @@ typedef struct LightDirChangeParams {
 } LightDirChangeParams;
 
 #endif // TYPES_H
+

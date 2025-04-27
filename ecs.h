@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include "types.h"
+#include "event-system.h"
 
 // Max entities constant
 #define MAX_ENTITIES 5000

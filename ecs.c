@@ -152,7 +152,6 @@ void initializeMaterialComponent(MaterialComponent* materialComponent){
 
 
 void initializeUIComponent(UIComponent* uiComponent){
-    Event emptyEvent;
     uiComponent->active = 0;
     uiComponent->hovered = 0;
     uiComponent->clicked = 0;
@@ -163,8 +162,7 @@ void initializeUIComponent(UIComponent* uiComponent){
     }
     uiComponent->uiNeedsUpdate = 0;
     uiComponent->boundingBoxEntityId = -1;
-    uiComponent->onClick = emptyEvent;
-    uiComponent->onChange = emptyEvent;
+    uiComponent->eventType = EVENT_NONE;
     uiComponent->type = UITYPE_NONE;
     uiComponent->parent = NULL;
     uiComponent->childCount = 0;

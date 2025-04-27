@@ -1,6 +1,8 @@
 #ifndef ECS_SYSTEMS_H
 #define ECS_SYSTEMS_H
 
+#include "event-system.h"
+
 
 
 void cameraSystem();

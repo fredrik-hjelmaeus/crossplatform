@@ -2,6 +2,7 @@
 #define GLOBALS_H
 
 #include <SDL2/SDL.h>
+#include "event-system.h"
 
 #if defined(__linux__)
     #define PLATFORM "Linux"
@@ -21,6 +22,7 @@
 // Window dimensions
 static const int width = 800;  // If these change, the views defaults should be changed aswell.
 static const int height = 600; // If these change, the views defaults should be changed aswell.
+
 
 struct Globals {
     SDL_Window* window;
@@ -56,6 +58,7 @@ struct Globals {
     bool debugDrawCalls;
     Arena assetArena;
     Arena uiArena;
+    Arena eventArena;
     Material* materials;
     int materialsCount;
     int materialsCapacity;
@@ -89,6 +92,9 @@ struct Globals {
     bool showUI;
     bool shadows;
     
+    // Event queue
+  //  EventQueue eventQueue;
+    EventRegister eventRegister;
 };
 
 extern struct Globals globals;
@@ -97,6 +103,8 @@ extern Camera mainCamera;
 
 #define ASSET_MEMORY_SIZE 5000000
 #define UI_MEMORY_SIZE 5000000
+//#define EVENT_QUEUE_SIZE 100
+#define EVENT_REGISTER_SIZE 100
 
 #ifdef DEV_MODE
     #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }

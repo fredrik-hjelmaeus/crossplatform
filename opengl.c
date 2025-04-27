@@ -89,8 +89,6 @@ void setupPoints(GLfloat *positions, int numPoints, GpuData *buffer)
 
 void depthshadow_createFrameBuffer(GpuData *buffer)
 {
-    GLuint depthMapFBO;
-    buffer->FBO = depthMapFBO;
     glGenFramebuffers(1, &buffer->FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
 }

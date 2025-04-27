@@ -338,7 +338,7 @@ void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 d
         // multiply normalized direction with a float here
         vec3_add(result, scaled_direction, position);
         createLine(position, result, entity);
-        GLfloat positions[] = { position[0], position[1], position[2] , result[0], result[1], result[2] };
+        //GLfloat positions[] = { position[0], position[1], position[2] , result[0], result[1], result[2] };
    //     createPoints(positions,2,entity);
         setTransformData(entity,position,scale,rotation);
        //  createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
@@ -688,7 +688,7 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,
  * Create a button mesh in ui
  * @param diffuse - color of the rectangle
 */
-void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Event onClick,Entity* parent){
+void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent){
     // vertex data
     GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords    // Normals
@@ -705,7 +705,6 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
     };
 
     Entity* entity = addEntity(MODEL);
-    onClick.targetEntityId = entity->id;
     
     entity->uiComponent->active = 1;
     entity->boundingBoxComponent->active = 1;
@@ -717,7 +716,7 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
     entity->boundingBoxComponent->boundingBox.max[2] = position[2] + scale[2];
     entity->uiComponent->text = text;
     entity->uiComponent->uiNeedsUpdate = 1;
-    entity->uiComponent->onClick = onClick;
+    entity->uiComponent->eventType = eventType;
     entity->uiComponent->type = UITYPE_BUTTON;
     if(parent != NULL){
         entity->uiComponent->parent = parent;
@@ -747,7 +746,7 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
  * Create a input mesh in ui
  * @param diffuse - color of the rectangle
 */
-void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Event onChange,Entity* parent){
+void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent){
     // vertex data
     GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
@@ -764,7 +763,7 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
     };
 
     Entity* entity = addEntity(MODEL);
-    
+  
     entity->uiComponent->active = 1;
     entity->boundingBoxComponent->active = 1;
     entity->boundingBoxComponent->boundingBox.min[0] = position[0];
@@ -775,7 +774,8 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
     entity->boundingBoxComponent->boundingBox.max[2] = position[2] + scale[2];
     entity->uiComponent->text = text;
     entity->uiComponent->uiNeedsUpdate = 1;
-    entity->uiComponent->onChange = onChange;
+    entity->uiComponent->eventType = eventType;
+        
     entity->uiComponent->type = UITYPE_INPUT;
     if(parent != NULL){
         entity->uiComponent->parent = parent;
@@ -860,7 +860,7 @@ void ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation
  * Create a button mesh in ui
  * @param diffuse - color of the rectangle
 */
-void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Entity* parent){
+void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, int eventType, Entity* parent){
     // vertex data
     GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords    // Normals
@@ -877,7 +877,6 @@ void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 
     };
 
     Entity* entity = addEntity(MODEL);
-
     // Slider consist of :
     // - button rectangle you interact with.
     vec3 btnRectangleScale = {20.0,20.0,2};
@@ -892,6 +891,7 @@ void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 
     // - slider drives a value and can also be driven by that value. Twoway.
     
     entity->uiComponent->active = 1;
+    entity->uiComponent->eventType = eventType;
     entity->uiComponent->sliderRange = (float)scale[0];
     entity->uiComponent->sliderRangeEntityId = rangeEntityId;
     entity->boundingBoxComponent->active = 1;
@@ -928,7 +928,7 @@ void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 
  * @brief Create a Checkbox
  * Create a button checkbox
 */
-void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, Event onClick,bool checked,Entity* parent){
+void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, int eventType,bool checked,Entity* parent){
     // vertex data
     GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords    // Normals
@@ -963,7 +963,7 @@ void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec
     entity->uiComponent->uiNeedsUpdate = 1;
     entity->uiComponent->type = UITYPE_CHECKBOX;
     entity->uiComponent->checkedEntityId = ui_createRectangle(mat2,newPos,newScale,rotation,NULL);
-    entity->uiComponent->onClick = onClick;
+    entity->uiComponent->eventType = eventType;
     entity->uiComponent->checked = checked;
     if(parent != NULL){
         entity->uiComponent->parent = parent;
@@ -986,3 +986,4 @@ void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec
 
     createMesh(vertices,4,bbIndices,8,position,scale,rotation,&mat2,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 }
+

@@ -124,16 +124,41 @@ void uiInputSystem(){
                 return;
             }
             if(strcmp(key, "Return") == 0 || strcmp(key, "Escape") == 0){
+                if(globals.entities[globals.focusedEntityId].uiComponent->eventType == CHANGE_X_DIRECTION){
+                        
+                        // Convert string to float and assign it.
+                        const char *str = globals.entities[globals.focusedEntityId].uiComponent->text;
+                        char *endptr;
+                        errno = 0;
+                        float value = strtof(str, &endptr);
+                        if(value > 1.0){
+                            value = 1.0;
+                            // Convert back to string from float.
+                            snprintf(globals.entities[globals.focusedEntityId].uiComponent->text,sizeof(globals.entities[globals.focusedEntityId].uiComponent->text),"%f",value);
+                        }
+                        if(value < 0.0){
+                            value = 0.0;
+                            // Convert back to string from float.
+                            snprintf(globals.entities[globals.focusedEntityId].uiComponent->text,sizeof(globals.entities[globals.focusedEntityId].uiComponent->text),"%f",value);
+                        }
+
+                        if (errno != 0 || endptr == str) {
+                            // Handle conversion error.
+                            fprintf(stderr, "Conversion error\n");
+                        } else {
+                            printf("Converted value: %f\n", value);
+                        }
+                }
                 globals.focusedEntityId = -1;
                 return;
             } 
             if(strcmp(key, "Backspace") == 0){
                 if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) > 0){
 
-                    // Remove the letter to the left of the cursor
+                    // Remove the letter to the left of the cursor.
                     removeCharacter(findCharacterUnderCursor(width,height).characterIndex-1);
 
-                    // Move cursor one step to the left
+                    // Move cursor one step to the left.
                     UIVector2 mouseCursor;
                     mouseCursor.x = globals.entities[globals.cursorEntityId].transformComponent->position[0];
                     mouseCursor.y = globals.entities[globals.cursorEntityId].transformComponent->position[1];
@@ -187,7 +212,21 @@ void uiInputSystem(){
             float advanceCursor = (float)(ch.Advance >> 6) * globals.charScale;
             globals.entities[globals.cursorEntityId].transformComponent->position[0] += advanceCursor;
             globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
-         }
+         }/* else{
+            // I STILL NEED AN ENTITY ID HERE TO THE INPUT FIELD IN THE EVENT
+            if(
+                globals.entities[globals.focusedEntityId].uiComponent->event.type == CHANGE_X_DIRECTION 
+                && globals.entities[globals.focusedEntityId].uiComponent->event.fPtr != NULL
+            ){
+                 snprintf(
+                        globals.entities[globals.focusedEntityId].uiComponent->text,
+                        sizeof(globals.entities[globals.focusedEntityId].uiComponent->text),
+                        "%f",
+                        globals.entities[globals.focusedEntityId].uiComponent->event.fPtr
+                    );
+            }
+         } */
+         
     }
 }
 
@@ -201,7 +240,7 @@ void uiInputSystem(){
  */
 void movementSystem(){
     // rotate model logic (temporary)
-    float degrees = 15.5f * globals.delta_time;
+   // float degrees = 15.5f * globals.delta_time;
    // float radians = degrees * M_PI / 180.0f;
 
     for(int i = 0; i < MAX_ENTITIES; i++) {
@@ -232,23 +271,42 @@ void movementSystem(){
                 
                 }
                 if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0].entityId){
-                    if(globals.focusedEntityId != -1 && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
-                       float value = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
+                    if(globals.focusedEntityId != -1 && globals.entities[globals.focusedEntityId].uiComponent->active){
                     
-                        printf("value %f \n",value);
 
 
-                        //////////////////////////////
-                        // I NEED A GOOD WAY TO PASS SLIDER VALUES FROM UI DOWN TO SETTING A VALUE ON SOMETHING. UI needs info !
-                        //////////////////////////////
+                      if(globals.entities[globals.focusedEntityId].uiComponent->eventType == CHANGE_X_DIRECTION && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
+                          /*   float value = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
+                            globals.entities[globals.focusedEntityId].uiComponent->event->fPtr = value; */
+                            //float someValue = 0.32;
+                            //globals.entities[globals.focusedEntityId].uiComponent->event->fPtr = &someValue;
+                            printf("SHOULD UPDATE using updated sliderValue, value: %f \n",globals.entities[globals.focusedEntityId].uiComponent->sliderValue * 100);
+                            globals.entities[i].lightComponent->direction[0] = globals.entities[globals.focusedEntityId].uiComponent->sliderValue * 100;
+                        
+                        
+
+                        globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                      }
+                      if(globals.entities[globals.focusedEntityId].uiComponent->eventType == CHANGE_Y_DIRECTION){
+                        float value = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
+                        printf("y value %f \n",value);
+                        globals.entities[i].lightComponent->direction[1] = value * 10.0;
+
+                        globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                      }
+                      if(globals.entities[globals.focusedEntityId].uiComponent->eventType == CHANGE_Z_DIRECTION){
+                        float value = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
+                        printf("z value %f \n",value);
+                        globals.entities[i].lightComponent->direction[2] = value * 10.0;
+
+                        globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+                      }
                     
                     // globals.entities[i].transformComponent->rotation[1] = radians;
                        // float offset = 20.0 * sin(0.5 * globals.delta_time);
-                         globals.entities[i].lightComponent->direction[0] = value * 10.0;
                         //printf("offset %f\n", offset);
                       /*   globals.entities[i].transformComponent->position[0] = offset * multiplicator;
                         globals.entities[i].transformComponent->position[2] = offset * multiplicator; */
-                        globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                     }else {
                       //  printf("no slider action\n");
                     }
@@ -430,7 +488,7 @@ void hoverAndClickSystem(){
                             }
                         
                             // Actions when clicked
-                            if(globals.entities[i].uiComponent->onClick.type == TOGGLE_CAST_SHADOW) printf("toggle cast shadow \n");
+                            if(globals.entities[i].uiComponent->eventType == TOGGLE_CAST_SHADOW) printf("toggle cast shadow \n");
                         }
                     
                     } else {
@@ -467,14 +525,19 @@ void uiSliderSystem(){
             float rangeX   = focusedEntity->uiComponent->sliderRange;  
             float newMouseX = (float)globals.mouseXpos;
             float t = (newMouseX - minRange) / rangeX;
-            if(t > 1.0f || t < 0.0f){
+            if(t > 1.0f){
+                t = 1.0f;
                 printf("out of range \n");
             }
-            printf("t %f \n",t);
-        //    printf("driver %f \n",driver);
+            if(t < 0.0f){
+                t = 0.0f;
+                printf("out of range \n");
+            }
           
             // If within draggable range
             if(newMouseX > minRange && newMouseX < maxRange){
+
+               // Slider position change
                float newPosX = absValue(newMouseX) - (width / 2);
          
                focusedEntity->transformComponent->position[0] = newPosX;
@@ -485,9 +548,15 @@ void uiSliderSystem(){
 
                focusedEntity->boundingBoxComponent->boundingBox.min[0] = newMouseX - 10;
                focusedEntity->boundingBoxComponent->boundingBox.max[0] = newMouseX + focusedEntity->transformComponent->scale[0] -10; 
-               focusedEntity->uiComponent->sliderValue = t;
-               if(focusedEntity->uiComponent->onChange.type == CHANGE_X_DIRECTION){
-                printf("change x direction \n");
+
+               if(globals.entities[globals.focusedEntityId].uiComponent->eventType == CHANGE_X_DIRECTION){
+                 if(t == 0.0){
+                    t = 1.0;
+                 }
+
+                 // Set new slider value
+                 globals.entities[globals.focusedEntityId].uiComponent->sliderValue = t;
+                 printf("new slider value: %f \n", globals.entities[globals.focusedEntityId].uiComponent->sliderValue);
                }
             } 
     }

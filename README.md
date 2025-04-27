@@ -19,7 +19,7 @@ Below a list of things needed to be setup for development. However note that thi
 - install gcc/clang
 - install homebrew
 - brew install sdl2 sdl2_image sdl2_mixer sdl2_net sdl2_ttf freetype
-- clang -std=c18 -Wall -pedantic \*.c -lSDL2 -I/usr/local/include/freetype2 -L/usr/local/lib -lfreetype -framework OpenGL -DGL_SILENCE_DEPRECATION && ./a.out
+- clang -std=c18 -Wall -pedantic \*.c -lSDL2 -I/usr/local/include/freetype2 -L/usr/local/lib -lfreetype -framework OpenGL -DGL_SILENCE_DEPRECATION -DDEV_MODE && ./a.out
 
 ### Develop on windows (^10) native OpenGL
 
@@ -42,7 +42,7 @@ Below a list of things needed to be setup for development. However note that thi
 - sudo apt-get install libgles2-mesa-dev
 - sudo apt-get update
 - sudo apt-get install libfreetype6-dev
-- gcc -std=c18 -Wall -pedantic *.c -I/usr/include/freetype2 -lfreetype -lSDL2 -lGLESv2 -lm -DDEV_MODE && ./a.out
+- gcc -std=c18 -Wall -pedantic \*.c -I/usr/include/freetype2 -lfreetype -lSDL2 -lGLESv2 -lm -DDEV_MODE && ./a.out
 - to debug: gcc -std=c18 -Wall -pedantic \*.c -lSDL2 -lGLESv2 -lm -g
 
 ### Develop for Webassembly (wasm) OpenGL ES 3.0
