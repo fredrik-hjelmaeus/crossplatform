@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include "opengl_types.h"
+#include "event.h"
 
 // Freetype
 #include <ft2build.h>
@@ -233,43 +234,6 @@ typedef struct Cubemap {
     vec3 down;
 } Cubemap;
 
-
-enum EventType {
-    EVENT_NONE,
-    TOGGLE_PANEL,
-    CHANGE_X_DIRECTION,
-    CHANGE_Y_DIRECTION,
-    CHANGE_Z_DIRECTION,
-    TEXT_INPUT,
-    NUMBER_INPUT,
-    TOGGLE_GLOBAL_SHADOWS,
-    TOGGLE_CAST_SHADOW,
-};
-
-#define MAX_SUBSCRIBERS 10
-
-typedef struct Event {
-  /**
-   * EventType enum , used to know what logic to do.
-   */
-  int eventId;
-  int type;
-  int subscribers[MAX_SUBSCRIBERS];
-  int subscriberCount;
-} Event;
-
-typedef struct EventQueue {
-  Event* events;
-  int eventCount;
-  int eventCapacity;
-} EventQueue;
-
-typedef struct EventRegister {
-    Event* events;
-    int eventCount;
-    int eventCapacity;
-} EventRegister;
-
 // ECS
 
 enum Tag {
@@ -343,7 +307,7 @@ typedef struct UIComponent {
     int boundingBoxEntityId;
     char* text;
     bool uiNeedsUpdate;
-    int eventType;
+    EventType eventType;
     UiType type;
     Entity* parent;
     int childCount;
@@ -406,6 +370,10 @@ typedef struct Entity {
     bool alive;
     bool visible;
     int tag;
+    // TODO: Remove these pointers.
+    // Instead add the component arrays to globals and access specific
+    // component for the entity using transformComponent[entity->id]
+    // This is a remnant of Array of structs we first had.
     TransformComponent* transformComponent;
     GroupComponent* groupComponent;
     MeshComponent* meshComponent;

@@ -860,7 +860,7 @@ void ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation
  * Create a button mesh in ui
  * @param diffuse - color of the rectangle
 */
-void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, int eventType, Entity* parent){
+void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, EventType eventType, Entity* parent){
     // vertex data
     GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords    // Normals

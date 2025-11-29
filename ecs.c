@@ -1,5 +1,6 @@
 #include "ecs.h"
 #include "globals.h"
+#include "event.h"
 
 //
 // Every entity get's all components attached to it and memory is allocated for all components.
@@ -38,23 +39,24 @@ void initECS(){
         entities[i].alive = 0;
         entities[i].id = i;
         entities[i].tag = UNINITIALIZED;
-        entities[i].transformComponent = &transformComponents[i];
+        // TODO: remove when Entity struct is changed (see Entity-struct)
+        entities[i].transformComponent = &transformComponents[i]; // TODO: remove
         initializeTransformComponent(entities[i].transformComponent);
-        entities[i].groupComponent = &groupComponents[i];
+        entities[i].groupComponent = &groupComponents[i]; // TODO: remove
         initializeGroupComponent(entities[i].groupComponent);
-        entities[i].meshComponent = &meshComponents[i];
+        entities[i].meshComponent = &meshComponents[i]; // TODO: remove
         initializeMeshComponent(entities[i].meshComponent);
-        entities[i].materialComponent = &materialComponents[i];
+        entities[i].materialComponent = &materialComponents[i]; // TODO: remove
         initializeMaterialComponent(entities[i].materialComponent); 
-        entities[i].uiComponent = &uiComponents[i];
+        entities[i].uiComponent = &uiComponents[i]; // TODO: remove
         initializeUIComponent(entities[i].uiComponent);
-        entities[i].lightComponent = &lightComponents[i];
+        entities[i].lightComponent = &lightComponents[i]; // TODO: remove
         initializeLightComponent(entities[i].lightComponent);
-        entities[i].lineComponent = &lineComponents[i];
+        entities[i].lineComponent = &lineComponents[i]; // TODO: remove
         initializeLineComponent(entities[i].lineComponent);
-        entities[i].pointComponent = &pointComponents[i];
+        entities[i].pointComponent = &pointComponents[i]; // TODO: remove
         initializePointComponent(entities[i].pointComponent);
-        entities[i].boundingBoxComponent = &boundingBoxComponents[i];
+        entities[i].boundingBoxComponent = &boundingBoxComponents[i]; // TODO: remove
         initializeBoundingBoxComponent(entities[i].boundingBoxComponent);
     }
 

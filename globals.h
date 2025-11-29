@@ -2,7 +2,8 @@
 #define GLOBALS_H
 
 #include <SDL2/SDL.h>
-#include "event-system.h"
+#include "types.h"
+#include "scene.h"
 
 #if defined(__linux__)
     #define PLATFORM "Linux"
@@ -35,6 +36,7 @@ struct Globals {
     float delta_time;
     GLenum overideDrawMode;
     int overrideDrawModeBool;
+    SceneMode currentSceneMode;
     Views views;
     int firstMouse;
     float mouseXpos;
@@ -92,9 +94,6 @@ struct Globals {
     bool showUI;
     bool shadows;
     
-    // Event queue
-  //  EventQueue eventQueue;
-    EventRegister eventRegister;
 };
 
 extern struct Globals globals;
@@ -107,9 +106,14 @@ extern Camera mainCamera;
 #define EVENT_REGISTER_SIZE 100
 
 #ifdef DEV_MODE
-    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }
+ /*    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }
     #else  // Tell compiler to do nothing in release mode
-    #define ASSERT(Expression, message) ((void)0)
+    #define ASSERT(Expression, message) ((void)0) */
+    #define ASSERT(Expression, message) \
+    if (!(Expression)) { \
+        fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); \
+        abort(); \
+    }
 #endif
 
 #endif 

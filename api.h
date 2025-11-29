@@ -1,6 +1,7 @@
 #ifndef API_H
 #define API_H
 
+#include "event.h"
 #include "types.h"
 
 //------
@@ -87,7 +88,12 @@ void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation
  * Create a mesh in ui
 */
 void ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent);
-void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation,int eventType, Entity* parent);
+/**
+ * @brief Create a slider. 
+ * @param eventType - The eventType is what is triggered when we use the slider
+ * Usually the event trigger is on mouse down and mouse pos is deemed within ui slider bounding box.
+ */
+void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation,EventType eventType, Entity* parent);
 void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, int eventType,bool checked,Entity* parent);
 
 

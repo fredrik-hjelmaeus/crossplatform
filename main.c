@@ -11,12 +11,12 @@
 #include "ecs.h"
 #include "ecs-entity.h"
 #include "ecs-systems.h"
-#include "event-system.h"
+#include "input-mapping.h"
+#include "event.h"
 #include "api.h"
 #include "assets.h"
 
-
-// Stb
+// STB
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -59,6 +59,7 @@ struct Globals globals = {
         .main={{0, 0, width, height}, {1.0f, 0.0f, 0.0f, 1.0f},NULL,false},
         .full={{0, 0, width, height}, {0.0f, 0.0f, 0.0f, 1.0f} ,NULL,false},
     },
+    .currentSceneMode=SCENE_MODE_NONE,
 
     // Mouse
     .firstMouse=1,
@@ -113,9 +114,6 @@ struct Globals globals = {
     .prevTick = 0,
     .showUI = true,
     .shadows = true,
-
-  //  .eventQueue    = { .events = NULL, .eventCount = 0, .eventCapacity = 10 },
-    .eventRegister = { .events = NULL, .eventCount = 0, .eventCapacity = 10 },
     
 };
 
@@ -467,6 +465,8 @@ void recalculateViewports(int w, int h){
 
 void handleKeyInput(){
          
+            processKeyInput(globals.event.key.keysym.sym, globals.currentSceneMode);
+            
             const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
            
             if(strcmp(key, "C") == 0) {
@@ -618,7 +618,7 @@ void input() {
         if(globals.event.type == SDL_QUIT) {
             globals.running = 0;
         } 
-            if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
+        if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
             
             // A button was pressed
             if (globals.event.button.button == SDL_BUTTON_LEFT) {
@@ -693,6 +693,7 @@ void input() {
            //printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
             // END TEMP CODE------------------
 
+            // Not sure this is used since we don't use viewports now?
             if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
                // printf("Mouse is within main view\n ");
                 // Update the camera front vector
@@ -738,16 +739,14 @@ void update(){
     // Set delta time in seconds
     globals.delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
 
-   displayFps(ticks);
+    displayFps(ticks);
     
-   
-
     // Systems
     cameraSystem();
+    processEvents();
     uiPositionSystem();
     uiInputSystem();
     hoverAndClickSystem();
-    eventSystem();
     uiSliderSystem();
     uiCheckboxSystem();
     textCursorSystem();
@@ -970,6 +969,8 @@ void emscriptenLoop() {
 */
 void initScene(){
 
+   changeSceneMode(SCENE_MODE_NORMAL);
+
    globals.views.main.camera->position[1] = 35.0f;
    globals.views.main.camera->position[2] = 35.0f;
    globals.views.main.camera->target[0] = 0.0f;
@@ -1072,9 +1073,9 @@ void initScene(){
     //createCube(objectMaterial,(vec3){10.0f, 3.0f, 12.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
     // Frame buffer quad
-    ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
+  //  ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
 
-    debug_drawFrustum();
+   // debug_drawFrustum();
 
    // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. (controlled by the uiPositionSystem)
    // Scale is in pixels, 100.0f is 100 pixels etc.
@@ -1128,10 +1129,15 @@ void initScene(){
     float yPos = 135.0f;
     yPos += 35.0f;
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction x",settingsPanel);
-    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},CHANGE_X_DIRECTION,settingsPanel);
-    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",CHANGE_X_DIRECTION,settingsPanel);
+    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_REQUEST_LIGHT_DIR_CHANGE,settingsPanel);
+    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",EVENT_REQUEST_LIGHT_DIR_CHANGE,settingsPanel);
     // Row 6 Slider
     yPos += 35.0f;
+
+    // Event subscriptions
+    subscribeToEvent(EVENT_REQUEST_LIGHT_DIR_CHANGE, onDirectionalLightChange);
+    subscribeToEvent(EVENT_NOTIFY_LIGHT_DIR_CHANGED, onDirectionLightChangeUpdateSlider);
+    subscribeToEvent(EVENT_NOTIFY_LIGHT_DIR_CHANGED, onDirectionLightChangeUpdateInput);
     
    
 
@@ -1173,9 +1179,9 @@ void initScene(){
  //ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    // TODO: create slider or input for ui using this
-  printf("materials-list (%d): \n",globals.materialsCount);
-    for(int i = 0; i < globals.materialsCount; i++){
-        printf("(%d),%s \n",i,globals.materials[i].name);
+  //printf("materials-list (%d): \n",globals.materialsCount);
+   // for(int i = 0; i < globals.materialsCount; i++){
+    //    printf("(%d),%s \n",i,globals.materials[i].name);
    /*       printf("shininess %f \n",globals.materials[i].shininess);
         printf("ambient.r %f \n",globals.materials[i].ambient.r);
         printf("ambient.g %f \n",globals.materials[i].ambient.g);
@@ -1192,13 +1198,13 @@ void initScene(){
         printf("ambientMap %d \n",globals.materials[i].ambientMap);
         printf("specularMap %d \n",globals.materials[i].specularMap);
         printf("shininessMap %d \n\n",globals.materials[i].shininessMap);  */
-   }   
+ // }   
 
 }
 
 int main(int argc, char **argv) {
 
-   
+   //testEvents();
     
    /*  if(PLATFORM == "UNKNOWN") {
         printf("Platform is unknown, please set PLATFORM in the makefile\n");
@@ -1210,13 +1216,6 @@ int main(int argc, char **argv) {
     arena_initMemory(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
     arena_initMemory(&globals.uiArena, UI_MEMORY_SIZE * sizeof(char));
    
-
-    //initEventQueue();
-    initEventRegister();
-    testEvents();
-    //eventSystem();
-    return 0;
-
     // Sub memory allocations
     globals.materials = arena_Alloc(&globals.assetArena, globals.materialsCapacity * sizeof(Material));
     // BELOW NOT YET IMPLEMENTED
