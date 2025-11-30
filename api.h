@@ -40,9 +40,9 @@ void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation);
 /**
  * @brief Create a light
  * Create a light source in the scene.
- * 
+ * @return int - Entity id
  */
-void createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
+int createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
 /**
  * @brief Create a Cube
  * Create a Cube mesh
@@ -59,42 +59,9 @@ void createLine(vec3 position, vec3 endPosition,Entity* entity);
 
 void debug_drawFrustum();
 
-//-------
-// UI API
-//-------
-/**
- * @brief Create a panel
- * Create a panel in ui. No visibility, only a bounding box.
- * @param material - material for bounding box
-*/
-Entity* ui_createPanel(Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent);
-/**
- * @brief Create a rectangle
- * Create a rectangle mesh
-*/
-int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent);
-/**
- * @brief Create a button
- * Create a button mesh in ui
-*/
-void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent);
-/**
- * @brief Create a input field
- * Create a input mesh in ui
-*/
-void ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent);
-/**
- * @brief Create a text field
- * Create a mesh in ui
-*/
-void ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent);
-/**
- * @brief Create a slider. 
- * @param eventType - The eventType is what is triggered when we use the slider
- * Usually the event trigger is on mouse down and mouse pos is deemed within ui slider bounding box.
- */
-void ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation,EventType eventType, Entity* parent);
-void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, int eventType,bool checked,Entity* parent);
+void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation);
+
+
 
 
 

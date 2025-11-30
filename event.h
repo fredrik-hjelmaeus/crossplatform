@@ -3,8 +3,7 @@
 
 typedef enum {
   EVENT_NONE,
-  EVENT_REQUEST_LIGHT_DIR_CHANGE,
-  EVENT_NOTIFY_LIGHT_DIR_CHANGED,
+  EVENT_LIGHT_DIR_CHANGED,
   EVENT_TOGGLE_PANEL,
   EVENT_TEXT_INPUT,
   EVENT_NUMBER_INPUT,
@@ -32,23 +31,28 @@ typedef struct {
   } payload;
 } Event;
 
-#define MAX_EVENTS_IN_QUEUE 100
+typedef void(*EventCallback)(Event event, void* association);
 
-extern Event eventQueue[MAX_EVENTS_IN_QUEUE];
-extern int eventQueueCount;
+typedef struct Subscriber {
+  EventType eventType;
+  EventCallback callback;
+  void* association;
+} Subscriber;
+
+#define MAX_EVENTS_IN_QUEUE 100
 
 void pushEvent(Event event);
 void processEvents();
 
-typedef void(*EventCallback)(Event event);
 #define MAX_SUBSCRIBERS_PER_EVENT 8
 
-void subscribeToEvent(EventType eventType, EventCallback callback);
+/**
+ * Association is a generic you check & cast to the type the event needs.
+ */
+void subscribeToEvent(Subscriber sub);
 void dispatchEvent(Event event);
 
-void onDirectionalLightChange(Event event);
-void onDirectionLightChangeUpdateSlider(Event event);
-void onDirectionLightChangeUpdateInput(Event event);
+void onDirectionLightChange(Event event, void* association);
 
 void testEvents();
 

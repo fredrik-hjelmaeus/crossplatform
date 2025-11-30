@@ -1,17 +1,18 @@
 #include "event.h"
 #include "globals.h"
 #include "input-mapping.h"
+#include "ui.h"
 
 // Event queue
 Event eventQueue[MAX_EVENTS_IN_QUEUE];
 int eventQueueCount = 0;
 
-// Event 
-EventCallback events[EVENT_COUNT][MAX_SUBSCRIBERS_PER_EVENT];
-int eventSubscriberCounts[EVENT_COUNT] = {0};
+// Subscribers 
+Subscriber subscribers[EVENT_COUNT][MAX_SUBSCRIBERS_PER_EVENT];
+int subscriberCounts[EVENT_COUNT] = {0};
 
 // Action fn's
-void onDirectionalLightChange(Event event) {
+/* void onDirectionalLightChange(Event event) {
   if(event.type == EVENT_REQUEST_LIGHT_DIR_CHANGE){
     // Action
     printf("TODO: change [direction light] here... \n");
@@ -22,36 +23,71 @@ void onDirectionalLightChange(Event event) {
     notificationEvent.payload.notification.newValue = event.payload.translateXObject.x;
     pushEvent(notificationEvent);
   }
-}
-void onDirectionLightChangeUpdateSlider(Event event){
-  if(event.type == EVENT_NOTIFY_LIGHT_DIR_CHANGED){
-    printf("update [SLIDER] with new value: %f \n",event.payload.notification.newValue);
+} */
+
+void onDirectionLightChange(Event event, void* association){
+  printf("Bingo %i \n",event.type);
+  ASSERT(event.type == EVENT_LIGHT_DIR_CHANGED,"wrong event type");
+  ASSERT(association != NULL,"association not provided (NULL)");
+  
+  if(event.type == EVENT_LIGHT_DIR_CHANGED){
+    
+    LightDirectionAssociation* lightAssoc = (LightDirectionAssociation*)association;
+
+    ASSERT(lightAssoc->lightEntityId != -1, "lightEntityId in association is invalid");
+    ASSERT(lightAssoc->sliderEntityId != -1, "sliderEntityId in association is invalid");
+    ASSERT(lightAssoc->textInputEntityId != -1, "textInputEntityId in association is invalid");
+  printf("lightEntityId %i \n ",lightAssoc->lightEntityId);
+  printf("sliderEntityId %i \n ",lightAssoc->sliderEntityId);
+  printf("textInputEntityId %i \n ",lightAssoc->textInputEntityId);
+    // Update light value
+    if(globals.entities[lightAssoc->lightEntityId].lightComponent->active){
+      printf("update light here...");
+    }
+  
+    // Update ui slider value
+    if(globals.entities[lightAssoc->sliderEntityId].uiComponent->active){
+      printf("update ui slider here...");
+    }
+  
+    // Update ui slider value
+    if(globals.entities[lightAssoc->textInputEntityId].uiComponent->active){
+      printf("update ui input here...");
+    }
+
   }
+
+ 
 }
-void onDirectionLightChangeUpdateInput(Event event){
+/* void onDirectionLightChangeUpdateInput(Event event, void* association){
   if(event.type == EVENT_NOTIFY_LIGHT_DIR_CHANGED){
     printf("update [INPUT] with new value: %f \n",event.payload.notification.newValue);
   }
-}
+} */
+
 
 // Register event subscription
-void subscribeToEvent(EventType eventType, EventCallback callback) {
-    int count = eventSubscriberCounts[eventType];
+//void subscribeToEvent(EventType eventType, EventCallback callback, void* association) {
+void subscribeToEvent(Subscriber sub) {
+    int count = subscriberCounts[sub.eventType];
+
+    ASSERT(count < MAX_SUBSCRIBERS_PER_EVENT,"max sub per event reached");
+
     if (count < MAX_SUBSCRIBERS_PER_EVENT) {
-        events[eventType][count] = callback;
-        eventSubscriberCounts[eventType]++;
+        subscribers[sub.eventType][count].callback = sub.callback;
+        subscribers[sub.eventType][count].association = sub.association;
+        subscriberCounts[sub.eventType]++;
     }
 }
 
 void dispatchEvent(Event event){
-  for(int i = 0; i < eventSubscriberCounts[event.type]; i++){
-    events[event.type][i](event);
+  for(int i = 0; i < subscriberCounts[event.type]; i++){
+    subscribers[event.type][i].callback(event, subscribers[event.type][i].association);
   }
 }
 
 void processEvents(){
   for(int i = 0; i < eventQueueCount; i++){
-    printf("handling event: %i \n",i);
     dispatchEvent(eventQueue[i]);
   }
 
@@ -59,7 +95,6 @@ void processEvents(){
 }
 
 void pushEvent(Event event){
-  printf("ok \n");
 
   #ifdef DEV_MODE
     ASSERT(eventQueueCount < MAX_EVENTS_IN_QUEUE, "Event queue overflow!");
@@ -77,22 +112,39 @@ void testEvents(){
    // This is a test setup aswell as doc for event-flow.
    // Meant to be used mainly for one-entity or one-time occurances.
    // This leaves systems to do updates on batches and we can avoid having to
-   // shoe-horn in these one-time updates we now can use event flow for.
-   // Test mode -> input-mapping -> subscribe -> process -> event -> action
-   changeSceneMode(SCENE_MODE_NORMAL); // sets mode
-  
-   //addKeyBinding(102,translateObjectEvent,SCENE_MODE_NORMAL); // key mapping
+   // shoe-horn in these one-time updates we now can use event flows for.
    
-   subscribeToEvent(EVENT_REQUEST_LIGHT_DIR_CHANGE, onDirectionalLightChange); // event sub
-   subscribeToEvent(EVENT_NOTIFY_LIGHT_DIR_CHANGED, onDirectionLightChangeUpdateInput); // event sub
-   subscribeToEvent(EVENT_NOTIFY_LIGHT_DIR_CHANGED, onDirectionLightChangeUpdateSlider); // event sub
+   // There are several event flows.
+   // 1. ui mapping, where we setup an association struct where we provide the actors id for 
+   // that particular event. 
+   // The function we provide should know what to do with actors id and provided event payload.
+   // 2. input mapping for keyboard input & mouse input etc.
 
-   TranslateXObjectPayload tpo = {.objectEntityId = 2, .x = 1.0 };
-   Event translateObjectEvent = {.type = EVENT_REQUEST_LIGHT_DIR_CHANGE, .payload.translateXObject = tpo };
+   // Test of 1. ui mapping:
+   changeSceneMode(SCENE_MODE_NORMAL); // sets mode
+   
+   LightDirectionAssociation* lightAss = (LightDirectionAssociation*)malloc(sizeof(LightDirectionAssociation));
+   
+   lightAss->lightEntityId = 2;
+   lightAss->sliderEntityId = 3;
+   lightAss->textInputEntityId = 4;
+
+   Subscriber sub = { .eventType = EVENT_LIGHT_DIR_CHANGED, .callback = onDirectionLightChange, .association = lightAss };
+   
+   subscribeToEvent(sub); // event sub
+   
+   // Fake invoke phase two. When slider or textInput has found an update on itself, it will send out this event.
+   // In this case it will provide new x value. 
+   // onDirectionLightChangeUpdateUI will have to know how to update lightAss with the payload.
+   TranslateXObjectPayload tpo = {.objectEntityId = 3, .x = 1.0 };
+   Event translateObjectEvent = {.type = EVENT_LIGHT_DIR_CHANGED, .payload.translateXObject = tpo };
    pushEvent(translateObjectEvent);
    
-   
+   processEvents(); // walk eventqueue and executes events
+
+   // Test of 2. -> input-mapping -> subscribe -> process -> event -> action
+   // Incomplete/Broken atm.
+   //addKeyBinding(102,translateObjectEvent,SCENE_MODE_NORMAL); // key mapping
    //processKeyInput(102,globals.currentSceneMode); // trigger event / push to eventqueue
-   processEvents(); // walk eventqueue and execute events (onObjectTransform here)
    exit(0);
 }

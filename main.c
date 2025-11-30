@@ -15,6 +15,7 @@
 #include "event.h"
 #include "api.h"
 #include "assets.h"
+#include "ui.h"
 
 // STB
 #define STB_IMAGE_IMPLEMENTATION
@@ -977,8 +978,6 @@ void initScene(){
    globals.views.main.camera->target[1] = 0.0f;
    globals.views.main.camera->target[2] = 0.0f;
     
-   
-
     // Assets
     initFont();
    
@@ -1057,7 +1056,7 @@ void initScene(){
     
 
     // lights
-    createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.01f, -1.01f, 0.01f},DIRECTIONAL);
+    int lightId = createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.01f, -1.01f, 0.01f},DIRECTIONAL);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
@@ -1087,7 +1086,6 @@ void initScene(){
  
     // UI Settings Panel
     Entity* settingsPanel = ui_createPanel(uiBoundingBoxMat,(vec3){545.0f, 5.0f, 3.0f}, (vec3){250.0f, 350.0f, 1.0f},(vec3){0.0f, 0.0f, 0.0f},NULL);
-
    
    /*  ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", TOGGLE_PANEL, settingsPanel);
 
@@ -1129,15 +1127,23 @@ void initScene(){
     float yPos = 135.0f;
     yPos += 35.0f;
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction x",settingsPanel);
-    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_REQUEST_LIGHT_DIR_CHANGE,settingsPanel);
-    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",EVENT_REQUEST_LIGHT_DIR_CHANGE,settingsPanel);
+    int sliderId = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_CHANGED,settingsPanel);
+    int textInputId = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",EVENT_LIGHT_DIR_CHANGED,settingsPanel);
     // Row 6 Slider
     yPos += 35.0f;
 
-    // Event subscriptions
-    subscribeToEvent(EVENT_REQUEST_LIGHT_DIR_CHANGE, onDirectionalLightChange);
-    subscribeToEvent(EVENT_NOTIFY_LIGHT_DIR_CHANGED, onDirectionLightChangeUpdateSlider);
-    subscribeToEvent(EVENT_NOTIFY_LIGHT_DIR_CHANGED, onDirectionLightChangeUpdateInput);
+    // Setup association
+    LightDirectionAssociation* lightAssociation = (LightDirectionAssociation*)malloc(sizeof(LightDirectionAssociation));
+    lightAssociation->lightEntityId = lightId;
+    lightAssociation->sliderEntityId = sliderId;
+    lightAssociation->textInputEntityId = textInputId;
+
+    // Event subscription
+    Subscriber sub = { .eventType = EVENT_LIGHT_DIR_CHANGED , .callback = onDirectionLightChange, .association = lightAssociation };
+    subscribeToEvent(sub);
+
+    //subscribeToEvent(EVENT_REQUEST_LIGHT_DIR_CHANGE, onDirectionalLightChange, );
+    //subscribeToEvent(EVENT_NOTIFY_LIGHT_DIR_CHANGED, onDirectionLightChangeUpdateInput, );
     
    
 
@@ -1204,7 +1210,7 @@ void initScene(){
 
 int main(int argc, char **argv) {
 
-   //testEvents();
+  
     
    /*  if(PLATFORM == "UNKNOWN") {
         printf("Platform is unknown, please set PLATFORM in the makefile\n");
@@ -1215,6 +1221,8 @@ int main(int argc, char **argv) {
     // Initialize Memory Arenas
     arena_initMemory(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
     arena_initMemory(&globals.uiArena, UI_MEMORY_SIZE * sizeof(char));
+
+     
    
     // Sub memory allocations
     globals.materials = arena_Alloc(&globals.assetArena, globals.materialsCapacity * sizeof(Material));
@@ -1249,6 +1257,8 @@ int main(int argc, char **argv) {
     Camera* mainCamera = initCamera();
     mainCamera->aspectRatio = globals.views.main.rect.width / globals.views.main.rect.height;
     globals.views.main.camera = mainCamera;
+
+    //testEvents();
 
     initScene();
 

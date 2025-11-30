@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "api.h"
 #include "event.h"
+#include "ui.h"
 
 void deleteEntity(Entity* entity);
 
@@ -124,7 +125,7 @@ void uiInputSystem(){
                 return;
             }
             if(strcmp(key, "Return") == 0 || strcmp(key, "Escape") == 0){
-                if(globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_REQUEST_LIGHT_DIR_CHANGE){
+                if(globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_LIGHT_DIR_CHANGED){
                         
                         // Convert string to float and assign it.
                         const char *str = globals.entities[globals.focusedEntityId].uiComponent->text;
@@ -272,38 +273,29 @@ void movementSystem(){
                 }
                 if(globals.entities[i].lightComponent->active == 1 && globals.entities[i].id == globals.lights[0].entityId){
                     if(globals.focusedEntityId != -1 && globals.entities[globals.focusedEntityId].uiComponent->active){
-                    
 
-
-                      if(
+                    /*   if(
                         globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_REQUEST_LIGHT_DIR_CHANGE 
                         && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER
-                    ){
-                          /*   float value = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
-                            globals.entities[globals.focusedEntityId].uiComponent->event->fPtr = value; */
-                            //float someValue = 0.32;
-                            //globals.entities[globals.focusedEntityId].uiComponent->event->fPtr = &someValue;
-                            printf("SHOULD UPDATE using updated sliderValue, value: %f \n",globals.entities[globals.focusedEntityId].uiComponent->sliderValue * 100);
-                            globals.entities[i].lightComponent->direction[0] = globals.entities[globals.focusedEntityId].uiComponent->sliderValue * 100;
-                        
-                        
-
+                      ){
+                        printf("SHOULD UPDATE using updated sliderValue, value: %f \n",globals.entities[globals.focusedEntityId].uiComponent->sliderValue * 100);
+                        globals.entities[i].lightComponent->direction[0] = globals.entities[globals.focusedEntityId].uiComponent->sliderValue * 100;
                         globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                       }
+
                       if(globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_REQUEST_LIGHT_DIR_CHANGE){
                         float value = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
                         printf("y value %f \n",value);
                         globals.entities[i].lightComponent->direction[1] = value * 10.0;
-
                         globals.entities[i].transformComponent->modelNeedsUpdate = 1;
                       }
+
                       if(globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_REQUEST_LIGHT_DIR_CHANGE){
                         float value = globals.entities[globals.focusedEntityId].uiComponent->sliderValue;
                         printf("z value %f \n",value);
                         globals.entities[i].lightComponent->direction[2] = value * 10.0;
-
                         globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-                      }
+                      } */
                     
                     // globals.entities[i].transformComponent->rotation[1] = radians;
                        // float offset = 20.0 * sin(0.5 * globals.delta_time);
@@ -552,7 +544,7 @@ void uiSliderSystem(){
                focusedEntity->boundingBoxComponent->boundingBox.min[0] = newMouseX - 10;
                focusedEntity->boundingBoxComponent->boundingBox.max[0] = newMouseX + focusedEntity->transformComponent->scale[0] -10; 
 
-               if(globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_REQUEST_LIGHT_DIR_CHANGE){
+               if(globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_LIGHT_DIR_CHANGED){
                  if(t == 0.0){
                     t = 1.0;
                  }
@@ -563,7 +555,7 @@ void uiSliderSystem(){
 
                  // Setup new event
                  TranslateXObjectPayload translateXPayload = { .objectEntityId = globals.focusedEntityId, .x = t };
-                 Event event = { .type = EVENT_REQUEST_LIGHT_DIR_CHANGE, .payload.translateXObject = translateXPayload };
+                 Event event = { .type = EVENT_LIGHT_DIR_CHANGED, .payload.translateXObject = translateXPayload };
                  pushEvent(event);
                }
             } 
