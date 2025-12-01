@@ -110,7 +110,10 @@ void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, c
     entity->boundingBoxComponent->boundingBox.max[0] = position[0] + scale[0];
     entity->boundingBoxComponent->boundingBox.max[1] = position[1] + scale[1];
     entity->boundingBoxComponent->boundingBox.max[2] = position[2] + scale[2];
-    entity->uiComponent->text = text;
+    if(text != NULL){
+        strncpy(entity->uiComponent->text, text, MAX_TEXT_LENGTH -1);
+        entity->uiComponent->text[MAX_TEXT_LENGTH -1] = '\0';
+    }
     entity->uiComponent->uiNeedsUpdate = 1;
     entity->uiComponent->eventType = eventType;
     entity->uiComponent->type = UITYPE_BUTTON;
@@ -169,10 +172,12 @@ int ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation,
     entity->boundingBoxComponent->boundingBox.max[0] = position[0] + scale[0];
     entity->boundingBoxComponent->boundingBox.max[1] = position[1] + scale[1];
     entity->boundingBoxComponent->boundingBox.max[2] = position[2] + scale[2];
-    entity->uiComponent->text = text;
+    if (text != NULL) {
+        strncpy(entity->uiComponent->text, text, MAX_TEXT_LENGTH - 1);
+        entity->uiComponent->text[MAX_TEXT_LENGTH - 1] = '\0';
+    }
     entity->uiComponent->uiNeedsUpdate = 1;
     entity->uiComponent->eventType = eventType;
-        
     entity->uiComponent->type = UITYPE_INPUT;
     if(parent != NULL){
         entity->uiComponent->parent = parent;
@@ -230,7 +235,10 @@ int ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation,
     entity->boundingBoxComponent->boundingBox.max[0] = position[0] + scale[0];
     entity->boundingBoxComponent->boundingBox.max[1] = position[1] + scale[1];
     entity->boundingBoxComponent->boundingBox.max[2] = position[2] + scale[2];
-    entity->uiComponent->text = text;
+    if(text != NULL){
+        strncpy(entity->uiComponent->text, text, MAX_TEXT_LENGTH -1);
+        entity->uiComponent->text[MAX_TEXT_LENGTH -1] = '\0';
+    }
     entity->uiComponent->uiNeedsUpdate = 1;
     entity->uiComponent->type = UITYPE_TEXT;
     if(parent != NULL){

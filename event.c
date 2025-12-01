@@ -12,21 +12,7 @@ Subscriber subscribers[EVENT_COUNT][MAX_SUBSCRIBERS_PER_EVENT];
 int subscriberCounts[EVENT_COUNT] = {0};
 
 // Action fn's
-/* void onDirectionalLightChange(Event event) {
-  if(event.type == EVENT_REQUEST_LIGHT_DIR_CHANGE){
-    // Action
-    printf("TODO: change [direction light] here... \n");
-
-    // Notification
-    Event notificationEvent;
-    notificationEvent.type = EVENT_NOTIFY_LIGHT_DIR_CHANGED;
-    notificationEvent.payload.notification.newValue = event.payload.translateXObject.x;
-    pushEvent(notificationEvent);
-  }
-} */
-
 void onDirectionLightChange(Event event, void* association){
-  printf("Bingo %i \n",event.type);
   ASSERT(event.type == EVENT_LIGHT_DIR_CHANGED,"wrong event type");
   ASSERT(association != NULL,"association not provided (NULL)");
   
@@ -37,37 +23,28 @@ void onDirectionLightChange(Event event, void* association){
     ASSERT(lightAssoc->lightEntityId != -1, "lightEntityId in association is invalid");
     ASSERT(lightAssoc->sliderEntityId != -1, "sliderEntityId in association is invalid");
     ASSERT(lightAssoc->textInputEntityId != -1, "textInputEntityId in association is invalid");
-  printf("lightEntityId %i \n ",lightAssoc->lightEntityId);
-  printf("sliderEntityId %i \n ",lightAssoc->sliderEntityId);
-  printf("textInputEntityId %i \n ",lightAssoc->textInputEntityId);
+
     // Update light value
-    if(globals.entities[lightAssoc->lightEntityId].lightComponent->active){
-      printf("update light here...");
+    if(globals.entities[lightAssoc->lightEntityId].transformComponent->active){
+      globals.entities[lightAssoc->lightEntityId].transformComponent->rotation[0] = event.payload.translateXObject.x;
     }
-  
+    
     // Update ui slider value
     if(globals.entities[lightAssoc->sliderEntityId].uiComponent->active){
-      printf("update ui slider here...");
+      globals.entities[lightAssoc->sliderEntityId].uiComponent->sliderValue = event.payload.translateXObject.x;
     }
-  
-    // Update ui slider value
-    if(globals.entities[lightAssoc->textInputEntityId].uiComponent->active){
-      printf("update ui input here...");
+    
+    // Update ui text input value
+    if(globals.entities[lightAssoc->textInputEntityId].alive && globals.entities[lightAssoc->textInputEntityId].uiComponent->active){
+        snprintf(globals.entities[lightAssoc->textInputEntityId].uiComponent->text,MAX_TEXT_LENGTH,"%0.2f",event.payload.translateXObject.x);
     }
-
   }
-
  
 }
-/* void onDirectionLightChangeUpdateInput(Event event, void* association){
-  if(event.type == EVENT_NOTIFY_LIGHT_DIR_CHANGED){
-    printf("update [INPUT] with new value: %f \n",event.payload.notification.newValue);
-  }
-} */
+
 
 
 // Register event subscription
-//void subscribeToEvent(EventType eventType, EventCallback callback, void* association) {
 void subscribeToEvent(Subscriber sub) {
     int count = subscriberCounts[sub.eventType];
 

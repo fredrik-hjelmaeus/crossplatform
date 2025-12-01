@@ -549,11 +549,7 @@ void uiSliderSystem(){
                     t = 1.0;
                  }
 
-                 // Set new slider value
-                 globals.entities[globals.focusedEntityId].uiComponent->sliderValue = t;
-                 printf("new slider value: %f \n", globals.entities[globals.focusedEntityId].uiComponent->sliderValue);
-
-                 // Setup new event
+                 // Setup new event that sends new value
                  TranslateXObjectPayload translateXPayload = { .objectEntityId = globals.focusedEntityId, .x = t };
                  Event event = { .type = EVENT_LIGHT_DIR_CHANGED, .payload.translateXObject = translateXPayload };
                  pushEvent(event);
