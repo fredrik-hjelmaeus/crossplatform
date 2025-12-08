@@ -85,7 +85,7 @@ int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,
  * @param diffuse - color of the rectangle
 */
 void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent){
-    // vertex data
+    // vertex data <- TODO: This rectangle vertices array is used in many places. Move it to a separate file?
     GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords    // Normals
         0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right

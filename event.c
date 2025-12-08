@@ -26,7 +26,7 @@ void onDirectionLightChange(Event event, void* association){
 
     // Update light value
     if(globals.entities[lightAssoc->lightEntityId].transformComponent->active){
-      globals.entities[lightAssoc->lightEntityId].transformComponent->rotation[0] = event.payload.translateXObject.x;
+      globals.entities[lightAssoc->lightEntityId].lightComponent->direction[1] = event.payload.translateXObject.x;
     }
     
     // Update ui slider value
@@ -36,13 +36,11 @@ void onDirectionLightChange(Event event, void* association){
     
     // Update ui text input value
     if(globals.entities[lightAssoc->textInputEntityId].alive && globals.entities[lightAssoc->textInputEntityId].uiComponent->active){
-        snprintf(globals.entities[lightAssoc->textInputEntityId].uiComponent->text,MAX_TEXT_LENGTH,"%0.2f",event.payload.translateXObject.x);
+      snprintf(globals.entities[lightAssoc->textInputEntityId].uiComponent->text,MAX_TEXT_LENGTH,"%0.2f",event.payload.translateXObject.x);
     }
   }
  
 }
-
-
 
 // Register event subscription
 void subscribeToEvent(Subscriber sub) {

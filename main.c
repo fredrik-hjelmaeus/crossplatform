@@ -681,17 +681,17 @@ void input() {
             globals.mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
-            //printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
+            printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
-              /* float x_ndc = (2.0f * xpos) / width - 1.0f;
+              float x_ndc = (2.0f * xpos) / width - 1.0f;
               float y_ndc = 1.0f - (2.0f * ypos) / height;
               float x_ui =  (-1 * x_ndc) * ((float)width * 0.5);
-              float y_ui =   y_ndc * ((float)height * 0.5);  */
-              //printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
+              float y_ui =   y_ndc * ((float)height * 0.5);  
+            //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
             //printf("Mouse moved to %f, %f\n", globals.mouseXpos, globals.mouseYpos);
-            //SDLVector2 sdlMouseCoords = {xpos, ypos};
-           // UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
-           //printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
+            SDLVector2 sdlMouseCoords = {xpos, ypos};
+            UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
+            printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
             // END TEMP CODE------------------
 
             // Not sure this is used since we don't use viewports now?
@@ -989,7 +989,6 @@ void initScene(){
   //  depthshadow_configureFrameBuffer(&globals.depthMapBuffer);
     //depthshadow_configureCubeMapFrameBuffer(&globals.depthMapBuffer);
     initAssets();
-
   
  //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
   
@@ -1007,10 +1006,6 @@ void initScene(){
    // ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
     ObjGroup* skp_arbetsrum = obj_loadFile("./Assets/arbetsrum_FINAL.obj");
  
-  
-   
-
-   
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
   
   /*   createObject(&cornell_box->objData[0],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
@@ -1056,7 +1051,7 @@ void initScene(){
     
 
     // lights
-    int lightId = createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.01f, -1.01f, 0.01f},DIRECTIONAL);
+    int lightId = createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.01f, -1.0f, 0.01f},DIRECTIONAL);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
@@ -1072,31 +1067,28 @@ void initScene(){
     //createCube(objectMaterial,(vec3){10.0f, 3.0f, 12.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
     // Frame buffer quad
-  //  ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
+    //ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
 
-   // debug_drawFrustum();
+    //debug_drawFrustum();
 
    // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. (controlled by the uiPositionSystem)
    // Scale is in pixels, 100.0f is 100 pixels etc.
    // z position will be z-depth, much like in DOM in web.Use this to control draw order.
    // TODO: implement rotation, it is atm not affecting. 
-
-    
-   
  
     // UI Settings Panel
     Entity* settingsPanel = ui_createPanel(uiBoundingBoxMat,(vec3){545.0f, 5.0f, 3.0f}, (vec3){250.0f, 350.0f, 1.0f},(vec3){0.0f, 0.0f, 0.0f},NULL);
    
-   /*  ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", TOGGLE_PANEL, settingsPanel);
-
-    ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",TEXT_INPUT,settingsPanel);
+    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", EVENT_TOGGLE_UI_PANEL, settingsPanel);
+ 
+    ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",EVENT_NONE,settingsPanel);
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 35.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
     // Row 2 Slider
   //  ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider Text Field",settingsPanel);
    // ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
    
    
-    ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",NUMBER_INPUT,settingsPanel);
+ /*   ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",NUMBER_INPUT,settingsPanel);
     // Row 3 Checkbox
     ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Global shadows",settingsPanel);
     ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},TOGGLE_GLOBAL_SHADOWS,true,settingsPanel);
@@ -1241,6 +1233,50 @@ int main(int argc, char **argv) {
     initProgram();
    
     initOpenGLWindow();
+
+    // Coordinate conversion tests
+
+    // SDL TO UI
+    SDLVector2 myVec; 
+    myVec.x = 400.0f;
+    myVec.y = 300.0f;
+    UIVector2 r = convertSDLToUI(myVec,width,height); // x - (width / 2), (height / 2) - y  = 0 , 0
+    ASSERT((int)r.x == 0 && (int)r.y == 0,"convertSDLToUI failed on 400,300");
+    myVec.x = 545.0f;
+    myVec.y = 5.0f;
+    r = convertSDLToUI(myVec,width,height); // 545 - (width / 2), height / 2 - 5.0 = 145 , 295
+    ASSERT((int)r.x == 145 && (int)r.y == 295,"convertSDLToUI failed on 545,5");
+    myVec.x = 0.0f;
+    myVec.y = 0.0f;
+    r = convertSDLToUI(myVec,width,height); // 0 - (width / 2), height / 2 - 0 = -400 , 300
+    ASSERT((int)r.x == -400 && (int)r.y == 300,"convertSDLToUI failed on 0,0");
+    myVec.x = 800.0f;
+    myVec.y = 600.0f;
+    r= convertSDLToUI(myVec,width,height); // 800 - (width /2 ), height /2 - 600 = 400, -300
+    ASSERT((int)r.x == 400 && (int)r.y == -300,"convertSDLToUI failed on 800,600");
+
+    // UI TO SDL
+    UIVector2 myUiVec;
+    myUiVec.x = 336.0f;
+    myUiVec.y = 202.0f;
+    SDLVector2 res = convertUIToSDL(myUiVec,width,height); 
+    ASSERT((int)res.x == 736 && (int)res.y == 98,"convert ui to sdl failed on 336,202");
+    myUiVec;
+    myUiVec.x = -336.0f;
+    myUiVec.y = -202.0f;
+    res = convertUIToSDL(myUiVec,width,height);
+    ASSERT((int)res.x == 64 && (int)res.y == 398,"convert ui to sdl failed on -336,-202");
+   
+    // Binary conversion tests
+   /*  int result = convertBinaryToDecimal(1111);
+    ASSERT(result == 15, "convertBinaryToDecimal failed on 1111");
+    long long binTwo = 1001001;  
+    result = convertBinaryToDecimal(binTwo);
+    ASSERT(result == 73, "convertBinaryToDecimal failed on 1001001");
+    long long twentyFive = 11001;  
+    result = convertBinaryToDecimal(twentyFive);
+    ASSERT(result == 25, "convertBinaryToDecimal failed on twentyFive"); */
+    //return 0;
     
     // Camera setup
     Camera* uiCamera = initCamera();

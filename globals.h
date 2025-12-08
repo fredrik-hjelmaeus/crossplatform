@@ -102,8 +102,6 @@ extern Camera mainCamera;
 
 #define ASSET_MEMORY_SIZE 5000000
 #define UI_MEMORY_SIZE 5000000
-//#define EVENT_QUEUE_SIZE 100
-#define EVENT_REGISTER_SIZE 100
 
 #ifdef DEV_MODE
  /*    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }

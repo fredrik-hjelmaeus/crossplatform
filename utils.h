@@ -30,6 +30,12 @@
 
 SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight);
 UIVector2 convertSDLToUI(SDLVector2 v, int screenWidth, int screenHeight);
+/**
+ * NOTE: 0101011 won't work. You need to remove the first 0 from it: 101011.
+ * Otherwise number will be octal number not binary. (clang 18)
+ */
+int convertBinaryToDecimal(long long bin);
+int getIntegerLength(long long num);
 float absValue(float value);
 Color hexToColor(const char* hex);
 char* readFile(const char *filename);

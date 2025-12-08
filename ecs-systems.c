@@ -427,14 +427,14 @@ void hoverAndClickSystem(){
                         // Left Click or just hover?
                         if(globals.mouseLeftButtonPressed && globals.prevMouseLeftDown == false){
                             if(!globals.entities[i].uiComponent->clicked && globals.entities[i].uiComponent->type == UITYPE_BUTTON){
-                               // if(globals.entities[i].uiComponent->onClick != NULL && globals.entities[i].uiComponent->onClick.type == TOGGLE_PANEL){
+                                if(globals.entities[i].uiComponent->eventType == EVENT_TOGGLE_UI_PANEL){
                                     if(!globals.entities[i].uiComponent->parent){
                                         printf("no parent to toggle panel on \n");
                                         continue;
                                     }
                                     printf("trying to toggle panel \n");
-                                    toggleChildrenVisibility(i);
-                              //  }
+                                    toggleChildrenVisibility(i); // Refactor to event?
+                               }
                             }
                   
                             globals.entities[i].uiComponent->clicked = 1;
