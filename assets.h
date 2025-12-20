@@ -4,7 +4,7 @@
 
 extern struct Material objectMaterial;
 extern struct Material lightMaterial;
-extern struct Material depthMapMaterial;
+extern struct Material showDepthMapMaterial;
 extern struct Material textInputUiMat;
 extern struct Material flatColorUiDarkGrayMat;
 extern struct Material flatColorUiGrayMat;

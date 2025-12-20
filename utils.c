@@ -450,7 +450,7 @@ int findTrailingSpaces(const char* str){
         if((int)str[i] == 32){
             count++;
         }else{
-            printf("no trail %d\n",i);
+          //  printf("no trail %d\n",i);
         }
     }
     return count +1;
@@ -691,7 +691,7 @@ void obj_parseMaterial(const char *filepath){
             continue;
         } 
        
-        printf(TEXT_COLOR_ERROR "unhandled mtl line-> %s <- \n" TEXT_COLOR_RESET , mtlLine);
+        //printf(TEXT_COLOR_ERROR "unhandled mtl line-> %s <- \n" TEXT_COLOR_RESET , mtlLine);
         // BELOW, NOT IMPLEMENTED
         //          # some implementations use 'map_bump' instead of 'bump' below
         //map_bump  lemur_bump.tga
@@ -723,9 +723,9 @@ void obj_parseMaterial(const char *filepath){
     }
     fclose(mtlfp);
     
-    printf("------------------------------------\n");
+ /*    printf("------------------------------------\n");
     printf("Material parsing done\n");
-    printf("------------------------------------\n");
+    printf("------------------------------------\n"); */
 }
 
 /**
@@ -897,7 +897,7 @@ ObjGroup* obj_loadFile(const char *filepath)
                         printf("Error: Object name too long. Exiting..");
                         exit(1);
                     }
-                    printf("usemtl objGroup->objectCount %d\n",objGroup->objectCount);
+                   // printf("usemtl objGroup->objectCount %d\n",objGroup->objectCount);
                     objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
                     for(int i = 0; i < lineLength; i++){
                         objGroup->objData[objGroup->objectCount].name[i] = line[i];

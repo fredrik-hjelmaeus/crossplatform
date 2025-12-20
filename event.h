@@ -8,13 +8,14 @@
  *  EventCallback is the "Receiver"
  *  Association is the "Who is who"
  * 
- * See testEvents for example of setting up event
+ * See tests_events for example of setting up event
  * & it's lifecycle.
  */
 
 typedef enum {
   EVENT_NONE,
-  EVENT_LIGHT_DIR_CHANGED,
+  EVENT_LIGHT_DIR_X_CHANGED,
+  EVENT_LIGHT_DIR_Y_CHANGED,
   EVENT_TOGGLE_UI_PANEL,
   EVENT_TEXT_INPUT,
   EVENT_NUMBER_INPUT,
@@ -28,16 +29,21 @@ typedef struct {
   float newValue;
 } NotificationPayload;
 
+typedef enum {
+  TRANSFORM_POS_X,
+  TRANSFORM_POS_Y,
+} TransformType;
+
 typedef struct {
   int objectEntityId;
-  float x;
-} TranslateXObjectPayload;
+  float t;
+} TransformPayload;
 
 typedef struct {
   EventType type;
   union {
     NotificationPayload notification;
-    TranslateXObjectPayload translateXObject;
+    TransformPayload transform;
     // Add all payload shapes you need here...
   } payload;
 } Event;
@@ -68,9 +74,8 @@ void subscribeToEvent(Subscriber sub);
 /**
  * Receiver callback functions.
  */
-void onDirectionLightChange(Event event, void* association);
-
-void testEvents();
+void onDirectionLightChangeX(Event event, void* association);
+void onDirectionLightChangeY(Event event, void* association);
 
 #endif // EVENT_H
 

@@ -98,12 +98,15 @@ void depthshadow_createDepthTexture()
     glGenTextures(1, &globals.depthMap);
     glBindTexture(GL_TEXTURE_2D, globals.depthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, globals.shadowWidth, globals.shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
-    glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
+    //glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
+    //glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
+    glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_MODE, GL_NONE );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // GL_CLAMP_TO_BORDER?
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // GL_CLAMP_TO_BORDER?
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); // GL_CLAMP_TO_EDGE?
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER); // GL_CLAMP_TO_EDGE?
+    float borderColor[] = {0.0f, 1.0f, 0.0f, 1.0f}; // RGBA: bright green
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 }
 
 void depthshadow_createDepthCubemap()
@@ -154,10 +157,10 @@ void depthshadow_renderToDepthTexture(GpuData *buffer,TransformComponent *transf
         if(myTempVar){
             printf("light nr %d\n",i);
             printf("entity id %d\n",globals.lights[i].entityId);
-            printf("type %d\n",globals.lights[i].type);
+            printf("type %d\n",globals.lights[i].lightType);
         }
        
-        switch(globals.lights[i].type){
+        switch(globals.lights[i].lightType){
             case POINT:
                 for(int j = 0; j < 6; j++){
                     depthshadow_configureFrameBuffer(buffer,GL_TEXTURE_CUBE_MAP_POSITIVE_X + j,globals.depthCubemap);
@@ -185,7 +188,13 @@ void depthshadow_renderToDepthTexture(GpuData *buffer,TransformComponent *transf
                 glUseProgram(globals.depthMapBuffer.shaderProgram);
                 unsigned int modelLoc = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "model");
                 glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
-                glUniformMatrix4fv(glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, (const GLfloat*)&globals.lightSpaceMatrix[globals.lights[i].lightSpaceMatrixIndex[0]][0][0]);  
+                GLint sm = glGetUniformLocation(globals.depthMapBuffer.shaderProgram, "lightSpaceMatrix");
+                glUniformMatrix4fv(
+                    sm,       // location id to update on gpu
+                    1,        // uploading one matrix
+                    GL_FALSE, // No transpose of matrix
+                    (const GLfloat*)&globals.lightSpaceMatrix[globals.lights[i].lightSpaceMatrixIndex[0]][0][0]
+                );  
                 glBindVertexArray(buffer->VAO);
                 glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
 
@@ -507,7 +516,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
         int pointLightCount = 0;
         char uniformName[64];
     for(int i = 0; i < globals.lightsCount; i++){
-        int lightType = globals.lights[i].type;
+        int lightType = globals.lights[i].lightType;
         Entity* lightEntity =  &globals.entities[globals.lights[i].entityId];
 
       //  printf("lightEntity->lightComponent->castShadows %d %d \n",lightEntity->id,lightEntity->lightComponent->castShadows);
@@ -592,6 +601,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
 
             // Set the light direction uniform
             GLint lightDirLocation = glGetUniformLocation(buffer->shaderProgram, "dirLight.direction");
+           // glUniform3f(lightDirLocation, lightEntity->lightComponent->direction[0], lightEntity->lightComponent->direction[1], lightEntity->lightComponent->direction[2]);
             glUniform3f(lightDirLocation, lightEntity->lightComponent->direction[0], lightEntity->lightComponent->direction[1], lightEntity->lightComponent->direction[2]);
         }
         if(lightType == POINT){
@@ -1036,8 +1046,6 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-
-
 GLuint setupTexture(TextureData textureData){
     GLuint texture;
     glGenTextures(1, &texture);
@@ -1075,7 +1083,6 @@ GLuint setupTexture(TextureData textureData){
     stbi_image_free(textureData.data);
     return texture;
 }
-
 
 void setupFontMesh(GpuData *buffer){
     glGenVertexArrays(1, &buffer->VAO);

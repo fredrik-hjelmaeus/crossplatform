@@ -106,12 +106,14 @@ extern Camera mainCamera;
 #ifdef DEV_MODE
  /*    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }
     #else  // Tell compiler to do nothing in release mode
-    #define ASSERT(Expression, message) ((void)0) */
+     */
     #define ASSERT(Expression, message) \
     if (!(Expression)) { \
         fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); \
         abort(); \
     }
-#endif
-
+#else
+    #define ASSERT(Expression, message) ((void)0)
 #endif 
+
+#endif // GLOBALS_H end

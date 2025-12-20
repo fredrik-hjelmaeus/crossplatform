@@ -73,7 +73,6 @@ float calcCubeShadow(vec3 fragPos, vec3 lightPos,float far_plane, samplerCube sh
 
 void main()
 {   
-   
     // properties
     vec3 norm    = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
@@ -84,14 +83,13 @@ void main()
     // per lamp. In the main() function we take all the calculated colors and sum them up for
     // this fragment's final color.
     // ========================================================
-    //vec3 result = vec3(0.0);
     int lightIndex = 0;
     // phase 1: directional lighting
     vec3 result = CalcDirLight(dirLight, norm, viewDir,lightIndex);
-    lightIndex++;
+    //lightIndex++;
 
     // phase 2: point lights
-    for(int i = 0; i < NR_POINT_LIGHTS; i++){
+   /*  for(int i = 0; i < NR_POINT_LIGHTS; i++){
         result += CalcPointLight(pointLights[i], norm, FragPos, viewDir,lightIndex);      
         lightIndex++;
     } 
@@ -100,7 +98,7 @@ void main()
     for(int i = 0; i < NR_SPOT_LIGHTS; i++){
         result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir,lightIndex);      
         lightIndex++;
-    } 
+    }  */
    
     if(gamma)
         result = pow(result, vec3(1.0/2.2)); 
@@ -159,14 +157,18 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir,int 
     // shadow
     float shadow = castShadows ? calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap) : 1.0;
 
+    if (shadow < 0.0) {
+        return vec3(1.0, 0.0, 0.0); // Red for debug
+    }
+
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
 
 // calculates the color when using a directional light.
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir,int lightIndex)
 {
-    //return vec3(0.0);
     vec3 lightDir = normalize(-light.direction);
+
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
     
@@ -202,9 +204,10 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir,int lightIndex)
          specular = light.specular * spec * material.diffuseColor.rgb;
     }
   
-   float shadow =  castShadows ? calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap) : 1.0;
+   //float shadow =  castShadows ? calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap) : 1.0;
+   float shadow = calcShadow(FragPosLightSpace[lightIndex], normal, lightDir, shadowMap);
 
-    return (ambient + (1.0 - shadow) * (diffuse + specular));
+   return (ambient + (1.0 - shadow) * (diffuse + specular));
 } 
 
 // calculates the color when using a point light.
@@ -257,29 +260,31 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir,in
 
 
 float calcShadow(vec4 FragPosLightSpace,vec3 normal, vec3 lightDir, sampler2D shadowMap){
-     // perform perspective divide
+
+     // Perform perspective divide.
     vec3 projCoords = FragPosLightSpace.xyz / FragPosLightSpace.w;
-    // transform to [0,1] range
+    
+    // Transform to [0,1] range
+    // NDC is [-1,1]; shadow map texture coordinates are [0,1].
     projCoords = projCoords * 0.5 + 0.5;
-   
+    
+    // PCF (Percentage Closer Filtering)
     float shadow = 0.0;
     //float bias = 0.005;
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    float bias = 0.005 * (1.0 - dot(normal, lightDir));
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-    for(int x = -1; x <= 1; ++x)
+    for(int x = -2; x <= 2; ++x)
+    for(int y = -2; y <= 2; ++y)
     {
-        for(int y = -1; y <= 1; ++y)
-        {
-            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += projCoords.z - bias > pcfDepth  ? 1.0 : 0.0;        
-        }
+        float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+        shadow += projCoords.z - bias > pcfDepth  ? 1.0 : 0.0;        
     }
-    shadow /= 9.0;
+    shadow /= 25.0;
 
     // If beyond far_plane do not shadow
     if(projCoords.z > 1.0)
 	{
-		shadow = 1.0;
+		shadow = -1.0;
 	} 
     return shadow;
 }
@@ -289,7 +294,7 @@ float calcCubeShadow(vec3 fragPos, vec3 lightPos, float far_plane,samplerCube sh
     float currentDepth = length(fragToLight);
 
     float shadow = 0.0;
-    float bias = 0.05;
+    float bias = 0.001;
     int samples = 4;
     float offset = 0.1;
     for (int x = -samples; x <= samples; ++x) {

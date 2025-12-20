@@ -16,6 +16,8 @@
 #include "api.h"
 #include "assets.h"
 #include "ui.h"
+#include "tests.h"
+#include "shadows.h"
 
 // STB
 #define STB_IMAGE_IMPLEMENTATION
@@ -101,8 +103,8 @@ struct Globals globals = {
     .lightSpaceMatrix={{0}},
     .postProcessBuffer={0},
     .showDepthMap=false,
-    .shadowWidth=256,
-    .shadowHeight=256,
+    .shadowWidth=2048,
+    .shadowHeight=2048,
 
     // Cursor
     .cursorEntityId=-1,
@@ -231,18 +233,7 @@ void setViewportWithScissorAndClear(View view) {
     glDisable(GL_SCISSOR_TEST);
 }
 
-/**
- * @param index
- */
-void createDirectionalLightSpace(int index){
-        Entity* light = &globals.entities[globals.lights[index].entityId];
-        int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex[0];
-        mat4x4 lightProjection, lightView;
-        float near_plane = 0.001f, far_plane = 60.0f;
-        mat4x4_ortho(lightProjection, -60.0f, 60.0f, -60.0f, 60.0f, near_plane, far_plane);
-        mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
-        mat4x4_mul(globals.lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
-}
+
 
 /**
  * @param index
@@ -306,7 +297,8 @@ void createPointLightSpace(int index){
 void createSpotLightSpace(int index){
     // ASSERT(true, "NOT YET IMPLEMENTED");
     Entity* light = &globals.entities[globals.lights[index].entityId];
-    int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex; 
+    int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex;
+    printf("lsi %i \n",lightSpaceIndex);
     mat4x4 lightProjection, lightView;
     float near_plane = 0.001f, far_plane = 60.0f;
     mat4x4_ortho(lightProjection, -60.0f, 60.0f, -60.0f, 60.0f, near_plane, far_plane);
@@ -316,16 +308,16 @@ void createSpotLightSpace(int index){
 
 void createLightSpace(){
     for(int i = 0; i < globals.lightsCount; i++){
-        if(globals.lights[i].type == DIRECTIONAL){
+        if(globals.lights[i].lightType == DIRECTIONAL){
             createDirectionalLightSpace(i);
         }
-        if(globals.lights[i].type == SPOT){
-            createDirectionalLightSpace(i);
+        if(globals.lights[i].lightType == SPOT){
+            //createDirectionalLightSpace(i);
           //  createSpotLightSpace(i);
         }
-        if(globals.lights[i].type == POINT){
+        if(globals.lights[i].lightType == POINT){
            // createDirectionalLightSpace(i);
-            createPointLightSpace(i);
+            //createPointLightSpace(i);
         }
     }
 }
@@ -681,7 +673,7 @@ void input() {
             globals.mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
-            printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
+          /*   printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
             // mouse move in ndc coordinates
               float x_ndc = (2.0f * xpos) / width - 1.0f;
               float y_ndc = 1.0f - (2.0f * ypos) / height;
@@ -691,7 +683,7 @@ void input() {
             //printf("Mouse moved to %f, %f\n", globals.mouseXpos, globals.mouseYpos);
             SDLVector2 sdlMouseCoords = {xpos, ypos};
             UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
-            printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y);
+            printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y); */
             // END TEMP CODE------------------
 
             // Not sure this is used since we don't use viewports now?
@@ -985,7 +977,7 @@ void initScene(){
   
     depthshadow_createFrameBuffer(&globals.depthMapBuffer);
     depthshadow_createDepthTexture();
-    depthshadow_createDepthCubemap();
+    //depthshadow_createDepthCubemap();
   //  depthshadow_configureFrameBuffer(&globals.depthMapBuffer);
     //depthshadow_configureCubeMapFrameBuffer(&globals.depthMapBuffer);
     initAssets();
@@ -1051,7 +1043,7 @@ void initScene(){
     
 
     // lights
-    int lightId = createLight(lightMaterial,(vec3){0.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.01f, -1.0f, 0.01f},DIRECTIONAL);
+    int lightId = createLight(lightMaterial,(vec3){5.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
@@ -1063,11 +1055,11 @@ void initScene(){
     createLight(lightMaterial,(vec3){-8.7f, 0.2f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); */
 
     // Primitives
-    createPlane(objectMaterial, (vec3){0.0f, -1.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
+    createPlane(objectMaterial, (vec3){0.0f, -3.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
     //createCube(objectMaterial,(vec3){10.0f, 3.0f, 12.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
     // Frame buffer quad
-    //ui_createRectangle(depthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
+  //  ui_createRectangle(showDepthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
 
     //debug_drawFrustum();
 
@@ -1115,30 +1107,37 @@ void initScene(){
         ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, textCopy , settingsPanel);
         ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, yPos, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},&toggleShadow,true,settingsPanel);
     } */
+   
     // Row 5 Slider
     float yPos = 135.0f;
     yPos += 35.0f;
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction x",settingsPanel);
-    int sliderId = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_CHANGED,settingsPanel);
-    int textInputId = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",EVENT_LIGHT_DIR_CHANGED,settingsPanel);
+    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position x",settingsPanel);
+    int sliderId = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
+    int textInputId = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "5.00",EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
     // Row 6 Slider
     yPos += 35.0f;
+    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position y",settingsPanel);
+    int sliderIdSix = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_Y_CHANGED,settingsPanel);
+    int textInputIdSix = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "5.00",EVENT_LIGHT_DIR_Y_CHANGED,settingsPanel);
+    
 
-    // Setup association
+    // Setup associations
     LightDirectionAssociation* lightAssociation = (LightDirectionAssociation*)malloc(sizeof(LightDirectionAssociation));
     lightAssociation->lightEntityId = lightId;
     lightAssociation->sliderEntityId = sliderId;
     lightAssociation->textInputEntityId = textInputId;
-
-    // Event subscription
-    Subscriber sub = { .eventType = EVENT_LIGHT_DIR_CHANGED , .callback = onDirectionLightChange, .association = lightAssociation };
-    subscribeToEvent(sub);
-
-    //subscribeToEvent(EVENT_REQUEST_LIGHT_DIR_CHANGE, onDirectionalLightChange, );
-    //subscribeToEvent(EVENT_NOTIFY_LIGHT_DIR_CHANGED, onDirectionLightChangeUpdateInput, );
     
-   
+    LightDirectionAssociation* lightAssociation2 = (LightDirectionAssociation*)malloc(sizeof(LightDirectionAssociation));
+    lightAssociation2->lightEntityId = lightId;
+    lightAssociation2->sliderEntityId = sliderIdSix;
+    lightAssociation2->textInputEntityId = textInputIdSix;
 
+    // Event subscriptions
+    Subscriber sub = { .eventType = EVENT_LIGHT_DIR_X_CHANGED , .callback = onDirectionLightChangeX, .association = lightAssociation };
+    subscribeToEvent(sub);
+    Subscriber sub2 = { .eventType = EVENT_LIGHT_DIR_Y_CHANGED , .callback = onDirectionLightChangeY, .association = lightAssociation2 };
+    subscribeToEvent(sub2);
+    
    /*  ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction y",settingsPanel);
     Event lightDirYsliderChange;
     lightDirYsliderChange.type = CHANGE_Y_DIRECTION;
@@ -1201,8 +1200,6 @@ void initScene(){
 }
 
 int main(int argc, char **argv) {
-
-  
     
    /*  if(PLATFORM == "UNKNOWN") {
         printf("Platform is unknown, please set PLATFORM in the makefile\n");
@@ -1234,49 +1231,11 @@ int main(int argc, char **argv) {
    
     initOpenGLWindow();
 
-    // Coordinate conversion tests
-
-    // SDL TO UI
-    SDLVector2 myVec; 
-    myVec.x = 400.0f;
-    myVec.y = 300.0f;
-    UIVector2 r = convertSDLToUI(myVec,width,height); // x - (width / 2), (height / 2) - y  = 0 , 0
-    ASSERT((int)r.x == 0 && (int)r.y == 0,"convertSDLToUI failed on 400,300");
-    myVec.x = 545.0f;
-    myVec.y = 5.0f;
-    r = convertSDLToUI(myVec,width,height); // 545 - (width / 2), height / 2 - 5.0 = 145 , 295
-    ASSERT((int)r.x == 145 && (int)r.y == 295,"convertSDLToUI failed on 545,5");
-    myVec.x = 0.0f;
-    myVec.y = 0.0f;
-    r = convertSDLToUI(myVec,width,height); // 0 - (width / 2), height / 2 - 0 = -400 , 300
-    ASSERT((int)r.x == -400 && (int)r.y == 300,"convertSDLToUI failed on 0,0");
-    myVec.x = 800.0f;
-    myVec.y = 600.0f;
-    r= convertSDLToUI(myVec,width,height); // 800 - (width /2 ), height /2 - 600 = 400, -300
-    ASSERT((int)r.x == 400 && (int)r.y == -300,"convertSDLToUI failed on 800,600");
-
-    // UI TO SDL
-    UIVector2 myUiVec;
-    myUiVec.x = 336.0f;
-    myUiVec.y = 202.0f;
-    SDLVector2 res = convertUIToSDL(myUiVec,width,height); 
-    ASSERT((int)res.x == 736 && (int)res.y == 98,"convert ui to sdl failed on 336,202");
-    myUiVec;
-    myUiVec.x = -336.0f;
-    myUiVec.y = -202.0f;
-    res = convertUIToSDL(myUiVec,width,height);
-    ASSERT((int)res.x == 64 && (int)res.y == 398,"convert ui to sdl failed on -336,-202");
-   
-    // Binary conversion tests
-   /*  int result = convertBinaryToDecimal(1111);
-    ASSERT(result == 15, "convertBinaryToDecimal failed on 1111");
-    long long binTwo = 1001001;  
-    result = convertBinaryToDecimal(binTwo);
-    ASSERT(result == 73, "convertBinaryToDecimal failed on 1001001");
-    long long twentyFive = 11001;  
-    result = convertBinaryToDecimal(twentyFive);
-    ASSERT(result == 25, "convertBinaryToDecimal failed on twentyFive"); */
-    //return 0;
+    // Tests
+    /* tests_ui_coordinate_conversion();
+    tests_binary_conversion();
+    tests_events();
+    return 0; */
     
     // Camera setup
     Camera* uiCamera = initCamera();
@@ -1294,10 +1253,7 @@ int main(int argc, char **argv) {
     mainCamera->aspectRatio = globals.views.main.rect.width / globals.views.main.rect.height;
     globals.views.main.camera = mainCamera;
 
-    //testEvents();
-
     initScene();
-
     
     //------------------------------------------------------
     // Main loop

@@ -125,7 +125,10 @@ void uiInputSystem(){
                 return;
             }
             if(strcmp(key, "Return") == 0 || strcmp(key, "Escape") == 0){
-                if(globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_LIGHT_DIR_CHANGED){
+                if(
+                    globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_LIGHT_DIR_X_CHANGED ||
+                    globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_LIGHT_DIR_Y_CHANGED 
+                ){
                         
                         // Convert string to float and assign it.
                         const char *str = globals.entities[globals.focusedEntityId].uiComponent->text;
@@ -524,36 +527,18 @@ void uiSliderSystem(){
                 t = 1.0f;
                 printf("out of range \n");
             }
-            if(t < 0.0f){
+            if(t <= 0.0f){
                 t = 0.0f;
                 printf("out of range \n");
             }
           
             // If within draggable range
             if(newMouseX > minRange && newMouseX < maxRange){
-
-               // Slider position change
-               float newPosX = absValue(newMouseX) - (width / 2);
-         
-               focusedEntity->transformComponent->position[0] = newPosX;
-               focusedEntity->transformComponent->modelNeedsUpdate = 1;
-
-               globals.entities[focusedEntity->uiComponent->boundingBoxEntityId].transformComponent->position[0] = newPosX;
-               globals.entities[focusedEntity->uiComponent->boundingBoxEntityId].transformComponent->modelNeedsUpdate = 1;
-
-               focusedEntity->boundingBoxComponent->boundingBox.min[0] = newMouseX - 10;
-               focusedEntity->boundingBoxComponent->boundingBox.max[0] = newMouseX + focusedEntity->transformComponent->scale[0] -10; 
-
-               if(globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_LIGHT_DIR_CHANGED){
-                 if(t == 0.0){
-                    t = 1.0;
-                 }
-
-                 // Setup new event that sends new value
-                 TranslateXObjectPayload translateXPayload = { .objectEntityId = globals.focusedEntityId, .x = t };
-                 Event event = { .type = EVENT_LIGHT_DIR_CHANGED, .payload.translateXObject = translateXPayload };
+               if(focusedEntity->uiComponent->eventType == EVENT_LIGHT_DIR_X_CHANGED){
+                 TransformPayload transform = { .objectEntityId = globals.focusedEntityId,.t = t };
+                 Event event = { .type = EVENT_LIGHT_DIR_X_CHANGED, .payload.transform = transform };
                  pushEvent(event);
-               }
+               } 
             } 
     }
 }

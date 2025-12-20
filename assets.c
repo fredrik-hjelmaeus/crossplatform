@@ -2,7 +2,7 @@
 
 struct Material objectMaterial;
 struct Material lightMaterial;
-struct Material depthMapMaterial;
+struct Material showDepthMapMaterial;
 struct Material textInputUiMat;
 struct Material flatColorUiDarkGrayMat;
 struct Material flatColorUiGrayMat;
@@ -39,9 +39,9 @@ void initAssets(){
         .diffuseMapOpacity = 1.0f,                    // used
         .specularMap = containerTwoSpecularMap,      // NOT used
     }; */
-     depthMapMaterial = (struct Material){ // Saved as example of how to use a texture with ui element.
+     showDepthMapMaterial = (struct Material){ // Saved as example of how to use a texture with ui element.
         .active = 1,
-        .name = "depthMapMaterial",
+        .name = "showDepthMapMaterial",
         .ambient = (Color){0.0f, 0.0f, 0.0f, 1.0f},  // NOT used
         .diffuse = (Color){0.0f, 0.5f, 0.0f, 1.0f},  // used when diffuseMapOpacity lower than 1.0
         .specular = (Color){0.0f, 0.0f, 0.0f, 1.0f}, // NOT used

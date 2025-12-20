@@ -1,0 +1,32 @@
+#include "shadows.h"
+#include "linmath.h"
+#include "types.h"
+#include "globals.h"
+
+
+/**
+ * @param index
+ */
+void createDirectionalLightSpace(int index){
+        Entity* light = &globals.entities[globals.lights[index].entityId];
+        int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex[0];
+
+        mat4x4 lightProjection, lightView;
+        float near_plane = 0.1f, far_plane = 100.0f;
+
+        // Orthographic projection covering the scene
+        mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+
+        printf("light pos x %f, y %f, z %f \n",light->transformComponent->position[0],light->transformComponent->position[1],light->transformComponent->position[2]);
+
+        // Light position at (10, 0, 0), looking at (0, 0, 0), up is (0, 1, 0)
+        mat4x4_look_at(
+            lightView,                          // view
+            light->transformComponent->position,// eye
+            (vec3){0.0f, 0.0f, 0.0f},           // center
+            (vec3){0.0f, 1.0f, 0.0f}            // up
+        );
+
+        // Multiply to get light-space matrix
+        mat4x4_mul(globals.lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView); 
+}

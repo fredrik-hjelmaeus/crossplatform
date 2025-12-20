@@ -220,9 +220,9 @@ typedef enum {
 } LightType;
 
 typedef struct Light {
-    int type;
+    int lightType;
     int entityId;
-    int lightSpaceMatrixIndex[6];
+    int lightSpaceMatrixIndex[9];
 } Light;
 
 typedef struct Cubemap {
