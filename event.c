@@ -28,8 +28,8 @@ void onDirectionLightChangeX(Event event, void* association){
     int entityId = event.payload.transform.objectEntityId;
     Entity* focusedEntity = &globals.entities[entityId];
 
-    ASSERT(focusedEntity != NULL,"No focused Entity found");
-    ASSERT(focusedEntity->transformComponent != NULL,"Missing transformcomponent");
+    ASSERT(focusedEntity != NULL, "No focused Entity found");
+    ASSERT(focusedEntity->transformComponent != NULL, "Missing transformcomponent");
 
     // Update light value
     if(globals.entities[lightAssoc->lightEntityId].transformComponent->active){
@@ -38,23 +38,77 @@ void onDirectionLightChangeX(Event event, void* association){
     
     // Update ui slider value
     if(globals.entities[lightAssoc->sliderEntityId].uiComponent->active){
-      // Slider position change
-      float newMouseX = (float)globals.mouseXpos;
-      float newPosX = absValue(newMouseX) - (width / 2);
+      Entity* sliderEntity = &globals.entities[lightAssoc->sliderEntityId];
+      ASSERT(sliderEntity != NULL,"missing slider entity");
+      Entity* sliderBoundingBoxEntity = &globals.entities[sliderEntity->uiComponent->boundingBoxEntityId];
+      ASSERT(sliderBoundingBoxEntity != NULL,"missing slider bb entity");
+      
+      if(entityId == lightAssoc->textInputEntityId){
+        Entity* sliderRangeEntity = &globals.entities[sliderEntity->uiComponent->sliderRangeEntityId];
+        ASSERT(sliderRangeEntity != NULL,"missing slider range entity");
+        
 
-      focusedEntity->transformComponent->position[0] = newPosX;
-      focusedEntity->transformComponent->modelNeedsUpdate = 1;
+        float minRange = sliderRangeEntity->boundingBoxComponent->boundingBox.min[0]; 
+        float maxRange = sliderRangeEntity->boundingBoxComponent->boundingBox.max[0];
+        float range = maxRange-minRange; 
+        
+        // Transform component use UI coordinates
+        SDLVector2 sdlVec;
+        sdlVec.x = minRange;
+        sdlVec.y = 0.0;
+        UIVector2 uiVec = convertSDLToUI(sdlVec,width,height);
+        float bbWidth = sliderEntity->transformComponent->scale[0];
 
-      globals.entities[focusedEntity->uiComponent->boundingBoxEntityId].transformComponent->position[0] = newPosX;
-      globals.entities[focusedEntity->uiComponent->boundingBoxEntityId].transformComponent->modelNeedsUpdate = 1;
+        // Take new t value and convert it to value of the range
+        // t = 0.1 , range = 75 -> 0.1*75 = 7.5
+        float xValue = (float)event.payload.transform.t * (float)range;
 
-      focusedEntity->boundingBoxComponent->boundingBox.min[0] = newMouseX - 10;
-      focusedEntity->boundingBoxComponent->boundingBox.max[0] = newMouseX + focusedEntity->transformComponent->scale[0] -10; 
+        // minRange + new x slider pos to get the new transform pos.
+        float newXPos = (float)uiVec.x + xValue;
+
+        sliderEntity->transformComponent->position[0] = newXPos;
+        sliderEntity->transformComponent->modelNeedsUpdate = 1;
+
+        // The bb is for collision(hover+select)
+        // Set slider bb position x 
+        sliderBoundingBoxEntity->transformComponent->position[0] = newXPos;
+        sliderBoundingBoxEntity->transformComponent->modelNeedsUpdate = 1;
+
+        // Set slider bb min x and max x
+        // NOTE: boundingBox use SDL coordinates
+        sliderEntity->boundingBoxComponent->boundingBox.min[0] = minRange + xValue - (bbWidth * 0.5); 
+        sliderEntity->boundingBoxComponent->boundingBox.max[0] = minRange + xValue + (bbWidth * 0.5); 
+        
+      }else {
+        
+        // Slider position change
+        float newMouseX = (float)globals.mouseXpos;
+        float newPosX = absValue(newMouseX) - (width / 2.0);
+
+        // Visual representation
+        // Set slider transform position x
+        sliderEntity->transformComponent->position[0] = newPosX;
+        sliderEntity->transformComponent->modelNeedsUpdate = 1;
+
+        // The bb is for collision(hover+select)
+        // Set slider bb position x 
+        sliderBoundingBoxEntity->transformComponent->position[0] = newPosX;
+        sliderBoundingBoxEntity->transformComponent->modelNeedsUpdate = 1;
+
+        // Set slider bb min x and max x
+        sliderEntity->boundingBoxComponent->boundingBox.min[0] = newMouseX - 10;
+        sliderEntity->boundingBoxComponent->boundingBox.max[0] = newMouseX + focusedEntity->transformComponent->scale[0] -10; 
+
+      }
     }
     
     // Update ui text input value
     if(globals.entities[lightAssoc->textInputEntityId].alive && globals.entities[lightAssoc->textInputEntityId].uiComponent->active){
-      snprintf(globals.entities[lightAssoc->textInputEntityId].uiComponent->text,MAX_TEXT_LENGTH,"%0.2f",event.payload.transform.t);
+      floatToString(
+        event.payload.transform.t, 
+        sizeof(globals.entities[lightAssoc->textInputEntityId].uiComponent->text),
+        globals.entities[lightAssoc->textInputEntityId].uiComponent->text
+      ); 
     }
   }
  

@@ -130,27 +130,29 @@ void uiInputSystem(){
                     globals.entities[globals.focusedEntityId].uiComponent->eventType == EVENT_LIGHT_DIR_Y_CHANGED 
                 ){
                         
-                        // Convert string to float and assign it.
+                        // Convert string to float 
                         const char *str = globals.entities[globals.focusedEntityId].uiComponent->text;
                         char *endptr;
                         errno = 0;
                         float value = strtof(str, &endptr);
+
+                        // Cap ranges
                         if(value > 1.0){
                             value = 1.0;
-                            // Convert back to string from float.
-                            snprintf(globals.entities[globals.focusedEntityId].uiComponent->text,sizeof(globals.entities[globals.focusedEntityId].uiComponent->text),"%f",value);
                         }
                         if(value < 0.0){
                             value = 0.0;
-                            // Convert back to string from float.
-                            snprintf(globals.entities[globals.focusedEntityId].uiComponent->text,sizeof(globals.entities[globals.focusedEntityId].uiComponent->text),"%f",value);
                         }
 
+                        // Handle conversion error.
                         if (errno != 0 || endptr == str) {
-                            // Handle conversion error.
                             fprintf(stderr, "Conversion error\n");
                         } else {
                             printf("Converted value: %f\n", value);
+                            // Send event 
+                            TransformPayload transform = { .objectEntityId = globals.focusedEntityId,.t = value };
+                            Event event = { .type = EVENT_LIGHT_DIR_X_CHANGED, .payload.transform = transform };
+                            pushEvent(event);
                         }
                 }
                 globals.focusedEntityId = -1;

@@ -38,16 +38,10 @@ int convertBinaryToDecimal(long long bin){
 
 
 UIVector2 convertSDLToUI(SDLVector2 v, int screenWidth, int screenHeight){
-    //printf("starting converting x: %f,y: %f \n",v.x,v.y);
-    // x - (width / 2), (height / 2) - y  = 0 , 0
     UIVector2 ui;
     ui.x =  v.x - ((float)screenWidth / 2.0);
     ui.y = ((float)screenHeight / 2.0) - v.y;
     return ui;
-    /* Vector2 sdlNorm = coords_normalize(v.x,v.y,screenWidth,screenHeight);
-    printf("nx %f,ny %f \n",sdlNorm.x,sdlNorm.y);
-    Vector2 offset  = coords_offset(sdlNorm.x,sdlNorm.y,-0.5,-0.5);
-    printf("ox %f,oy %f \n",offset.x,offset.y); */
 }
 
 int sign(float value){
@@ -56,16 +50,6 @@ int sign(float value){
     return 0;
 }
 
-
-/**
- * UI x: center, UI y: center
- * SDL left 0, SDL top 0
- */
-/* SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight){
-    float sdl_x = absValue(v.x) - (screenWidth / 2);
-    float sdl_y = (screenHeight / 2) - v.y;
-    return (SDLVector2){sdl_x,sdl_y};
-} */
 SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight){
     SDLVector2 sdl; 
     float w = (float)screenWidth;
@@ -85,14 +69,7 @@ SDLVector2 convertUIToSDL(UIVector2 v,int screenWidth,int screenHeight){
     
     return sdl;
 }
-/* 
-UIVector2 convertSDLToUI(SDLVector2 v, int screenWidth, int screenHeight){
-    float x_ndc = (2.0f * v.x) / screenWidth - 1.0f;
-    float y_ndc = 1.0f - (2.0f * v.y) / screenHeight;
-    float x_ui = x_ndc * ((float)screenWidth * 0.5);
-    float y_ui = y_ndc * ((float)screenHeight * 0.5);
-    return (UIVector2){x_ui, y_ui};
-} */
+
 /**
  * Converts hex to color
  * @param hex #3355FF
@@ -1067,6 +1044,9 @@ void changeCursor(SDL_SystemCursor cursorType) {
     }
 }
 
+void floatToString(float f, int len,char *c){
+    snprintf(c,len,"%0.2f",f);
+}
 
 //----------------------------------------
 //---COLLISION DETECTION------------------

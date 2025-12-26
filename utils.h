@@ -51,6 +51,7 @@ void captureDrawCalls(int width, int height, int drawCallsCounter);
 float deg2rad(float degrees);
 GLuint setupTexture(TextureData textureData);
 void changeCursor(SDL_SystemCursor cursorType); 
+void floatToString(float f,int len, char* c);
 
 // Memory
 void arena_initMemory(Arena* arena, size_t size);

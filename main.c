@@ -1113,7 +1113,7 @@ void initScene(){
     yPos += 35.0f;
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position x",settingsPanel);
     int sliderId = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
-    int textInputId = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "5.00",EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
+    int textInputId = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "0.00",EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
     // Row 6 Slider
     yPos += 35.0f;
     ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position y",settingsPanel);

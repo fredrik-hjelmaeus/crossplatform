@@ -296,7 +296,7 @@ int ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 r
     btnRectanglePosition[1] = position[1];
     btnRectanglePosition[2] = position[2];
    // ui_createRectangle(mat1,(vec3){position[0],position[1]+5,position[2]},btnRectangleScale,rotation,NULL);
-   int rangeEntityId = ui_createRectangle(mat2,(vec3){position[0],position[1]+(scale[1]/2),position[2]},(vec3){scale[0],10.0,scale[2]},rotation,NULL);
+   int rangeEntityId = ui_createRectangle(mat2, (vec3){position[0],position[1]+(scale[1]/2),position[2]}, (vec3){scale[0],10.0,scale[2]}, rotation, NULL);
     // - thin rectangle you slide along
     // - thin rectangle showing "progress" of slide on top of the other thin rectangle.
     // - slider drives a value and can also be driven by that value. Twoway.

@@ -17,8 +17,6 @@ void createDirectionalLightSpace(int index){
         // Orthographic projection covering the scene
         mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 
-        printf("light pos x %f, y %f, z %f \n",light->transformComponent->position[0],light->transformComponent->position[1],light->transformComponent->position[2]);
-
         // Light position at (10, 0, 0), looking at (0, 0, 0), up is (0, 1, 0)
         mat4x4_look_at(
             lightView,                          // view
