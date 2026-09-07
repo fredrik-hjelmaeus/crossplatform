@@ -57,7 +57,7 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation);
  */
 void createLine(vec3 position, vec3 endPosition,Entity* entity);
 
-void debug_drawFrustum();
+void debug_drawFrustum(void);
 
 void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation);
 

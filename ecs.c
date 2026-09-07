@@ -15,7 +15,7 @@
  * Having the components already allocated on startup is faster, but uses more memory.
  * If component size grows too large, we might consider allocating them on the fly or have a memory pool for each component type?
 */
-void initECS(){
+void initECS(void){
     // Allocate memory for MAX_ENTITIES Components structs
     TransformComponent* transformComponents = allocateComponentMemory(sizeof(TransformComponent), "transform");
     GroupComponent* groupComponents = allocateComponentMemory(sizeof(GroupComponent), "group");

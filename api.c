@@ -231,7 +231,7 @@ void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
 int createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type){
     
    // vertex data
-    GLfloat vertices[] = {
+    /* GLfloat vertices[] = {
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f,
@@ -273,12 +273,12 @@ int createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 di
         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
         -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  1.0f,  0.0f,
         -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f
-    }; 
+    };  */
 
 
     
     // index data NOT USED ATM and not correct anymore
-    GLuint indices[] = {
+    /* GLuint indices[] = {
         // front and back
         0, 3, 2,
         2, 1, 0,
@@ -294,7 +294,7 @@ int createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 di
         18, 19, 16,
         20, 21, 22,
         22, 23, 20
-    };
+    }; */
     
     // cutOff
     float degrees = 12.5f;
@@ -501,7 +501,7 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
 }
 
 // TODO: unfinished. Supposed to draw the frustum of the camera or light correctly.
-void debug_drawFrustum()
+void debug_drawFrustum(void)
 {
      //float near_plane = -0.05f, far_plane = 300.0f;
     //mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);

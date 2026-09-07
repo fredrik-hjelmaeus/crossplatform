@@ -93,7 +93,7 @@ void depthshadow_createFrameBuffer(GpuData *buffer)
     glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
 }
 
-void depthshadow_createDepthTexture()
+void depthshadow_createDepthTexture(void)
 {
     glGenTextures(1, &globals.depthMap);
     glBindTexture(GL_TEXTURE_2D, globals.depthMap);
@@ -109,7 +109,7 @@ void depthshadow_createDepthTexture()
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 }
 
-void depthshadow_createDepthCubemap()
+void depthshadow_createDepthCubemap(void)
 {
     glGenTextures(1, &globals.depthCubemap);
     glBindTexture(GL_TEXTURE_CUBE_MAP, globals.depthCubemap);
@@ -1014,7 +1014,7 @@ void renderMesh(GpuData* buffer,TransformComponent* transformComponent, Camera* 
     } */
 
     // Set light space matrix uniform
-    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "lightSpaceMatrix"), 9, GL_FALSE, &globals.lightSpaceMatrix[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "lightSpaceMatrix"), 9, GL_FALSE, &globals.lightSpaceMatrix[0][0][0]);
       
     // Set viewPos uniform
     GLint viewPosLocation = glGetUniformLocation(buffer->shaderProgram, "viewPos");

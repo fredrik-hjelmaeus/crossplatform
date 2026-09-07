@@ -3,17 +3,15 @@
 
 //#include "event-system.h"
 
-
-
-void cameraSystem();
-void uiPositionSystem();
-void movementSystem();
-void uiInputSystem();
-void hoverAndClickSystem();
-void textCursorSystem();
-void modelSystem();
-void debugSystem();
-void uiSliderSystem();
-void uiCheckboxSystem();
+void cameraSystem(void);
+void uiPositionSystem(void);
+void movementSystem(void);
+void uiInputSystem(void);
+void hoverAndClickSystem(void);
+void textCursorSystem(void);
+void modelSystem(void);
+void debugSystem(void);
+void uiSliderSystem(void);
+void uiCheckboxSystem(void);
 
 #endif

@@ -1,4 +1,5 @@
 #include "ecs-systems.h"
+#include <errno.h>
 #include "types.h"
 #include "globals.h"
 #include "ecs.h"
@@ -50,7 +51,7 @@ void moveCursor(float x){
  * BUG:  Too far typing to into the right of input field bugs out
  * BUG:  BackSpace in middle of a text should remove left character
  */
-void uiInputSystem(){
+void uiInputSystem(void){
     if(globals.focusedEntityId != -1){
          if(globals.event.type == SDL_KEYDOWN) {
             const char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
@@ -244,7 +245,7 @@ void uiInputSystem(){
  * Atm this system is more of a placeholder for movement logic, but will eventually be more complex. 
  * NOTE: Most movement logic is still done in the input function,but will eventually be moved here.
  */
-void movementSystem(){
+void movementSystem(void){
     // rotate model logic (temporary)
    // float degrees = 15.5f * globals.delta_time;
    // float radians = degrees * M_PI / 180.0f;
@@ -324,7 +325,7 @@ void movementSystem(){
  * Atm we are not handling everything about the camera here, just the update of projection & view.
  * Movement is handled in the input function, but will eventually be moved here.
  */
-void cameraSystem(){
+void cameraSystem(void){
     updateCamera(globals.views.main.camera);
     updateCamera(globals.views.ui.camera);
 }
@@ -337,7 +338,7 @@ void cameraSystem(){
  * ¨ystem then is responsible for 
  * setting the position to top left corner + the requested position.
  */
-void uiPositionSystem(){
+void uiPositionSystem(void){
     for(int i = 0; i < MAX_ENTITIES; i++) {
    
         if(
@@ -413,7 +414,7 @@ void uiPositionSystem(){
     }
 }
 
-void hoverAndClickSystem(){
+void hoverAndClickSystem(void){
     int newCursor = SDL_SYSTEM_CURSOR_ARROW;
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
@@ -509,7 +510,7 @@ void hoverAndClickSystem(){
     changeCursor(newCursor);
 }
 
-void uiSliderSystem(){
+void uiSliderSystem(void){
     if(
         globals.focusedEntityId != -1 
         && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER
@@ -545,7 +546,7 @@ void uiSliderSystem(){
     }
 }
 
-void textCursorSystem(){
+void textCursorSystem(void){
     
     if(globals.focusedEntityId != -1){
         if(globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
@@ -688,7 +689,7 @@ void textCursorSystem(){
  * NOTE: Atm this is more of a placeholder for model matrix update logic, since we only handle rotation on x-axis and not even handling scale change. 
  * So atm only works with rigid body transforms.
  */
-void modelSystem(){
+void modelSystem(void){
     // Look for transform needs update flag & update/recalc model matrix if needed.
      for(int i = 0; i < MAX_ENTITIES; i++) {
         if(globals.entities[i].alive == 1) {
@@ -719,7 +720,7 @@ void modelSystem(){
           }}
 }
 
-void debugSystem(){
+void debugSystem(void){
     
     // Turn off debug draw calls, we only want one frame of drawcalls saved.
     if(globals.debugDrawCalls){
@@ -728,7 +729,7 @@ void debugSystem(){
        
 }
 
-void uiCheckboxSystem(){
+void uiCheckboxSystem(void){
 
     for(int i = 0; i < MAX_ENTITIES; i++){
         if(

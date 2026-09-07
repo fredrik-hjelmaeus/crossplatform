@@ -26,8 +26,8 @@ void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
 // Shadow maps
 void depthshadow_createFrameBuffer(GpuData* buffer);
-void depthshadow_createDepthTexture();
-void depthshadow_createDepthCubemap();
+void depthshadow_createDepthTexture(void);
+void depthshadow_createDepthCubemap(void);
 void depthshadow_setViewportForDepthMapShadowRender(View view);
 void depthshadow_configureFrameBuffer(GpuData* buffer, GLenum textureTarget, GLuint depthMap);
 void depthshadow_renderToDepthTexture(GpuData* buffer,TransformComponent* transformComponent);

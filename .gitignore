@@ -16,3 +16,7 @@
 *.jpg
 *.png
 *.out
+myprogram
+myprogram.dSYM/
+a.out.dSYM/
+.main.c.swp

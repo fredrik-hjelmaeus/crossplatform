@@ -79,7 +79,7 @@ int addMaterial(Material material);
 Material* getMaterial(int index);
 
 // Parse obj files
-void obj_runTests();
+void obj_runTests(void);
 void obj_handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
 char* obj_handleFilePath(const char* filepath);
 ObjGroup* obj_loadFile(const char* filepath);

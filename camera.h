@@ -5,7 +5,7 @@
 #include "globals.h" 
 #include "assets.h"
 
-Camera* initCamera();
+Camera* initCamera(void);
 void updateCamera(Camera* camera);
 
 #endif // CAMERA_H

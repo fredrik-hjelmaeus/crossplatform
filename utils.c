@@ -171,7 +171,7 @@ float deg2rad(float degrees) {
  */
 void obj_handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount) {
    
-   int num_slashes = 0;
+   //int num_slashes = 0;
    int spaceCount = 0;
   
    bool isSlash = false;
@@ -197,7 +197,7 @@ void obj_handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int
            isSlash = false;
        }
        else if(*linePtr == '/'){
-         num_slashes++;
+        // num_slashes++;
          if(isSlash){
             //printf("this is a double slash\n");
             hasTextureData = false;
@@ -348,7 +348,7 @@ void obj_handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int
  * Run tests.
  * Atm no expect/asserts, just printouts you manually have to check.
  */
-void obj_runTests()
+void obj_runTests(void)
 {
    char line[] =  "f 1/2/3 4/5/6 7/8/9"; // 9
    char line2[] = "f 7//7 8//8 9//9"; // 6
@@ -530,11 +530,11 @@ void obj_parseMaterial(const char *filepath){
         exit(1);
     }
 
-    int materialParsedLineCount = 0;
+    //int materialParsedLineCount = 0;
 
     // Parse .mtl file
     while (fgets(mtlLine, sizeof mtlLine, mtlfp) != NULL){
-        materialParsedLineCount++;
+        //materialParsedLineCount++;
      //   printf("materialParsedLineCount: %d \n",materialParsedLineCount);
         //printf("parsing material line: %s \n",mtlLine);
         // comment

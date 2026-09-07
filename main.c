@@ -31,14 +31,14 @@
 
 // Prototypes
 void createPoint(vec3 position);
-void onButtonClick();
+void onButtonClick(void);
 void toggleGlobalShadows(void *params);
 void toggleShadow(int entityId);
-void togglePanel();
-void onTextInputChange();
+//void togglePanel(void);
+void onTextInputChange(void);
 void createPoints(GLfloat* positions,int numPoints, Entity* entity);
 void lightDirectionChange(void *params);
-Camera* initCamera();
+Camera* initCamera(void);
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -139,7 +139,7 @@ void setRenderDrawColor(int r,int g, int b, int a) {
     SDL_SetRenderDrawColor(globals.renderer, r, g, b, a);
 }
 
-int pollEvent(){
+int pollEvent(void){
     return SDL_PollEvent(&globals.event);
 }
 
@@ -156,7 +156,7 @@ void setVersion() {
     }
 } 
 #else
-void setVersion() {
+void setVersion(void) {
     if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) != 0){
         printf("Failed to set OpenGL core profile: %s\n", SDL_GetError());
     }
@@ -169,7 +169,7 @@ void setVersion() {
 }
 #endif
 
-void initWindow() {
+void initWindow(void) {
     // Initialize SDL
     CHECK_SDL_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
 
@@ -297,7 +297,7 @@ void createPointLightSpace(int index){
 void createSpotLightSpace(int index){
     // ASSERT(true, "NOT YET IMPLEMENTED");
     Entity* light = &globals.entities[globals.lights[index].entityId];
-    int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex;
+    int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex[0];
     printf("lsi %i \n",lightSpaceIndex);
     mat4x4 lightProjection, lightView;
     float near_plane = 0.001f, far_plane = 60.0f;
@@ -306,7 +306,7 @@ void createSpotLightSpace(int index){
     mat4x4_mul(globals.lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
 }
 
-void createLightSpace(){
+void createLightSpace(void){
     for(int i = 0; i < globals.lightsCount; i++){
         if(globals.lights[i].lightType == DIRECTIONAL){
             createDirectionalLightSpace(i);
@@ -322,7 +322,7 @@ void createLightSpace(){
     }
 }
 
-void initProgram(){
+void initProgram(void){
     initWindow();
     initECS();
 }
@@ -456,7 +456,7 @@ void recalculateViewports(int w, int h){
     globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
 }
 
-void handleKeyInput(){
+void handleKeyInput(void){
          
             processKeyInput(globals.event.key.keysym.sym, globals.currentSceneMode);
             
@@ -603,7 +603,7 @@ void handleKeyInput(){
  * This is because this fn will become too large otherwise,and we wan't to group & handle events in a more structured way. 
  * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
  */
-void input() {
+void input(void) {
     
     // Process events
     while(pollEvent()) {
@@ -718,7 +718,7 @@ void displayFps(Uint32 ticks){
     globals.prevTick = ticks/1000;
 }
 
-void update(){
+void update(void){
 
     // Time 
     Uint32 ticks = SDL_GetTicks();
@@ -748,7 +748,7 @@ void update(){
     globals.prevMouseLeftDown = globals.mouseLeftButtonPressed;
 }
 
-void render(){
+void render(void){
 
     // Clear the entire window
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -908,7 +908,7 @@ void render(){
     SDL_GL_SwapWindow(globals.window); 
 }
 
-void quit(){
+void quit(void){
     // Release resources
     SDL_GL_DeleteContext(globals.gl_context);
     SDL_DestroyRenderer(globals.renderer);
@@ -916,7 +916,7 @@ void quit(){
     SDL_Quit();
 }
 
-void initOpenGLWindow(){
+void initOpenGLWindow(void){
   // Create an OpenGL context associated with the window.
    globals.gl_context = SDL_GL_CreateContext(globals.window);
    if (!globals.gl_context) {
@@ -932,7 +932,7 @@ void initOpenGLWindow(){
  * After this the projection matrix for the font need to be set using setFontProjection.
  * And then you can render text using renderText.
  */
-void initFont(){
+void initFont(void){
     setupFontTextures("./Assets/ARIAL.TTF",globals.fontSize);
     setupFontMesh(&globals.gpuFontData);
     setupMaterial(&globals.gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
@@ -960,7 +960,7 @@ void emscriptenLoop() {
  * 3d objects put into main viewport will be in an 3d-enviroment and treated normally.
  * objects created in the ui viewport will be in a 2d-environment and act more like a web ui element.
 */
-void initScene(){
+void initScene(void){
 
    changeSceneMode(SCENE_MODE_NORMAL);
 
@@ -1210,8 +1210,6 @@ int main(int argc, char **argv) {
     // Initialize Memory Arenas
     arena_initMemory(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
     arena_initMemory(&globals.uiArena, UI_MEMORY_SIZE * sizeof(char));
-
-     
    
     // Sub memory allocations
     globals.materials = arena_Alloc(&globals.assetArena, globals.materialsCapacity * sizeof(Material));
@@ -1314,7 +1312,7 @@ void ui_panel(Material material, vec3 position,vec3 scale, vec3 rotation,Rectang
   //ui_createRectangle(Material material, vec3 positi)
   printf("not yet implemented \n");
 }
-void onButtonClick() {
+void onButtonClick(void) {
 
     for(int i = 0; i < MAX_ENTITIES; i++){
        if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].transformComponent->active == 1){
@@ -1377,14 +1375,9 @@ void togglePanel(void *params){
     } */
    // printf("Panel toggled!\n");
 }
-void onTextInputChange(){
+void onTextInputChange(void){
     printf("Text input changed!\n");
 }
-
-// -----------------------------------------------------
-// ASSETS
-// -----------------------------------------------------
-
 
 
     

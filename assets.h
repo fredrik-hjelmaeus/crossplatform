@@ -10,5 +10,5 @@ extern struct Material flatColorUiDarkGrayMat;
 extern struct Material flatColorUiGrayMat;
 extern struct Material uiBoundingBoxMat;
 
-  void initAssets();
+  void initAssets(void);
 

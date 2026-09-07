@@ -4,7 +4,7 @@
 #include "ui.h"
 
 
-void tests_ui_coordinate_conversion(){
+void tests_ui_coordinate_conversion(void){
    // SDL TO UI
     SDLVector2 myVec; 
     myVec.x = 400.0f;
@@ -39,7 +39,7 @@ void tests_ui_coordinate_conversion(){
     printf(TEXT_COLOR_GREEN "SUCCESS \n" TEXT_COLOR_RESET);
 }
 
-void tests_binary_conversion(){
+void tests_binary_conversion(void){
     int result = convertBinaryToDecimal(1111);
     ASSERT(result == 15, "convertBinaryToDecimal failed on 1111");
     long long binTwo = 1001001;  
@@ -53,7 +53,7 @@ void tests_binary_conversion(){
     printf(TEXT_COLOR_GREEN "SUCCESS \n" TEXT_COLOR_RESET);
 }
 
-void tests_events(){
+void tests_events(void){
    // This is a test setup aswell as doc for event-flow.
    // Meant to be used mainly for one-entity or one-time occurances.
    // This leaves systems to do updates on batches and we can avoid having to

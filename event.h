@@ -66,7 +66,7 @@ typedef struct Subscriber {
 #define MAX_SUBSCRIBERS_PER_EVENT 8
 
 void pushEvent(Event event);
-void processEvents();
+void processEvents(void);
 void dispatchEvent(Event event);
 
 void subscribeToEvent(Subscriber sub);

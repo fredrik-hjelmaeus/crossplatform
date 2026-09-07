@@ -162,7 +162,7 @@ void dispatchEvent(Event event){
   }
 }
 
-void processEvents(){
+void processEvents(void){
   for(int i = 0; i < eventQueueCount; i++){
     dispatchEvent(eventQueue[i]);
   }

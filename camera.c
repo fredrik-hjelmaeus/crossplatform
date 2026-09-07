@@ -3,7 +3,7 @@
 /**
  * @brief Create a camera
  */
-Camera* initCamera() {
+Camera* initCamera(void) {
     Camera* camera = (Camera*)malloc(sizeof(Camera));
     if (camera == NULL) {
         // Handle memory allocation failure

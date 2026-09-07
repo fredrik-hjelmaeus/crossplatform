@@ -268,7 +268,7 @@ void removeCharacter(int index){
 }
 
 // TODO: temp solution, do not handle if caps lock is already active on program run.
-bool isCapsLock() {
+bool isCapsLock(void) {
     SDL_Keymod modState = SDL_GetModState();
     if (modState & KMOD_CAPS) {
         //printf("Caps Lock is activated\n");
@@ -281,7 +281,7 @@ bool isCapsLock() {
 
 // TODO: This is a temp solution. We should handle this using
 // event->key.keysym.sym == SDLK_LSHIFT instead.
-bool isLeftShiftPressed(){
+bool isLeftShiftPressed(void){
     SDL_Keymod modState = SDL_GetModState();
     if (modState & KMOD_LSHIFT) {
         //printf("Left Shift is activated\n");
