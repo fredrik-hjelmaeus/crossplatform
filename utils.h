@@ -6,7 +6,6 @@
 #include "stb_image.h"
 #include <string.h>
 #include "types.h"
-#include <SDL2/SDL.h>
 
 // Text output colors
 #define TEXT_COLOR_ERROR     "\x1b[31m"
@@ -50,7 +49,6 @@ void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* trans
 void captureDrawCalls(int width, int height, int drawCallsCounter);
 float deg2rad(float degrees);
 GLuint setupTexture(TextureData textureData);
-void changeCursor(SDL_SystemCursor cursorType); 
 void floatToString(float f,int len, char* c);
 
 // Memory

@@ -20,3 +20,5 @@ myprogram
 myprogram.dSYM/
 a.out.dSYM/
 .main.c.swp
+a.out
+*.out

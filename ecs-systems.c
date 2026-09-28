@@ -1,4 +1,5 @@
 #include "ecs-systems.h"
+#include "fh-sdl.h"
 #include <errno.h>
 #include "types.h"
 #include "globals.h"
@@ -54,7 +55,7 @@ void moveCursor(float x){
 void uiInputSystem(void){
     if(globals.focusedEntityId != -1){
          if(globals.event.type == SDL_KEYDOWN) {
-            const char* key = SDL_GetKeyName(globals.event.key.keysym.sym);
+            const char* key = getKeyName(globals.event.key.keysym.sym);
             
             bool isSpaceKey = false;
             bool isSelectionActive = globals.cursorSelectionActive;

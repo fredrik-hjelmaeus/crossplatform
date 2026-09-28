@@ -2,6 +2,7 @@
 #include "types.h"
 #include "utils.h"
 #include "globals.h"
+#include "fh-sdl.h"
 #include "api.h"
 
 ClosestLetter getCharacterByIndex(int index){
@@ -269,7 +270,7 @@ void removeCharacter(int index){
 
 // TODO: temp solution, do not handle if caps lock is already active on program run.
 bool isCapsLock(void) {
-    SDL_Keymod modState = SDL_GetModState();
+    SDL_Keymod modState = getModState();
     if (modState & KMOD_CAPS) {
         //printf("Caps Lock is activated\n");
         return true;
@@ -282,7 +283,7 @@ bool isCapsLock(void) {
 // TODO: This is a temp solution. We should handle this using
 // event->key.keysym.sym == SDLK_LSHIFT instead.
 bool isLeftShiftPressed(void){
-    SDL_Keymod modState = SDL_GetModState();
+    SDL_Keymod modState = getModState();
     if (modState & KMOD_LSHIFT) {
         //printf("Left Shift is activated\n");
         return true;

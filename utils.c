@@ -1034,16 +1034,6 @@ void intToPngFilename(int number, char* buffer, size_t bufferSize) {
     snprintf(buffer, bufferSize, "%d.png", number);
 }
 
-// Function to change the cursor
-void changeCursor(SDL_SystemCursor cursorType) {
-    SDL_Cursor* cursor = SDL_CreateSystemCursor(cursorType);
-    if (cursor != NULL) {
-        SDL_SetCursor(cursor);
-    } else {
-        fprintf(stderr, "Failed to create cursor: %s\n", SDL_GetError());
-    }
-}
-
 void floatToString(float f, int len,char *c){
     snprintf(c,len,"%0.2f",f);
 }

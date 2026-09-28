@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <time.h>
-#include <SDL2/SDL.h>
 #include "opengl_types.h"
 #include "types.h"
 #include "globals.h"
@@ -18,6 +17,7 @@
 #include "ui.h"
 #include "tests.h"
 #include "shadows.h"
+#include "fh-sdl.h"
 
 // STB
 #define STB_IMAGE_IMPLEMENTATION
@@ -28,6 +28,7 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
+
 
 // Prototypes
 void createPoint(vec3 position);
@@ -42,83 +43,7 @@ Camera* initCamera(void);
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-//------------------------------------------------------
-// Global variables / Initialization
-//------------------------------------------------------
 
-struct Globals globals = {
-    .window=NULL,
-    .renderer=NULL,
-    .event={0},
-    .gl_context=NULL,
-    .running=1,
-    .entities=NULL,
-    .vertex_count=0,
-    .delta_time=0.0f,
-    .overideDrawMode=GL_TRIANGLES,
-    .overrideDrawModeBool=0,
-    .views = {
-        .ui={{0,   0, width, height}, {0.0f, 1.0f, 0.0f, 1.0f},NULL,false},
-        .main={{0, 0, width, height}, {1.0f, 0.0f, 0.0f, 1.0f},NULL,false},
-        .full={{0, 0, width, height}, {0.0f, 0.0f, 0.0f, 1.0f} ,NULL,false},
-    },
-    .currentSceneMode=SCENE_MODE_NONE,
-
-    // Mouse
-    .firstMouse=1,
-    .mouseXpos=0.0f,
-    .mouseYpos=0.0f,
-    .mouseLeftButtonPressed=false, // mouse down check every frame
-    .prevMouseLeftDown=false,
-    .mouseDoubleClick=false,
-    .deselectCondition=false,
-    .mouseDragged=false,
-    .mouseDragStart={-10000.0f,-10000.0f},
-    .mouseDragPreviousFrame={0.0f,0.0f},
-
-    .drawBoundingBoxes=false,
-    .render=true,
-    .gpuFontData={0,0,0,0,0,0,GL_TRIANGLES},
-    .charScale=0.5f,
-    .fontSize=26,
-    .textColor={187.0/255.0,188.0/255.0,196.0/255.0,1.0},
-    .unitScale=100.0f, // 1 unit = 1 cm 
-    .culling=false,
-    .drawCallsCounter=0,
-    .debugDrawCalls=false,
-    //.assetArena=NULL,
-    .materials=NULL,
-    .materialsCount=0,
-    .materialsCapacity=15,
-    .objDataCapacity=20000,
-    .lights={{0}},
-    .lightsCount=0,
-    .focusedEntityId=-1,
-    .blinnMode=false,
-    .gamma=false,
-    .depthMapBuffer={0},
-    .frameBuffer={0},
-    .depthMap=0,
-    .depthCubemap=0,
-    .lightSpaceMatrix={{0}},
-    .postProcessBuffer={0},
-    .showDepthMap=false,
-    .shadowWidth=2048,
-    .shadowHeight=2048,
-
-    // Cursor
-    .cursorEntityId=-1,
-    .cursorBlinkTime=0.5f,
-    .cursorSelectionActive=false,
-    .cursorDragStart=-1.0f,
-    .cursorTextSelection={0,0},
-    
-    .frameCount = 0,
-    .prevTick = 0,
-    .showUI = true,
-    .shadows = true,
-    
-};
 
 // Colors
 Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
@@ -134,61 +59,6 @@ int last_frame_time = 0;
 // SDL, OpenGL & PROGRAM INITIALIZATION
 //------------------------------------------------------
 
-void setRenderDrawColor(int r,int g, int b, int a) {
-    // Initial renderer color
-    SDL_SetRenderDrawColor(globals.renderer, r, g, b, a);
-}
-
-int pollEvent(void){
-    return SDL_PollEvent(&globals.event);
-}
-
-#ifdef __EMSCRIPTEN__
-void setVersion() {
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES) != 0){
-        printf("Failed to set OpenGL ES profile: %s\n", SDL_GetError());
-    }
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) != 0){
-        printf("Failed to set OpenGL ES major version: %s\n", SDL_GetError());
-    }
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) != 0){
-        printf("Failed to set OpenGL ES minor version: %s\n", SDL_GetError());
-    }
-} 
-#else
-void setVersion(void) {
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) != 0){
-        printf("Failed to set OpenGL core profile: %s\n", SDL_GetError());
-    }
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3) != 0){
-        printf("Failed to set OpenGL major version: %s\n", SDL_GetError());
-    }
-    if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3) != 0){
-        printf("Failed to set OpenGL minor version: %s\n", SDL_GetError());
-    }
-}
-#endif
-
-void initWindow(void) {
-    // Initialize SDL
-    CHECK_SDL_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
-
-    // Set OpenGL version (3.0) or webgl won't be 2.0
-    setVersion();
-
-    // Create an SDL window
-    globals.window = SDL_CreateWindow(
-        "FH Engine", 
-        SDL_WINDOWPOS_UNDEFINED, 
-        SDL_WINDOWPOS_UNDEFINED, 
-        width, 
-        height, 
-        SDL_WINDOW_OPENGL |
-        SDL_WINDOW_RESIZABLE
-    );
-    CHECK_SDL_ERROR(globals.window == NULL, SDL_GetError());
-
-}
 
 void setViewport(struct View view) {
     glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
@@ -206,7 +76,6 @@ void setViewportAndClear(View view){
     // Clear the viewport
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
-
 
 /**
  * @brief Set the viewport, scissor box and clear color for a view
@@ -232,8 +101,6 @@ void setViewportWithScissorAndClear(View view) {
     // Disable the scissor test
     glDisable(GL_SCISSOR_TEST);
 }
-
-
 
 /**
  * @param index
@@ -323,7 +190,7 @@ void createLightSpace(void){
 }
 
 void initProgram(void){
-    initWindow();
+    if (!initSdlWindow(&globals)) exit(1);
     initECS();
 }
 
@@ -460,7 +327,7 @@ void handleKeyInput(void){
          
             processKeyInput(globals.event.key.keysym.sym, globals.currentSceneMode);
             
-            const char *key = SDL_GetKeyName(globals.event.key.keysym.sym);
+            const char *key = getKeyName(globals.event.key.keysym.sym);
            
             if(strcmp(key, "C") == 0) {
                 globals.views.full.clearColor.r = randFloat(0.0,1.0);
@@ -491,12 +358,7 @@ void handleKeyInput(void){
                 globals.running = 0;
             }
             if(strcmp(key, "F") == 0) {
-                Uint32 windowFlags = SDL_GetWindowFlags(globals.window);
-                if(windowFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
-                    SDL_SetWindowFullscreen(globals.window, 0);
-                } else {
-                    SDL_SetWindowFullscreen(globals.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-                }
+                toggleFullscreen(&globals);
             }
             if(strcmp(key, "W") == 0){
                 globals.views.main.camera->position[0] += globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[0];
@@ -606,7 +468,7 @@ void handleKeyInput(void){
 void input(void) {
     
     // Process events
-    while(pollEvent()) {
+    while(pollEvent(&globals)) {
         
         if(globals.event.type == SDL_QUIT) {
             globals.running = 0;
@@ -640,7 +502,7 @@ void input(void) {
             
         if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
-            SDL_GetWindowSize(globals.window, &w, &h);
+            getWindowSize(&globals, &w, &h);
             recalculateViewports(w,h);
             
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
@@ -712,7 +574,7 @@ void displayFps(Uint32 ticks){
     if(ticks/1000-globals.prevTick != 0){
         char str[10];
         sprintf(str,"FPS: %d", globals.frameCount);
-        SDL_SetWindowTitle(globals.window, str);
+        setWindowTitle(&globals, str);
         globals.frameCount = 0;
     }
     globals.prevTick = ticks/1000;
@@ -721,16 +583,16 @@ void displayFps(Uint32 ticks){
 void update(void){
 
     // Time 
-    Uint32 ticks = SDL_GetTicks();
+    Uint32 ticks = getTicks();
 
     // Cap the frame rate
     int time_to_wait = FRAME_TARGET_TIME - (ticks - last_frame_time);
     if(time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
-        SDL_Delay(time_to_wait);
+        delay((Uint32)time_to_wait);
     }
 
     // Set delta time in seconds
-    globals.delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
+    globals.delta_time = (getTicks() - last_frame_time) / 1000.0f;
 
     displayFps(ticks);
     
@@ -905,25 +767,7 @@ void render(void){
     #endif
 
     // Swap the window buffers to show the new frame
-    SDL_GL_SwapWindow(globals.window); 
-}
-
-void quit(void){
-    // Release resources
-    SDL_GL_DeleteContext(globals.gl_context);
-    SDL_DestroyRenderer(globals.renderer);
-    SDL_DestroyWindow(globals.window);
-    SDL_Quit();
-}
-
-void initOpenGLWindow(void){
-  // Create an OpenGL context associated with the window.
-   globals.gl_context = SDL_GL_CreateContext(globals.window);
-   if (!globals.gl_context) {
-      printf("Failed to create OpenGL context: %s\n", SDL_GetError());
-      exit(1);
-   }
-   glEnable(GL_DEPTH_TEST);
+    swapWindow(&globals);
 }
 
 /**
@@ -942,7 +786,7 @@ void initFont(void){
 void emscriptenLoop() {
     if(!globals.running){
         printf("Closing sdl canvas!\n");
-        quit();
+        quit(&globals);
         printf("Goodbye!\n");
         emscripten_cancel_main_loop();
     }
@@ -1227,7 +1071,8 @@ int main(int argc, char **argv) {
     
     initProgram();
    
-    initOpenGLWindow();
+    if (!createOpenGLContext(&globals)) exit(1);
+    glEnable(GL_DEPTH_TEST);
 
     // Tests
     /* tests_ui_coordinate_conversion();
@@ -1271,7 +1116,7 @@ int main(int argc, char **argv) {
     // -----------------------------------------------------
     // Quit
     // -----------------------------------------------------
-    quit();
+    quit(&globals);
     printf("Non emscripten shutdown complete!\n");
     return 0;
     #endif
