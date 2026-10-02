@@ -3,7 +3,7 @@
 #include "utils.h"
 
 void handleKeyInput(void);
-void recalculateViewports(int w, int h);
+void recalculateViewports(int w, int h,struct Globals *globals);
 void calcCameraFront(Camera *camera, float xpos, float ypos);
 
 /**
@@ -49,7 +49,7 @@ void input(struct Globals *globals) {
         if(globals->event.type == SDL_WINDOWEVENT && globals->event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
             getWindowSize(globals, &w, &h);
-            recalculateViewports(w,h);
+            recalculateViewports(w,h,globals);
             
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
             //glViewport(0, 0, w / 2, h);
