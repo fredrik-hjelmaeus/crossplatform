@@ -18,6 +18,7 @@
 #include "tests.h"
 #include "shadows.h"
 #include "fh-sdl.h"
+#include "input.h"
 
 // STB
 #define STB_IMAGE_IMPLEMENTATION
@@ -460,112 +461,6 @@ void handleKeyInput(void){
             }
 }
 
-/**
- * Atm we handle all events right here. Eventually we wan't to store the polled events in a queue and process them in the update loop instead.
- * This is because this fn will become too large otherwise,and we wan't to group & handle events in a more structured way. 
- * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
- */
-void input(void) {
-    
-    // Process events
-    while(pollEvent(&globals)) {
-        
-        if(globals.event.type == SDL_QUIT) {
-            globals.running = 0;
-        } 
-        if (globals.event.type == SDL_MOUSEBUTTONDOWN) {
-            
-            // A button was pressed
-            if (globals.event.button.button == SDL_BUTTON_LEFT) {
-               
-                if(globals.event.button.clicks == 2){
-                   
-                    globals.mouseDoubleClick = true;
-                }
-                
-                // Left Button Pressed
-                globals.mouseLeftButtonPressed = true;
-                
-            } else if (globals.event.button.button == SDL_BUTTON_RIGHT) {
-                
-              
-            }
-        } 
-        if(globals.event.type == SDL_KEYDOWN) {
-            // If input element is focused, we don't handle keyboard events here but in the uiInputSystem
-            if(globals.focusedEntityId != -1){
-                return;
-            }else {
-                handleKeyInput();
-            }
-        }
-            
-        if(globals.event.type == SDL_WINDOWEVENT && globals.event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
-            int w, h; 
-            getWindowSize(&globals, &w, &h);
-            recalculateViewports(w,h);
-            
-            // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
-            //glViewport(0, 0, w / 2, h);
-        }
-       
-        if (globals.event.type == SDL_MOUSEBUTTONUP) {
-           // A button was released
-           globals.mouseLeftButtonPressed = false;
-           
-           if(globals.cursorSelectionActive){
-                globals.deselectCondition = true;
-           }
-           globals.mouseDragged = false;
-           if(globals.focusedEntityId != -1 && globals.entities[globals.focusedEntityId].uiComponent->type == UITYPE_SLIDER){
-                globals.focusedEntityId = -1;
-           }
-           
-            
-        }
-        if (globals.event.type == SDL_MOUSEMOTION) {
-            if(globals.mouseLeftButtonPressed){
-                globals.mouseDragged = true;
-            }
-
-            int xpos = globals.event.motion.x;
-            int ypos = globals.event.motion.y;
-
-            globals.mouseXpos = (float)xpos;
-            globals.mouseYpos = (float)ypos;
-
-            // -----------TEMP CODE------------
-          /*   printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
-            // mouse move in ndc coordinates
-              float x_ndc = (2.0f * xpos) / width - 1.0f;
-              float y_ndc = 1.0f - (2.0f * ypos) / height;
-              float x_ui =  (-1 * x_ndc) * ((float)width * 0.5);
-              float y_ui =   y_ndc * ((float)height * 0.5);  
-            //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
-            //printf("Mouse moved to %f, %f\n", globals.mouseXpos, globals.mouseYpos);
-            SDLVector2 sdlMouseCoords = {xpos, ypos};
-            UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
-            printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y); */
-            // END TEMP CODE------------------
-
-            // Not sure this is used since we don't use viewports now?
-            if(isPointInsideRect(globals.views.main.rect, (vec2){xpos, ypos})){ 
-               // printf("Mouse is within main view\n ");
-                // Update the camera front vector
-                calcCameraFront(globals.views.main.camera,xpos, ypos);
-                // set view matrix needs update flag (so that we recalculate the view matrix with the new front vector)
-                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
-            }
-            if(isPointInsideRect(globals.views.ui.rect, (vec2){xpos, ypos})){
-                globals.views.ui.isMousePointerWithin = true;
-            }else{
-                globals.views.ui.isMousePointerWithin = false;
-            }
-
-           
-        }
-    }
-}
 
 
 void displayFps(Uint32 ticks){
@@ -770,17 +665,6 @@ void render(void){
     swapWindow(&globals);
 }
 
-/**
- * @brief Initialize the font
- * Load texture,setup mesh,setup material
- * After this the projection matrix for the font need to be set using setFontProjection.
- * And then you can render text using renderText.
- */
-void initFont(void){
-    setupFontTextures("./Assets/ARIAL.TTF",globals.fontSize);
-    setupFontMesh(&globals.gpuFontData);
-    setupMaterial(&globals.gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
-}
 
 #ifdef __EMSCRIPTEN__
 void emscriptenLoop() {
@@ -790,258 +674,13 @@ void emscriptenLoop() {
         printf("Goodbye!\n");
         emscripten_cancel_main_loop();
     }
-    input();
+    input(&globals);
     update();
     render();
 }
 #endif
 
 
-
-/**
- * @brief Initialize the scene
- * Create the 3d and ui scene objects
- * 3d objects put into main viewport will be in an 3d-enviroment and treated normally.
- * objects created in the ui viewport will be in a 2d-environment and act more like a web ui element.
-*/
-void initScene(void){
-
-   changeSceneMode(SCENE_MODE_NORMAL);
-
-   globals.views.main.camera->position[1] = 35.0f;
-   globals.views.main.camera->position[2] = 35.0f;
-   globals.views.main.camera->target[0] = 0.0f;
-   globals.views.main.camera->target[1] = 0.0f;
-   globals.views.main.camera->target[2] = 0.0f;
-    
-    // Assets
-    initFont();
-   
-    setupMaterial(&globals.depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
-  
-    depthshadow_createFrameBuffer(&globals.depthMapBuffer);
-    depthshadow_createDepthTexture();
-    //depthshadow_createDepthCubemap();
-  //  depthshadow_configureFrameBuffer(&globals.depthMapBuffer);
-    //depthshadow_configureCubeMapFrameBuffer(&globals.depthMapBuffer);
-    initAssets();
-  
- //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
-  
-
-
-   // ObjGroup* truck = obj_loadFile("./Assets/truck.obj"); // Not supported atm, need .obj group support.
-  // ObjGroup* cornell_box = obj_loadFile("./Assets/cornell_box.obj");  
-   // ObjGroup* bunny = obj_loadFile("./Assets/bunny2.obj");
-  /*  ObjGroup* plane = obj_loadFile("./Assets/plane.obj"); 
-    ObjGroup* objExample = obj_loadFile("./Assets/Two_adjoining_squares_with_vertex_normals.obj");
-    ObjGroup* sphere = obj_loadFile("./Assets/blender_sphere3.obj");
-    ObjGroup* triangleVolumes = obj_loadFile("./Assets/triangle_volumes.obj");
-    ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");*/
-  //  ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   
-   // ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
-    ObjGroup* skp_arbetsrum = obj_loadFile("./Assets/arbetsrum_FINAL.obj");
- 
-    // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
-  
-  /*   createObject(&cornell_box->objData[0],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[1],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[2],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[3],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[4],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[5],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[6],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-    createObject(&cornell_box->objData[7],(vec3){-5.0f, 5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   */
- 
-   
-   // createPoint((vec3){-5.0f, -5.0f, 0.0f});
-    //createObject(VIEWPORT_MAIN,&plane->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-   /*  for(int i = 0; i < 500; i++){
-        createObject(&truck->objData[i],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    } */
-  
-    createObject(&skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&skp_arbetsrum->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&skp_arbetsrum->objData[2],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-  
-  /*   createObject(&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[1],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[2],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[3],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[4],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[5],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[6],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[7],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[8],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&truck->objData[9],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); */
-    
-    //createObject(VIEWPORT_MAIN,&objExample->objData[0],(vec3){5.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    //createObject(VIEWPORT_MAIN,&sphere->objData[0],(vec3){3.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    //createObject(VIEWPORT_MAIN,&triangleVolumes->objData[0],(vec3){4.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    //createObject(VIEWPORT_MAIN,&teapot->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){-90.0f, 0.0f, 0.0f}); 
-   // createObject(&dragon->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});   
-   // createObject(&bunny->objData[0],(vec3){6.0f, 0.0f, 0.0f}, (vec3){10.0f, 10.0f, 10.0f}, (vec3){0.0f, 0.0f, 0.0f});   
- //   createObject(&textured_objects->objData[0],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});  
-   // createObject(&textured_objects->objData[1],(vec3){2.0f, 1.0f, -6.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});     
-    
-
-    // lights
-    int lightId = createLight(lightMaterial,(vec3){5.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
-   // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
-   // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
- /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
-    createLight(lightMaterial,(vec3){3.0f, 2.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
-    createLight(lightMaterial,(vec3){0.0f, 1.0f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
-   
-    createLight(lightMaterial,(vec3){10.7f, -5.2f, -3.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
-    createLight(lightMaterial,(vec3){-12.7f, 5.2f, 2.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
-    createLight(lightMaterial,(vec3){-8.7f, 0.2f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); */
-
-    // Primitives
-    createPlane(objectMaterial, (vec3){0.0f, -3.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
-    //createCube(objectMaterial,(vec3){10.0f, 3.0f, 12.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
-  
-    // Frame buffer quad
-  //  ui_createRectangle(showDepthMapMaterial, (vec3){0.0f, 0.0f,5.0f}, (vec3){800.0f, 600.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
-
-    //debug_drawFrustum();
-
-   // UI scene objects creation (2d scene) x,y coords where x = 0 is left and y = 0 is top and x,y is pixel positions. (controlled by the uiPositionSystem)
-   // Scale is in pixels, 100.0f is 100 pixels etc.
-   // z position will be z-depth, much like in DOM in web.Use this to control draw order.
-   // TODO: implement rotation, it is atm not affecting. 
- 
-    // UI Settings Panel
-    Entity* settingsPanel = ui_createPanel(uiBoundingBoxMat,(vec3){545.0f, 5.0f, 3.0f}, (vec3){250.0f, 350.0f, 1.0f},(vec3){0.0f, 0.0f, 0.0f},NULL);
-   
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", EVENT_TOGGLE_UI_PANEL, settingsPanel);
- 
-    ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",EVENT_NONE,settingsPanel);
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 35.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
-    // Row 2 Slider
-  //  ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider Text Field",settingsPanel);
-   // ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
-   
-   
- /*   ui_createTextInput(textInputUiMat, (vec3){730.0f, 65.0f, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",NUMBER_INPUT,settingsPanel);
-    // Row 3 Checkbox
-    ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, 100.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Global shadows",settingsPanel);
-    ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, 100.0f, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},TOGGLE_GLOBAL_SHADOWS,true,settingsPanel);
-   
-
-    // Row 4 List
-   
-    for(int i=0; i < globals.lightsCount; i++){
-        yPos += 35.0f;
-        Event toggleShadow = {
-            .type = TOGGLE_CAST_SHADOW,
-            .bPtr = &globals.entities[globals.lights[i].entityId].lightComponent->castShadows,
-            .subscriberCount = 0,
-            .subscribers = {0}
-        };
-
-      // char* lightName[20];
-       char* textCopy = (char*)arena_Alloc(&globals.uiArena, 99 * sizeof(char));
-       sprintf(textCopy, "id: %d, type: %d", globals.lights[i].entityId,globals.lights[i].type);
-       // strcpy(lightName, "customtext"); // Copies "custom text" into the lightName array.
-       // itoa(globals.lights[i].entityId,lightName,10);
-       // lightName = 'c';
-       // sprintf(lightName,"%i", globals.lights[i].entityId); //globals.entities[globals.lights[i].entityId].id
-        ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, textCopy , settingsPanel);
-        ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, yPos, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},&toggleShadow,true,settingsPanel);
-    } */
-   
-    // Row 5 Slider
-    float yPos = 135.0f;
-    yPos += 35.0f;
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position x",settingsPanel);
-    int sliderId = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
-    int textInputId = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "0.00",EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
-    // Row 6 Slider
-    yPos += 35.0f;
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position y",settingsPanel);
-    int sliderIdSix = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_Y_CHANGED,settingsPanel);
-    int textInputIdSix = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "5.00",EVENT_LIGHT_DIR_Y_CHANGED,settingsPanel);
-    
-
-    // Setup associations
-    LightDirectionAssociation* lightAssociation = (LightDirectionAssociation*)malloc(sizeof(LightDirectionAssociation));
-    lightAssociation->lightEntityId = lightId;
-    lightAssociation->sliderEntityId = sliderId;
-    lightAssociation->textInputEntityId = textInputId;
-    
-    LightDirectionAssociation* lightAssociation2 = (LightDirectionAssociation*)malloc(sizeof(LightDirectionAssociation));
-    lightAssociation2->lightEntityId = lightId;
-    lightAssociation2->sliderEntityId = sliderIdSix;
-    lightAssociation2->textInputEntityId = textInputIdSix;
-
-    // Event subscriptions
-    Subscriber sub = { .eventType = EVENT_LIGHT_DIR_X_CHANGED , .callback = onDirectionLightChangeX, .association = lightAssociation };
-    subscribeToEvent(sub);
-    Subscriber sub2 = { .eventType = EVENT_LIGHT_DIR_Y_CHANGED , .callback = onDirectionLightChangeY, .association = lightAssociation2 };
-    subscribeToEvent(sub2);
-    
-   /*  ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction y",settingsPanel);
-    Event lightDirYsliderChange;
-    lightDirYsliderChange.type = CHANGE_Y_DIRECTION;
-    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},lightDirYsliderChange,settingsPanel);
-    Event lightDirYtextChange;
-    lightDirYtextChange.type = CHANGE_Y_DIRECTION;
-    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",lightDirYtextChange,settingsPanel);
-    // Row 7 Slider
-    yPos += 35.0f;
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Direction z",settingsPanel);
-    Event lightDirZsliderChange;
-    lightDirZsliderChange.type = CHANGE_Z_DIRECTION;
-    ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},lightDirZsliderChange,settingsPanel);
-    Event lightDirZtextChange;
-    lightDirZtextChange.type = CHANGE_Z_DIRECTION;
-    ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "1.00",lightDirZtextChange,settingsPanel); */
-
-  /*   ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 30.0f, 0.0f}, (vec3){5.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
-    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){550.0f, 30.0f, 1.0f}, (vec3){245.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
-    // Bottom pane
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 355.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header2",TOGGLE_PANEL,NULL);
-    ui_createRectangle(flatColorUiGrayMat, (vec3){545.0f, 405.0f, 0.0f}, (vec3){10.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);
-    ui_createRectangle(flatColorUiDarkGrayMat, (vec3){555.0f, 405.0f, 1.0f}, (vec3){240.0f, 300.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},NULL);    */
-    
-   
-
-    //ui_slider(flatColorUiDarkGrayMat, (vec3){545.0f, 55.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider",onSliderChange);
-    //ui_colorPicker(flatColorUiDarkGrayMat, (vec3){545.0f, 105.0f, 0.0f}, (vec3){250.0f, 50.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "ColorPicker",onColorPickerChange);
-    //ui_checkbox
-    //ui_open_file (texture,obj-model,.fh-packfile,)
-
-
- //ui_createRectangle(uiMaterial, (vec3){765.0f, 5.0f, 0.0f}, (vec3){35.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f});
-
- // Textured button
- //ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
-  
-   // TODO: create slider or input for ui using this
-  //printf("materials-list (%d): \n",globals.materialsCount);
-   // for(int i = 0; i < globals.materialsCount; i++){
-    //    printf("(%d),%s \n",i,globals.materials[i].name);
-   /*       printf("shininess %f \n",globals.materials[i].shininess);
-        printf("ambient.r %f \n",globals.materials[i].ambient.r);
-        printf("ambient.g %f \n",globals.materials[i].ambient.g);
-        printf("ambient.b %f \n",globals.materials[i].ambient.b);
-        printf("diffuse.r %f \n",globals.materials[i].diffuse.r);
-        printf("diffuse.g %f \n",globals.materials[i].diffuse.g);
-        printf("diffuse.b %f \n",globals.materials[i].diffuse.b);
-        printf("specular.r %f \n",globals.materials[i].specular.r);
-        printf("specular.g %f \n",globals.materials[i].specular.g);
-        printf("specular.b %f \n",globals.materials[i].specular.b);
-        printf("ior/Ni %f \n",globals.materials[i].ior);
-        printf("alpha %f \n",globals.materials[i].alpha); 
-        printf("diffuseMap %d \n",globals.materials[i].diffuseMap);
-        printf("ambientMap %d \n",globals.materials[i].ambientMap);
-        printf("specularMap %d \n",globals.materials[i].specularMap);
-        printf("shininessMap %d \n\n",globals.materials[i].shininessMap);  */
- // }   
-
-}
 
 int main(int argc, char **argv) {
     
@@ -1096,7 +735,7 @@ int main(int argc, char **argv) {
     mainCamera->aspectRatio = globals.views.main.rect.width / globals.views.main.rect.height;
     globals.views.main.camera = mainCamera;
 
-    initScene();
+    initScene(&globals);
     
     //------------------------------------------------------
     // Main loop
@@ -1107,7 +746,7 @@ int main(int argc, char **argv) {
     #else
     // native code
     while(globals.running) {
-        input();
+        input(&globals);
         update();
         render();
         debugSystem();

@@ -17,5 +17,13 @@ char specialLeftShiftHandling(char c);
 void deleteTextRange(unsigned int startIndex, unsigned int endIndex);
 void addIndexToCursorTextSelection(unsigned int index);
 
+/**
+ * Initialize the font
+ * Load texture,setup mesh,setup material
+ * After this the projection matrix for the font need to be set using setFontProjection.
+ * And then you can render text using renderText.
+ */
+void initFont(void);
+
 
 #endif

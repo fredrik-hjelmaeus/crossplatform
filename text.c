@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "fh-sdl.h"
 #include "api.h"
+#include "opengl.h"
 
 ClosestLetter getCharacterByIndex(int index){
 
@@ -340,3 +341,17 @@ char specialLeftShiftHandling(char c){
     }
     return c;
 }
+
+
+/**
+ * Initialize the font
+ * Load texture,setup mesh,setup material
+ * After this the projection matrix for the font need to be set using setFontProjection.
+ * And then you can render text using renderText.
+ */
+void initFont(void){
+    setupFontTextures("./Assets/ARIAL.TTF",globals.fontSize);
+    setupFontMesh(&globals.gpuFontData);
+    setupMaterial(&globals.gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
+}
+
