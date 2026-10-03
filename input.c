@@ -1,9 +1,9 @@
 #include "input.h"
 #include "fh-sdl.h"
 #include "utils.h"
+#include "viewport.h"
 
 void handleKeyInput(void);
-void recalculateViewports(int w, int h,struct Globals *globals);
 void calcCameraFront(Camera *camera, float xpos, float ypos);
 
 /**

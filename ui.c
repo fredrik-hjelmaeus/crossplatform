@@ -400,3 +400,68 @@ void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec
     createMesh(vertices,4,bbIndices,8,position,scale,rotation,&mat2,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 }
 
+void onButtonClick(void) {
+
+    for(int i = 0; i < MAX_ENTITIES; i++){
+       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].transformComponent->active == 1){
+            globals.entities[i].transformComponent->rotation[1] += 0.01f;
+            globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+       }
+    }
+    printf("Button pressed!\n");
+}
+
+void toggleGlobalShadows(void *params){
+    if(params != NULL){
+       // printf("unused param %d \n",(int)params);
+    }
+    globals.shadows = !globals.shadows;
+    printf("global shadows ? %d \n",globals.shadows);
+}
+
+void toggleShadow(int entityId){
+        globals.entities[entityId].lightComponent->castShadows = !globals.entities[entityId].lightComponent->castShadows;
+        printf("shadow state on entityiID %d: %d \n",entityId,globals.entities[entityId].lightComponent->castShadows);
+}
+
+void lightDirectionChange(void *params){
+    LightDirChangeParams lightDirectionChange = *(LightDirChangeParams *)params;
+    printf("entity ID %d \n",lightDirectionChange.entityId);
+    globals.entities[globals.lights[0].entityId].lightComponent->direction[lightDirectionChange.index] = globals.entities[lightDirectionChange.entityId].uiComponent->sliderValue;
+}
+
+void togglePanel(void *params){
+    if(params != NULL){
+        printf("unhandled params \n");
+    }
+ //   BoundingBox boundary;
+    for(int i = 0; i < MAX_ENTITIES; i++){
+       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].uiComponent->clicked){
+        printf("Sclicked %d \n",globals.entities[i].id);
+        
+            if(globals.entities[i].uiComponent->parent != NULL){
+                printf("parentId %d ",globals.entities[i].uiComponent->parent->id);
+            }
+       }
+    }
+   /*  for(int i = 0; i < MAX_ENTITIES; i++){
+       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active == 1 && globals.entities[i].transformComponent->active == 1){
+      
+        if(isPointInsideRect(boundary, (vec2){ globals.entities[i].uiComponent->boundingBox.x, globals.entities[i].uiComponent->boundingBox.y}) 
+        && isPointInsideRect(boundary, (vec2){ globals.entities[i].uiComponent->boundingBox.x+globals.entities[i].uiComponent->boundingBox.x 
+        + globals.entities[i].uiComponent->boundingBox.width, globals.entities[i].uiComponent->boundingBox.y
+        + globals.entities[i].uiComponent->boundingBox.height})){
+             if(globals.entities[i].transformComponent->scale[1] > 0.0f){
+                globals.entities[i].transformComponent->scale[1] -= 0.61f;
+            }
+            globals.entities[i].transformComponent->modelNeedsUpdate = 1;
+        }
+
+        
+           
+            
+       }
+    } */
+   // printf("Panel toggled!\n");
+}
+

@@ -4,6 +4,7 @@
 #include "ecs-entity.h"
 #include "shadows.h"
 
+
 void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation){
     entity->transformComponent->active = 1;
     entity->transformComponent->position[0] = position[0];
@@ -609,3 +610,24 @@ void debug_drawFrustum(void)
     createLine(startl,endl,entity3);
     
 }
+
+void createPoints(GLfloat* positions,int numPoints, Entity* entity){
+    entity->pointComponent->active = 1;
+    entity->pointComponent->color = (Color){1.0f,0.0f,1.0f,1.0f};
+    entity->pointComponent->points = positions;
+    entity->pointComponent->pointSize = 10.0f;
+    entity->transformComponent->position[0] = positions[0];
+    entity->transformComponent->position[1] = positions[1];
+    entity->transformComponent->position[2] = positions[2];
+    entity->transformComponent->scale[0] = 1.0f;
+    entity->transformComponent->scale[1] = 1.0f;
+    entity->transformComponent->scale[2] = 1.0f;
+    entity->transformComponent->rotation[0] = 0.0f;
+    entity->transformComponent->rotation[1] = 0.0f;
+    entity->transformComponent->rotation[2] = 0.0f;
+    entity->transformComponent->modelNeedsUpdate = 1;
+    setupPoints(positions,numPoints,entity->pointComponent->gpuData);
+    setupMaterial(entity->pointComponent->gpuData,"shaders/point_vertex.glsl", "shaders/point_fragment.glsl");
+}
+
+

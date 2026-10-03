@@ -7,6 +7,11 @@
 //-------
 // UI API
 //-------
+void togglePanel(void *params);
+void lightDirectionChange(void *params);
+void toggleShadow(int entityId);
+void toggleGlobalShadows(void *params);
+void onButtonClick(void);
 /**
  * @brief Create a panel
  * Create a panel in ui. No visibility, only a bounding box.

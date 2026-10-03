@@ -19,6 +19,8 @@
 #include "shadows.h"
 #include "fh-sdl.h"
 #include "input.h"
+#include "viewport.h"
+#include "lighting.h"
 
 // STB
 #define STB_IMAGE_IMPLEMENTATION
@@ -32,19 +34,9 @@
 
 
 // Prototypes
-void createPoint(vec3 position);
-void onButtonClick(void);
-void toggleGlobalShadows(void *params);
-void toggleShadow(int entityId);
-//void togglePanel(void);
-void onTextInputChange(void);
-void createPoints(GLfloat* positions,int numPoints, Entity* entity);
-void lightDirectionChange(void *params);
 Camera* initCamera(void);
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
-
-
 
 // Colors
 Color blue = {0.0f, 0.0f, 1.0f, 1.0f};
@@ -60,135 +52,6 @@ int last_frame_time = 0;
 // SDL, OpenGL & PROGRAM INITIALIZATION
 //------------------------------------------------------
 
-
-void setViewport(struct View view) {
-    glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
-}
-
-void setViewportAndClear(View view){
-    Rectangle rect = convertViewRectangleToSDLCoordinates(view,globals.views.full.rect.height);
-   
-    // Set the viewport
-    glViewport(rect.x, rect.y, rect.width, rect.height);
-
-     // Set the clear color
-    glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
-
-    // Clear the viewport
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-/**
- * @brief Set the viewport, scissor box and clear color for a view
- * Expects the view to be in opengl coordinates
- */
-void setViewportWithScissorAndClear(View view) {
-    Rectangle rect = convertViewRectangleToSDLCoordinates(view,globals.views.full.rect.height);
-   
-    // Set the viewport
-    glViewport(rect.x, rect.y, rect.width, rect.height);
-
-    // Set the scissor box
-    glScissor(rect.x, rect.y, rect.width, rect.height);
-    glEnable(GL_SCISSOR_TEST);
-
-    // Set the clear color
-    glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
-
-    // Clear the viewport
-    //glClear(GL_COLOR_BUFFER_BIT);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Disable the scissor test
-    glDisable(GL_SCISSOR_TEST);
-}
-
-/**
- * @param index
- */
-void createPointLightSpace(int index){
-    Entity* light = &globals.entities[globals.lights[index].entityId];
-    float near_plane = 0.001f, far_plane = 60.0f;
-    mat4x4 lightProjection, lightView;
-    mat4x4_perspective(lightProjection,90,1.0,near_plane,far_plane);
-
-    vec3 targets[6] = {
-        {1.0f,  0.0f,  0.0f},  // Right
-        {-1.0f,  0.0f,  0.0f},  // Left
-        {0.0f,  1.0f,  0.0f},  // Up
-        {0.0f, -1.0f,  0.0f},  // Down
-        {0.0f,  0.0f,  1.0f},  // Front
-        {0.0f,  0.0f, -1.0f}   // Back
-    };
-
-    vec3 ups[6] = {
-        {0.0f, -1.0f,  0.0f},  // Right
-        {0.0f, -1.0f,  0.0f},  // Left
-        {0.0f,  0.0f,  1.0f},  // Up
-        {0.0f,  0.0f, -1.0f},  // Down
-        {0.0f, -1.0f,  0.0f},  // Front
-        {0.0f, -1.0f,  0.0f}   // Back
-    };
-
-    for(int i = 0; i < 6; i++){
-        ASSERT(index > MAX_LIGHTS,"index larger than MAX_LIGHTS");
-        int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex[i]; 
-        ASSERT(lightSpaceIndex > MAX_LIGHTSPACES,"Light space index out of bounds");
-
-        // 6 projections with diff. view targets, up,down,left,right,front,back HERE!<--
-        // front
-        if(i == 0) mat4x4_look_at(lightView, light->transformComponent->position, targets[i],ups[i]);
-      //  if(i == 0) mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
-        // back
-        if(i == 1) mat4x4_look_at(lightView, light->transformComponent->position,  targets[i], ups[i]);
-       // if(i == 1) mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, -1.0f, 0.0f});
-        // left
-       // if(i == 2) mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){-1.0f, 1.0f, 0.0f});
-        if(i == 2) mat4x4_look_at(lightView, light->transformComponent->position,  targets[i], ups[i]);
-        // right
-    //    if(i == 3) mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 0.0f});
-        if(i == 3) mat4x4_look_at(lightView, light->transformComponent->position, targets[i], ups[i]);
-        // up
-       // if(i == 4) mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, -1.0f});
-        if(i == 4) mat4x4_look_at(lightView, light->transformComponent->position,  targets[i], ups[i]);
-        // down
-       // if(i == 5) mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 1.0f});
-        if(i == 5) mat4x4_look_at(lightView, light->transformComponent->position,  targets[i], ups[i]);
-
-        mat4x4_mul(globals.lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
-    }
-}
-
-/**
- * @param index
- */
-void createSpotLightSpace(int index){
-    // ASSERT(true, "NOT YET IMPLEMENTED");
-    Entity* light = &globals.entities[globals.lights[index].entityId];
-    int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex[0];
-    printf("lsi %i \n",lightSpaceIndex);
-    mat4x4 lightProjection, lightView;
-    float near_plane = 0.001f, far_plane = 60.0f;
-    mat4x4_ortho(lightProjection, -60.0f, 60.0f, -60.0f, 60.0f, near_plane, far_plane);
-    mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
-    mat4x4_mul(globals.lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
-}
-
-void createLightSpace(void){
-    for(int i = 0; i < globals.lightsCount; i++){
-        if(globals.lights[i].lightType == DIRECTIONAL){
-            createDirectionalLightSpace(i);
-        }
-        if(globals.lights[i].lightType == SPOT){
-            //createDirectionalLightSpace(i);
-          //  createSpotLightSpace(i);
-        }
-        if(globals.lights[i].lightType == POINT){
-           // createDirectionalLightSpace(i);
-            //createPointLightSpace(i);
-        }
-    }
-}
 
 void initProgram(void){
     if (!initSdlWindow(&globals)) exit(1);
@@ -659,107 +522,7 @@ int main(int argc, char **argv) {
     #endif
 }
 
-//------------------------------------------------------
-//  PROGRAM ACTIONS API
-//------------------------------------------------------
-// TODO: Move these to api.c after we used them.
-void createPoint(vec3 position){
-   /*  GLfloat vertices[] = {
-        position[0], position[1], position[2],  1.0f, 1.0f, 1.0f, 0.0f, 0.0f
-    }; */
-}
-void createPoints(GLfloat* positions,int numPoints, Entity* entity){
-    entity->pointComponent->active = 1;
-    entity->pointComponent->color = (Color){1.0f,0.0f,1.0f,1.0f};
-    entity->pointComponent->points = positions;
-    entity->pointComponent->pointSize = 10.0f;
-    entity->transformComponent->position[0] = positions[0];
-    entity->transformComponent->position[1] = positions[1];
-    entity->transformComponent->position[2] = positions[2];
-    entity->transformComponent->scale[0] = 1.0f;
-    entity->transformComponent->scale[1] = 1.0f;
-    entity->transformComponent->scale[2] = 1.0f;
-    entity->transformComponent->rotation[0] = 0.0f;
-    entity->transformComponent->rotation[1] = 0.0f;
-    entity->transformComponent->rotation[2] = 0.0f;
-    entity->transformComponent->modelNeedsUpdate = 1;
-    setupPoints(positions,numPoints,entity->pointComponent->gpuData);
-    setupMaterial(entity->pointComponent->gpuData,"shaders/point_vertex.glsl", "shaders/point_fragment.glsl");
-}
 
-/**
- * TODO: This will create a ui_panel and is in turn an abstraction to create a group of ui-elements to make up this panel.
- */
-void ui_panel(Material material, vec3 position,vec3 scale, vec3 rotation,Rectangle rect, bool floating, bool collapsable){
-  //ui_createRectangle(Material material, vec3 positi)
-  printf("not yet implemented \n");
-}
-void onButtonClick(void) {
-
-    for(int i = 0; i < MAX_ENTITIES; i++){
-       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].transformComponent->active == 1){
-            globals.entities[i].transformComponent->rotation[1] += 0.01f;
-            globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-       }
-    }
-    printf("Button pressed!\n");
-}
-void toggleGlobalShadows(void *params){
-    if(params != NULL){
-       // printf("unused param %d \n",(int)params);
-    }
-    globals.shadows = !globals.shadows;
-    printf("global shadows ? %d \n",globals.shadows);
-}
-void toggleShadow(int entityId){
-        globals.entities[entityId].lightComponent->castShadows = !globals.entities[entityId].lightComponent->castShadows;
-        printf("shadow state on entityiID %d: %d \n",entityId,globals.entities[entityId].lightComponent->castShadows);
-}
-
-void lightDirectionChange(void *params){
-    LightDirChangeParams lightDirectionChange = *(LightDirChangeParams *)params;
-    printf("entity ID %d \n",lightDirectionChange.entityId);
-    globals.entities[globals.lights[0].entityId].lightComponent->direction[lightDirectionChange.index] = globals.entities[lightDirectionChange.entityId].uiComponent->sliderValue;
-}
-
-void togglePanel(void *params){
-    if(params != NULL){
-        printf("unhandled params \n");
-    }
-   // printf("hello");
- //   BoundingBox boundary;
-    for(int i = 0; i < MAX_ENTITIES; i++){
-       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active != 1 && globals.entities[i].uiComponent->clicked){
-        printf("Sclicked %d \n",globals.entities[i].id);
-        
-            if(globals.entities[i].uiComponent->parent != NULL){
-                printf("parentId %d ",globals.entities[i].uiComponent->parent->id);
-            }
-       }
-    }
-   /*  for(int i = 0; i < MAX_ENTITIES; i++){
-       if(globals.entities[i].alive == 1 && globals.entities[i].uiComponent->active == 1 && globals.entities[i].transformComponent->active == 1){
-      
-        if(isPointInsideRect(boundary, (vec2){ globals.entities[i].uiComponent->boundingBox.x, globals.entities[i].uiComponent->boundingBox.y}) 
-        && isPointInsideRect(boundary, (vec2){ globals.entities[i].uiComponent->boundingBox.x+globals.entities[i].uiComponent->boundingBox.x 
-        + globals.entities[i].uiComponent->boundingBox.width, globals.entities[i].uiComponent->boundingBox.y
-        + globals.entities[i].uiComponent->boundingBox.height})){
-             if(globals.entities[i].transformComponent->scale[1] > 0.0f){
-                globals.entities[i].transformComponent->scale[1] -= 0.61f;
-            }
-            globals.entities[i].transformComponent->modelNeedsUpdate = 1;
-        }
-
-        
-           
-            
-       }
-    } */
-   // printf("Panel toggled!\n");
-}
-void onTextInputChange(void){
-    printf("Text input changed!\n");
-}
 
 
     

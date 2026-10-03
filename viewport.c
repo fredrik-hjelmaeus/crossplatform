@@ -1,3 +1,6 @@
+#include "viewport.h"
+#include "opengl_types.h"
+#include "utils.h"
 #include "globals.h"
 #include "ecs.h"
 
@@ -107,3 +110,45 @@ void recalculateViewports(int w, int h, struct Globals *globals){
     // Update the projection on the perspective main view camera
     globals->views.main.camera->projectionMatrixNeedsUpdate = 1;
 }
+void setViewport(struct View view) {
+    glViewport(view.rect.x, view.rect.y, view.rect.width, view.rect.height);
+}
+
+void setViewportAndClear(View view){
+    Rectangle rect = convertViewRectangleToSDLCoordinates(view,globals.views.full.rect.height);
+   
+    // Set the viewport
+    glViewport(rect.x, rect.y, rect.width, rect.height);
+
+     // Set the clear color
+    glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
+
+    // Clear the viewport
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+/**
+ * @brief Set the viewport, scissor box and clear color for a view
+ * Expects the view to be in opengl coordinates
+ */
+void setViewportWithScissorAndClear(View view) {
+    Rectangle rect = convertViewRectangleToSDLCoordinates(view,globals.views.full.rect.height);
+   
+    // Set the viewport
+    glViewport(rect.x, rect.y, rect.width, rect.height);
+
+    // Set the scissor box
+    glScissor(rect.x, rect.y, rect.width, rect.height);
+    glEnable(GL_SCISSOR_TEST);
+
+    // Set the clear color
+    glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
+
+    // Clear the viewport
+    //glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Disable the scissor test
+    glDisable(GL_SCISSOR_TEST);
+}
+
