@@ -1,3 +1,4 @@
+#include "render.h"
 #include "text.h"
 #include "types.h"
 #include "utils.h"
@@ -349,9 +350,9 @@ char specialLeftShiftHandling(char c){
  * After this the projection matrix for the font need to be set using setFontProjection.
  * And then you can render text using renderText.
  */
-void initFont(AppState *app){
+void initFont(RenderState *renderState, AppState *app){
     setupFontTextures(app, "./Assets/ARIAL.TTF",app->fontSize);
-    setupFontMesh(&app->gpuFontData);
-    setupMaterial(&app->gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
+    setupFontMesh(&renderState->gpuFontData);
+    setupMaterial(&renderState->gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
 }
 

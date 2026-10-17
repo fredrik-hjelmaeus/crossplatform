@@ -1,3 +1,4 @@
+#include "render.h"
 #include "ui.h"
 #include "app.h"
 #include "api.h"
@@ -411,12 +412,12 @@ void onButtonClick(AppState *app) {
     printf("Button pressed!\n");
 }
 
-void toggleGlobalShadows(AppState *app, void *params){
+void toggleGlobalShadows(RenderState *renderState, void *params){
     if(params != NULL){
        // printf("unused param %d \n",(int)params);
     }
-    app->shadows = !app->shadows;
-    printf("global shadows ? %d \n",app->shadows);
+    renderState->shadows = !renderState->shadows;
+    printf("global shadows ? %d \n",renderState->shadows);
 }
 
 void toggleShadow(AppState *app, int entityId){

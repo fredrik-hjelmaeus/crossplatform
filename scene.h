@@ -1,6 +1,8 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+typedef struct RenderState RenderState;
+
 typedef struct AppState AppState;
 
 typedef enum {
@@ -11,6 +13,6 @@ typedef enum {
 } SceneMode;
 
 void changeSceneMode(SceneMode mode,AppState *app);
-void initScene(AppState *app);
+void initScene(RenderState *renderState, AppState *app);
 
 #endif // SCENE_H

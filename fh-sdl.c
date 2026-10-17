@@ -1,10 +1,11 @@
+#include "render.h"
 #include "fh-sdl.h"
 #include "app.h"
 #include <stdio.h>
 
-void setRenderDrawColor(int r, int g, int b, int a, AppState *app) {
+void setRenderDrawColor(RenderState *renderState, int r, int g, int b, int a) {
     // Initial renderer color
-    SDL_SetRenderDrawColor(app->renderer, r, g, b, a);
+    SDL_SetRenderDrawColor(renderState->renderer, r, g, b, a);
 }
 
 int pollEvent(AppState *app){
@@ -42,18 +43,18 @@ int initSdlWindow(AppState *app) {
     return 1;
 }
 
-int createOpenGLContext(AppState *app) {
-    app->gl_context = SDL_GL_CreateContext(app->window);
-    if (app->gl_context == NULL) {
+int createOpenGLContext(RenderState *renderState, AppState *app) {
+    renderState->gl_context = SDL_GL_CreateContext(app->window);
+    if (renderState->gl_context == NULL) {
         fprintf(stderr, "Failed to create OpenGL context: %s\n", SDL_GetError());
         return 0;
     }
     return 1;
 }
 
-void quit(AppState *app) {
-    if (app->gl_context != NULL) SDL_GL_DeleteContext(app->gl_context);
-    if (app->renderer != NULL) SDL_DestroyRenderer(app->renderer);
+void quit(RenderState *renderState, AppState *app) {
+    if (renderState->gl_context != NULL) SDL_GL_DeleteContext(renderState->gl_context);
+    if (renderState->renderer != NULL) SDL_DestroyRenderer(renderState->renderer);
     if (app->window != NULL) SDL_DestroyWindow(app->window);
     SDL_Quit();
 }

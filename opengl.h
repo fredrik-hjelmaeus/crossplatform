@@ -1,6 +1,9 @@
 #ifndef OPENGL_H   // If OPENGL_H isn't defined...
 #define OPENGL_H   // Define it (with no particular value)
 
+typedef struct RenderState RenderState;
+
+
 typedef struct AppState AppState;
 
 #include <stdio.h>
@@ -11,11 +14,11 @@ typedef struct AppState AppState;
 #include "utils.h"
 
 
-void renderMesh(AppState *app, GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material);
+void renderMesh(RenderState *renderState, AppState *app, GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material);
 
 void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPath);
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
-GLuint setupTexture(AppState *app, TextureData textureData);
+GLuint setupTexture(RenderState *renderState, TextureData textureData);
 
 void setupFontTextures(AppState *app, char* fontPath,int fontSize);
 void setupFontMesh(GpuData *buffer);
@@ -28,11 +31,11 @@ void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
 // Shadow maps
 void depthshadow_createFrameBuffer(GpuData* buffer);
-void depthshadow_createDepthTexture(AppState *app);
-void depthshadow_createDepthCubemap(AppState *app);
-void depthshadow_setViewportForDepthMapShadowRender(AppState *app, View view);
+void depthshadow_createDepthTexture(RenderState *renderState);
+void depthshadow_createDepthCubemap(RenderState *renderState);
+void depthshadow_setViewportForDepthMapShadowRender(RenderState *renderState, View view);
 void depthshadow_configureFrameBuffer(GpuData* buffer, GLenum textureTarget, GLuint depthMap);
-void depthshadow_renderToDepthTexture(AppState *app, GpuData *buffer,TransformComponent *transformComponent);
+void depthshadow_renderToDepthTexture(RenderState *renderState, AppState *app, GpuData *buffer,TransformComponent *transformComponent);
 /**
  * @brief Generally called when view are switched
  * buffer is font gpu data

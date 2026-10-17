@@ -1,3 +1,4 @@
+#include "render.h"
 #include "scene.h"
 #include "app.h"
 #include "assets.h"
@@ -18,7 +19,7 @@ void changeSceneMode(SceneMode mode,AppState *app){
  * 3d objects put into main viewport will be in an 3d-enviroment and treated normally.
  * objects created in the ui viewport will be in a 2d-environment and act more like a web ui element.
 */
-void initScene(AppState *app){
+void initScene(RenderState *renderState, AppState *app){
 
    changeSceneMode(SCENE_MODE_NORMAL,app);
 
@@ -29,16 +30,16 @@ void initScene(AppState *app){
    app->views.main.camera->target[2] = 0.0f;
     
     // Assets
-    initFont(app);
+    initFont(renderState, app);
    
-    setupMaterial(&app->depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
+    setupMaterial(&renderState->depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
   
-    depthshadow_createFrameBuffer(&app->depthMapBuffer);
-    depthshadow_createDepthTexture(app);
+    depthshadow_createFrameBuffer(&renderState->depthMapBuffer);
+    depthshadow_createDepthTexture(renderState);
     //depthshadow_createDepthCubemap();
-  //  depthshadow_configureFrameBuffer(&app->depthMapBuffer);
-    //depthshadow_configureCubeMapFrameBuffer(&app->depthMapBuffer);
-    initAssets(app);
+  //  depthshadow_configureFrameBuffer(&renderState->depthMapBuffer);
+    //depthshadow_configureCubeMapFrameBuffer(&renderState->depthMapBuffer);
+    initAssets(renderState);
   
  //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
   
@@ -54,7 +55,7 @@ void initScene(AppState *app){
     ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");*/
   //  ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   
    // ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
-    ObjGroup* skp_arbetsrum = obj_loadFile(app, "./Assets/arbetsrum_FINAL.obj");
+    ObjGroup* skp_arbetsrum = obj_loadFile(renderState, app, "./Assets/arbetsrum_FINAL.obj");
  
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
   
@@ -101,7 +102,7 @@ void initScene(AppState *app){
     
 
     // lights
-    int lightId = createLight(app, lightMaterial,(vec3){5.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
+    int lightId = createLight(renderState, app, lightMaterial,(vec3){5.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);

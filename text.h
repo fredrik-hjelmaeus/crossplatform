@@ -1,6 +1,9 @@
 #ifndef TEXT_H
 #define TEXT_H
 
+typedef struct RenderState RenderState;
+
+
 typedef struct AppState AppState;
 
 #include "types.h"
@@ -25,7 +28,7 @@ void addIndexToCursorTextSelection(AppState *app, unsigned int index);
  * After this the projection matrix for the font need to be set using setFontProjection.
  * And then you can render text using renderText.
  */
-void initFont(AppState *app);
+void initFont(RenderState *renderState, AppState *app);
 
 
 #endif

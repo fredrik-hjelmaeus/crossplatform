@@ -1,6 +1,9 @@
 #ifndef API_H
 #define API_H
 
+typedef struct RenderState RenderState;
+
+
 typedef struct AppState AppState;
 
 #include "event.h"
@@ -44,7 +47,7 @@ void createObject(AppState *app, ObjData* obj,vec3 position,vec3 scale,vec3 rota
  * Create a light source in the scene.
  * @return int - Entity id
  */
-int createLight(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
+int createLight(RenderState *renderState, AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type);
 /**
  * @brief Create a Cube
  * Create a Cube mesh

@@ -1,6 +1,9 @@
 #ifndef UTILS_H   // If UTILS_H isn't defined...
 #define UTILS_H   // Define it (with no particular value)
 
+typedef struct RenderState RenderState;
+
+
 typedef struct AppState AppState;
 
 #include <stdio.h>
@@ -50,7 +53,7 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
 void captureDrawCalls(int width, int height, int drawCallsCounter);
 float deg2rad(float degrees);
-GLuint setupTexture(AppState *app, TextureData textureData);
+GLuint setupTexture(RenderState *renderState, TextureData textureData);
 void floatToString(float f,int len, char* c);
 
 // Memory
@@ -82,9 +85,9 @@ Material* getMaterial(AppState *app, int index);
 void obj_runTests(void);
 void obj_handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
 char* obj_handleFilePath(AppState *app, const char* filepath);
-ObjGroup* obj_loadFile(AppState *app, const char *filepath);
-void obj_parseMaterial(AppState *app, const char *filepath);
-bool obj_processTextureMap(AppState *app, char* mtlLine,const char* mapType,GLuint* map);
+ObjGroup* obj_loadFile(RenderState *renderState, AppState *app, const char *filepath);
+void obj_parseMaterial(RenderState *renderState, AppState *app, const char *filepath);
+bool obj_processTextureMap(RenderState *renderState, AppState *app, char* mtlLine,const char* mapType,GLuint* map);
 
 // Math
 void vec3_subtract(vec3 a, vec3 b, vec3* result);

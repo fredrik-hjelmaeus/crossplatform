@@ -1,3 +1,4 @@
+#include "render.h"
 #include "api.h"
 #include "app.h"
 #include "opengl.h"
@@ -192,7 +193,7 @@ void createMesh(AppState *app,
         //setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
         setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
         printf("post process mesh quad material id %d \n",entity->meshComponent->gpuData->shaderProgram);
-        //setupMaterial(&app->postProcessBuffer, "shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl");
+        //setupMaterial(&renderState->postProcessBuffer, "shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl");
     }else if(entity->uiComponent->active == 1){
         setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
     }else {
@@ -229,7 +230,7 @@ void createObject(AppState *app, ObjData* obj,vec3 position,vec3 scale,vec3 rota
  * Create a light source in the scene.
  * @return {int} Entity id
  */
-int createLight(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type){
+int createLight(RenderState *renderState, AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type){
     
    // vertex data
     /* GLfloat vertices[] = {
@@ -328,7 +329,7 @@ int createLight(AppState *app, Material material,vec3 position,vec3 scale,vec3 r
     ASSERT(app->lightsCount < MAX_LIGHTS, "Too many lights");
     app->lights[app->lightsCount].entityId = entity->id;
     app->lights[app->lightsCount].lightType = type;
-    createDirectionalLightSpace(app, app->lightsCount);
+    createDirectionalLightSpace(renderState, app, app->lightsCount);
     app->lightsCount++;
 
     if(type == DIRECTIONAL){

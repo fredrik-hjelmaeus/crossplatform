@@ -1,6 +1,9 @@
 #ifndef UI_H
 #define UI_H
 
+typedef struct RenderState RenderState;
+
+
 typedef struct AppState AppState;
 
 #include "types.h"
@@ -12,7 +15,7 @@ typedef struct AppState AppState;
 void togglePanel(AppState *app, void *params);
 void lightDirectionChange(AppState *app, void *params);
 void toggleShadow(AppState *app, int entityId);
-void toggleGlobalShadows(AppState *app, void *params);
+void toggleGlobalShadows(RenderState *renderState, void *params);
 void onButtonClick(AppState *app);
 /**
  * @brief Create a panel

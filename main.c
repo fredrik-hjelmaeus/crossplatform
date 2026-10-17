@@ -1,3 +1,4 @@
+#include "render.h"
 #include <stdio.h>
 #include <time.h>
 #include "opengl_types.h"
@@ -87,7 +88,7 @@ void calcCameraFront(Camera* camera, float xpos, float ypos){
             vec3_norm(camera->front, direction);
 }
 
-void handleKeyInput(AppState *app){
+void handleKeyInput(RenderState *renderState, AppState *app){
          
             processKeyInput(app->event.key.keysym.sym, app->currentSceneMode);
             
@@ -108,15 +109,15 @@ void handleKeyInput(AppState *app){
                 //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
             }
             if(strcmp(key, "T") == 0) {
-                app->culling = !app->culling;
+                renderState->culling = !renderState->culling;
             }
             if(strcmp(key, "L") == 0) {
                 // Pressing L will write all drawcalls of a frame to disk as a pngs
-                app->debugDrawCalls = true;
+                renderState->debugDrawCalls = true;
                 printf("Debug drawcalls enabled\n");
             }
             if(strcmp(key, "B") == 0) {
-                app->drawBoundingBoxes = !app->drawBoundingBoxes;
+                renderState->drawBoundingBoxes = !renderState->drawBoundingBoxes;
             }
             if(strcmp(key, "Escape") == 0) {
                 app->running = 0;
@@ -211,13 +212,13 @@ void handleKeyInput(AppState *app){
                 }
             }
             if(strcmp(key, "U") == 0){
-                app->blinnMode = !app->blinnMode;
+                renderState->blinnMode = !renderState->blinnMode;
             }
             if(strcmp(key, "G") == 0){
-                app->gamma = !app->gamma;
+                renderState->gamma = !renderState->gamma;
             }
             if(strcmp(key, "H") == 0){
-                app->showDepthMap = !app->showDepthMap;
+                renderState->showDepthMap = !renderState->showDepthMap;
             }
             if(strcmp(key, "U") == 0){
                 app->showUI = !app->showUI;
@@ -236,7 +237,7 @@ void displayFps(AppState *app, Uint32 ticks){
     app->prevTick = ticks/1000;
 }
 
-void update(AppState *app){
+void update(RenderState *renderState, AppState *app){
 
     // Time 
     Uint32 ticks = getTicks();
@@ -259,14 +260,14 @@ void update(AppState *app){
     uiInputSystem(app);
     hoverAndClickSystem(app);
     uiSliderSystem(app);
-    uiCheckboxSystem(app);
+    uiCheckboxSystem(renderState, app);
     textCursorSystem(app);
     movementSystem(app);
     modelSystem(app);
     app->prevMouseLeftDown = app->mouseLeftButtonPressed;
 }
 
-void render(AppState *app){
+void render(RenderState *renderState, AppState *app){
 
     // Clear the entire window
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -274,7 +275,7 @@ void render(AppState *app){
     glEnable(GL_DEPTH_TEST);
 
     // Set culling
-     if(app->culling){
+     if(renderState->culling){
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
         glFrontFace(GL_CCW);
@@ -294,7 +295,7 @@ void render(AppState *app){
                 GLfloat shin = app->entities[i].materialComponent->shininess;
                 GLuint diffMap = app->entities[i].materialComponent->diffuseMap;
                 bool useDiffMap = app->entities[i].materialComponent->useDiffuseMap;
-                renderMesh(app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,diff,amb,spec,shin,diffMap,app->views.main.camera,useDiffMap);
+                renderMesh(renderState, app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,diff,amb,spec,shin,diffMap,app->views.main.camera,useDiffMap);
             }
         }
     }
@@ -303,9 +304,9 @@ void render(AppState *app){
    
    // Render depth map
    // TODO: GL_CULL_FACE to avoid Peter panning?
-   if(app->shadows){
-    createLightSpace(app);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, app->depthMapBuffer.FBO);
+   if(renderState->shadows){
+    createLightSpace(renderState, app);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, renderState->depthMapBuffer.FBO);
     
     glEnable(GL_DEPTH_TEST);
         for(int i = 0; i < MAX_ENTITIES; i++) {
@@ -313,7 +314,7 @@ void render(AppState *app){
                 if(app->entities[i].meshComponent->active == 1) {
                     if(app->entities[i].uiComponent->active != 1){
                         if(!app->entities[i].materialComponent->isPostProcessMaterial){
-                            depthshadow_renderToDepthTexture(app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent);
+                            depthshadow_renderToDepthTexture(renderState, app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent);
                         }
                     }
                 }
@@ -326,13 +327,13 @@ void render(AppState *app){
   
    // Render main view & 3d objects
    setViewportAndClear(app, app->views.full);
-   setFontProjection(&app->gpuFontData,app->views.full);
+   setFontProjection(&renderState->gpuFontData,app->views.full);
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(app->entities[i].alive == 1 && app->entities[i].visible) {
             if(app->entities[i].meshComponent->active == 1) {
                 if(app->entities[i].uiComponent->active != 1){
                    if(!app->entities[i].materialComponent->isPostProcessMaterial){
-                     renderMesh(app,  app->entities[i].meshComponent->gpuData, app->entities[i].transformComponent, app->views.main.camera,app->entities[i].materialComponent );
+                     renderMesh(renderState, app,  app->entities[i].meshComponent->gpuData, app->entities[i].transformComponent, app->views.main.camera,app->entities[i].materialComponent );
                    }
                     
                 }
@@ -374,13 +375,13 @@ void render(AppState *app){
             if(app->entities[i].alive == 1 && app->entities[i].visible) {
                 if(app->entities[i].meshComponent->active == 1) {
                             // render ui, could be overhead with switching viewports?. profile.    
-                            if(app->drawBoundingBoxes){
+                            if(renderState->drawBoundingBoxes){
                                 if(app->entities[i].tag == BOUNDING_BOX){
-                                    renderMesh(app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,app->views.ui.camera, app->entities[i].materialComponent);
+                                    renderMesh(renderState, app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,app->views.ui.camera, app->entities[i].materialComponent);
                                 }
                             }else {
                                 if(app->entities[i].uiComponent->active == 1 && app->entities[i].tag != BOUNDING_BOX){
-                                    renderMesh(app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,app->views.ui.camera, app->entities[i].materialComponent);
+                                    renderMesh(renderState, app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,app->views.ui.camera, app->entities[i].materialComponent);
                                 }
                             }
                 }
@@ -388,7 +389,7 @@ void render(AppState *app){
         }
         
         // render ui text
-        setFontProjection(&app->gpuFontData,app->views.ui);
+        setFontProjection(&renderState->gpuFontData,app->views.ui);
         glDisable(GL_DEPTH_TEST);
         for(int i = 0; i < MAX_ENTITIES; i++) {
             if(app->entities[i].alive == 1 && app->entities[i].visible) {
@@ -407,7 +408,7 @@ void render(AppState *app){
                                 // align text center vertically
                                 result[1] -= (float)app->characters[0].Size[1] / 4.0;
                             renderText(app, 
-                                &app->gpuFontData, 
+                                &renderState->gpuFontData, 
                                 app->entities[i].uiComponent->text, 
                                 result[0],result[1],
                                 app->charScale,app->textColor);
@@ -428,18 +429,25 @@ void render(AppState *app){
 
 
 #ifdef __EMSCRIPTEN__
+typedef struct {
+    AppState *app;
+    RenderState *renderState;
+} LoopContext;
+
 void emscriptenLoop(void *context) {
-    AppState *app = context;
+    LoopContext *loop = context;
+    AppState *app = loop->app;
+    RenderState *renderState = loop->renderState;
     if(!app->running){
         printf("Closing sdl canvas!\n");
-        quit(app);
+        quit(renderState, app);
         printf("Goodbye!\n");
         emscripten_cancel_main_loop();
         return;
     }
-    input(app);
-    update(app);
-    render(app);
+    input(renderState, app);
+    update(renderState, app);
+    render(renderState, app);
 }
 #endif
 
@@ -454,6 +462,7 @@ int main(int argc, char **argv) {
     printf("Platform is %s\n", PLATFORM); */
 
     AppState appState = appDefaults();
+    RenderState renderState = renderDefaults();
 
     // Initialize Memory Arenas
     arena_initMemory(&appState.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
@@ -475,7 +484,7 @@ int main(int argc, char **argv) {
     
     initProgram(&appState);
    
-    if (!createOpenGLContext(&appState)) exit(1);
+    if (!createOpenGLContext(&renderState, &appState)) exit(1);
     glEnable(GL_DEPTH_TEST);
 
     // Tests
@@ -500,27 +509,28 @@ int main(int argc, char **argv) {
     mainCamera->aspectRatio = appState.views.main.rect.width / appState.views.main.rect.height;
     appState.views.main.camera = mainCamera;
 
-    initScene(&appState);
+    initScene(&renderState, &appState);
     
     //------------------------------------------------------
     // Main loop
     // -----------------------------------------------------
     // Wasm code
     #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop_arg(emscriptenLoop, &appState, 0, 1);
+    LoopContext loop = {&appState, &renderState};
+    emscripten_set_main_loop_arg(emscriptenLoop, &loop, 0, 1);
     #else
     // native code
     while(appState.running) {
-        input(&appState);
-        update(&appState);
-        render(&appState);
-        debugSystem(&appState);
+        input(&renderState, &appState);
+        update(&renderState, &appState);
+        render(&renderState, &appState);
+        debugSystem(&renderState);
     }
 
     // -----------------------------------------------------
     // Quit
     // -----------------------------------------------------
-    quit(&appState);
+    quit(&renderState, &appState);
     printf("Non emscripten shutdown complete!\n");
     return 0;
     #endif

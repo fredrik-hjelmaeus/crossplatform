@@ -1,3 +1,4 @@
+#include "render.h"
 #include "ecs-systems.h"
 #include "fh-sdl.h"
 #include <errno.h>
@@ -721,16 +722,16 @@ void modelSystem(AppState *app){
           }}
 }
 
-void debugSystem(AppState *app){
+void debugSystem(RenderState *renderState){
     
     // Turn off debug draw calls, we only want one frame of drawcalls saved.
-    if(app->debugDrawCalls){
-        app->debugDrawCalls = false;
+    if(renderState->debugDrawCalls){
+        renderState->debugDrawCalls = false;
     }
        
 }
 
-void uiCheckboxSystem(AppState *app){
+void uiCheckboxSystem(RenderState *renderState, AppState *app){
 
     for(int i = 0; i < MAX_ENTITIES; i++){
         if(
@@ -748,7 +749,7 @@ void uiCheckboxSystem(AppState *app){
                 }else {
                     app->entities[i].uiComponent->checked = true;
                     app->entities[app->entities[i].uiComponent->checkedEntityId].materialComponent->diffuse.g = 1.0;
-                    app->shadows = true;
+                    renderState->shadows = true;
                     printf("checked \n");
                   
                 }

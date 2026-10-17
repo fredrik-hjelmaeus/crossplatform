@@ -1,14 +1,16 @@
 #ifndef FH_SDL_H
 #define FH_SDL_H
 
+typedef struct RenderState RenderState;
+
 typedef struct AppState AppState;
 #include <SDL2/SDL.h>
 
-void setRenderDrawColor(int r, int g, int b, int a, AppState *app);
+void setRenderDrawColor(RenderState *renderState, int r, int g, int b, int a);
 int pollEvent(AppState *app);
 int initSdlWindow(AppState *app);
-int createOpenGLContext(AppState *app);
-void quit(AppState *app);
+int createOpenGLContext(RenderState *renderState, AppState *app);
+void quit(RenderState *renderState, AppState *app);
 void swapWindow(AppState *app);
 void toggleFullscreen(AppState *app);
 void getWindowSize(AppState *app, int *width, int *height);

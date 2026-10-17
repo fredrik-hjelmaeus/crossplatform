@@ -1,10 +1,11 @@
+#include "render.h"
 #include "app.h"
 #include "input.h"
 #include "fh-sdl.h"
 #include "utils.h"
 #include "viewport.h"
 
-void handleKeyInput(AppState *app);
+void handleKeyInput(RenderState *renderState, AppState *app);
 void calcCameraFront(Camera *camera, float xpos, float ypos);
 
 /**
@@ -12,7 +13,7 @@ void calcCameraFront(Camera *camera, float xpos, float ypos);
  * This is because this fn will become too large otherwise,and we wan't to group & handle events in a more structured way. 
  * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
  */
-void input(AppState *app) {
+void input(RenderState *renderState, AppState *app) {
     
     // Process events
     while(pollEvent(app)) {
@@ -43,7 +44,7 @@ void input(AppState *app) {
             if(app->focusedEntityId != -1){
                 return;
             }else {
-                handleKeyInput(app);
+                handleKeyInput(renderState, app);
             }
         }
             

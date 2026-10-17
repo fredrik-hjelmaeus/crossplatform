@@ -1,3 +1,4 @@
+#include "render.h"
 #include "shadows.h"
 #include "linmath.h"
 #include "types.h"
@@ -7,7 +8,7 @@
 /**
  * @param index
  */
-void createDirectionalLightSpace(AppState *app, int index){
+void createDirectionalLightSpace(RenderState *renderState, AppState *app, int index){
         Entity* light = &app->entities[app->lights[index].entityId];
         int lightSpaceIndex = app->lights[index].lightSpaceMatrixIndex[0];
 
@@ -26,5 +27,5 @@ void createDirectionalLightSpace(AppState *app, int index){
         );
 
         // Multiply to get light-space matrix
-        mat4x4_mul(app->lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView); 
+        mat4x4_mul(renderState->lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView); 
 }

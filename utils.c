@@ -1,3 +1,4 @@
+#include "render.h"
 #include "utils.h"
 #include "app.h"
 #include <ctype.h>
@@ -482,7 +483,7 @@ char* obj_handleFilePath(AppState *app, const char* filepath){
     return newPath;
 }
 
-bool obj_processTextureMap(AppState *app, char* mtlLine,const char* mapType,GLuint* map){
+bool obj_processTextureMap(RenderState *renderState, AppState *app, char* mtlLine,const char* mapType,GLuint* map){
     
     if(strncmp(mtlLine, mapType, strlen(mapType)) == 0){
             char* token = strtok(mtlLine, " ");
@@ -497,7 +498,7 @@ bool obj_processTextureMap(AppState *app, char* mtlLine,const char* mapType,GLui
             char* filepath = obj_handleFilePath(app, token);
             TextureData texture = loadTexture(filepath);
             
-            *map = setupTexture(app, texture);
+            *map = setupTexture(renderState, texture);
             //printf("mapType %s ID: %d \n",mapType,map);
             return true;
     }
@@ -510,7 +511,7 @@ bool obj_processTextureMap(AppState *app, char* mtlLine,const char* mapType,GLui
  * spec: https://en.wikipedia.org/wiki/Wavefront_.obj_file
  * https://paulbourke.net/dataformats/mtl/
  */
-void obj_parseMaterial(AppState *app, const char *filepath){
+void obj_parseMaterial(RenderState *renderState, AppState *app, const char *filepath){
     // Check if .mtl file with same name exists, if so load&parse it.
     char* dest = (char*)arena_Alloc(&app->assetArena, 99 * sizeof(char));
     char* dot = (char*)arena_Alloc(&app->assetArena, 99 * sizeof(char));
@@ -643,28 +644,28 @@ void obj_parseMaterial(AppState *app, const char *filepath){
         //  The options and their arguments are inserted between the 
         //  keyword and the "filename". 
         //  map_Ka -options args filename
-        if(obj_processTextureMap(app, mtlLine,"map_Ka", &app->materials[app->materialsCount-1].ambientMap)){
+        if(obj_processTextureMap(renderState, app, mtlLine,"map_Ka", &app->materials[app->materialsCount-1].ambientMap)){
             app->materials[app->materialsCount-1].material_flags |= MATERIAL_AMBIENTMAP_ENABLED;
             continue;
         }
         //map_Kd   lemur.tga
-        if(obj_processTextureMap(app, mtlLine,"map_Kd", &app->materials[app->materialsCount-1].diffuseMap)){
+        if(obj_processTextureMap(renderState, app, mtlLine,"map_Kd", &app->materials[app->materialsCount-1].diffuseMap)){
             app->materials[app->materialsCount-1].diffuseMapOpacity = 1.0;
             app->materials[app->materialsCount-1].material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
             continue;
         }
         //map_Ks   lemur.tga   specular color map
-        if(obj_processTextureMap(app, mtlLine,"map_Ks", &app->materials[app->materialsCount-1].specularMap)){
+        if(obj_processTextureMap(renderState, app, mtlLine,"map_Ks", &app->materials[app->materialsCount-1].specularMap)){
             app->materials[app->materialsCount-1].material_flags |= MATERIAL_SPECULARMAP_ENABLED;
             continue;
         }
         //map_Ns   lemur_spec.tga specular intensity map
-        if(obj_processTextureMap(app, mtlLine,"map_Ns", &app->materials[app->materialsCount-1].shininessMap)){
+        if(obj_processTextureMap(renderState, app, mtlLine,"map_Ns", &app->materials[app->materialsCount-1].shininessMap)){
             app->materials[app->materialsCount-1].material_flags |= MATERIAL_SHININESSMAP_ENABLED;
             continue;
         }
         //map_d    lemur_alpha.tga (alpha)
-        if(obj_processTextureMap(app, mtlLine,"map_d", &app->materials[app->materialsCount-1].alpha)){
+        if(obj_processTextureMap(renderState, app, mtlLine,"map_d", &app->materials[app->materialsCount-1].alpha)){
             continue;
         } 
        
@@ -732,7 +733,7 @@ int getMaterialByName(AppState *app, const char* name){
 // obj specification: https://paulbourke.net/dataformats/obj/ 
 // mtl specification: https://paulbourke.net/dataformats/mtl/
 // & https://en.wikipedia.org/wiki/Wavefront_.obj_file
-ObjGroup* obj_loadFile(AppState *app, const char *filepath)
+ObjGroup* obj_loadFile(RenderState *renderState, AppState *app, const char *filepath)
 {
     // How many vertices can we store in the obj file
     #define OBJDATA_MAX 300001
@@ -795,7 +796,7 @@ ObjGroup* obj_loadFile(AppState *app, const char *filepath)
         if((int)line[0] == 109){
             if(strncmp(line, "mtllib", 6) == 0){
                // NOTE: We don't actually use mtllib name yet. We just use filepath and change to .mtl.
-                obj_parseMaterial(app, filepath);
+                obj_parseMaterial(renderState, app, filepath);
             }
             continue;
         }

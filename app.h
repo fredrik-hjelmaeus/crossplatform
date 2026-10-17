@@ -18,7 +18,6 @@
 #endif
 
 #define MAX_LIGHTS 10
-#define MAX_LIGHTSPACES 36
 
 // Window dimensions
 static const int width = 800;  // If these change, the views defaults should be changed aswell.
@@ -26,15 +25,11 @@ static const int height = 600; // If these change, the views defaults should be 
 
 typedef struct AppState {
     SDL_Window* window;
-    SDL_Renderer* renderer;
     SDL_Event event;
-    SDL_GLContext gl_context;
     int running;
     Entity* entities;
     int vertex_count;
     float delta_time;
-    GLenum overideDrawMode;
-    int overrideDrawModeBool;
     SceneMode currentSceneMode;
     Views views;
     int firstMouse;
@@ -45,21 +40,17 @@ typedef struct AppState {
     bool mouseDragged;
     vec2 mouseDragStart;
     vec2 mouseDragPreviousFrame;
-    bool drawBoundingBoxes;
     Character characters[128];
     int fontSize;
     Color textColor;
-    bool render;
-    GpuData gpuFontData;
     float unitScale;
+    // For now, scene lights stay here: entity creation and UI editing use them too.
     Light lights[MAX_LIGHTS];
     int lightsCount;
-    bool culling;
-    int drawCallsCounter;
-    bool debugDrawCalls;
     Arena assetArena;
     Arena uiArena;
     Arena eventArena;
+    // For now, asset materials stay here: loading and entity creation own this catalog.
     Material* materials;
     int materialsCount;
     int materialsCapacity;
@@ -67,17 +58,6 @@ typedef struct AppState {
     int focusedEntityId;
     float charScale;
     bool mouseDoubleClick;
-    bool blinnMode;
-    bool gamma;
-    GLuint depthMap;
-    GLuint depthCubemap;
-    mat4x4 lightSpaceMatrix[MAX_LIGHTSPACES];
-    GpuData depthMapBuffer; // used to store depthmap shader
-    GpuData frameBuffer; // used to store framebuffer shader
-    GpuData postProcessBuffer; // used to store framebuffer shader
-    bool showDepthMap;
-    int shadowWidth;
-    int shadowHeight;
 
     // Cursor
     int cursorEntityId;
@@ -90,7 +70,6 @@ typedef struct AppState {
     int frameCount;
     Uint32 prevTick;
     bool showUI;
-    bool shadows;
 
 } AppState;
 

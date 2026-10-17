@@ -1,3 +1,4 @@
+#include "render.h"
 #include "assets.h"
 
 struct Material objectMaterial;
@@ -8,13 +9,13 @@ struct Material flatColorUiDarkGrayMat;
 struct Material flatColorUiGrayMat;
 struct Material uiBoundingBoxMat;
 
-void initAssets(AppState *app){
+void initAssets(RenderState *renderState){
    TextureData containerTextureData = loadTexture("./Assets/container.jpg");
-   GLuint containerMap = setupTexture(app, containerTextureData);
+   GLuint containerMap = setupTexture(renderState, containerTextureData);
    TextureData containerTwoTextureData = loadTexture("./Assets/container2.png");
-   GLuint containerTwoMap = setupTexture(app, containerTwoTextureData);
+   GLuint containerTwoMap = setupTexture(renderState, containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
-   GLuint containerTwoSpecularMap = setupTexture(app, containerTwoSpecTextureData);
+   GLuint containerTwoSpecularMap = setupTexture(renderState, containerTwoSpecTextureData);
 
 
     objectMaterial = (struct Material){

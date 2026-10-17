@@ -1,10 +1,13 @@
 #ifndef LIGHTING_H
 #define LIGHTING_H
 
+typedef struct RenderState RenderState;
+
+
 typedef struct AppState AppState;
 
-void createPointLightSpace(AppState *app, int index);
-void createSpotLightSpace(AppState *app, int index);
-void createLightSpace(AppState *app);
+void createPointLightSpace(RenderState *renderState, AppState *app, int index);
+void createSpotLightSpace(RenderState *renderState, AppState *app, int index);
+void createLightSpace(RenderState *renderState, AppState *app);
 
 #endif // LIGHTING_H

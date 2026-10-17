@@ -1,3 +1,4 @@
+#include "render.h"
 #include "types.h"
 #include "linmath.h"
 #include "app.h"
@@ -93,11 +94,11 @@ void depthshadow_createFrameBuffer(GpuData *buffer)
     glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
 }
 
-void depthshadow_createDepthTexture(AppState *app)
+void depthshadow_createDepthTexture(RenderState *renderState)
 {
-    glGenTextures(1, &app->depthMap);
-    glBindTexture(GL_TEXTURE_2D, app->depthMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, app->shadowWidth, app->shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glGenTextures(1, &renderState->depthMap);
+    glBindTexture(GL_TEXTURE_2D, renderState->depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, renderState->shadowWidth, renderState->shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     //glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
     //glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
     glTexParameteri ( GL_TEXTURE_2D,  GL_TEXTURE_COMPARE_MODE, GL_NONE );
@@ -109,13 +110,13 @@ void depthshadow_createDepthTexture(AppState *app)
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 }
 
-void depthshadow_createDepthCubemap(AppState *app)
+void depthshadow_createDepthCubemap(RenderState *renderState)
 {
-    glGenTextures(1, &app->depthCubemap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, app->depthCubemap);
+    glGenTextures(1, &renderState->depthCubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, renderState->depthCubemap);
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, app->shadowWidth, app->shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, renderState->shadowWidth, renderState->shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -136,10 +137,10 @@ void depthshadow_configureFrameBuffer(GpuData *buffer,GLenum textureTarget, GLui
     }
 }
 
-void depthshadow_setViewportForDepthMapShadowRender(AppState *app, View view){
+void depthshadow_setViewportForDepthMapShadowRender(RenderState *renderState, View view){
    
     // Set the viewport
-    glViewport(0, 0, app->shadowWidth, app->shadowHeight);
+    glViewport(0, 0, renderState->shadowWidth, renderState->shadowHeight);
 
      // Set the clear color
     glClearColor(view.clearColor.r, view.clearColor.g, view.clearColor.b, view.clearColor.a);
@@ -151,7 +152,7 @@ void depthshadow_setViewportForDepthMapShadowRender(AppState *app, View view){
 
 static bool myTempVar = true;
 
-void depthshadow_renderToDepthTexture(AppState *app, GpuData *buffer,TransformComponent *transformComponent)
+void depthshadow_renderToDepthTexture(RenderState *renderState, AppState *app, GpuData *buffer,TransformComponent *transformComponent)
 {
     for(int i = 0; i < app->lightsCount; i++){
         if(myTempVar){
@@ -163,18 +164,18 @@ void depthshadow_renderToDepthTexture(AppState *app, GpuData *buffer,TransformCo
         switch(app->lights[i].lightType){
             case POINT:
                 for(int j = 0; j < 6; j++){
-                    depthshadow_configureFrameBuffer(buffer,GL_TEXTURE_CUBE_MAP_POSITIVE_X + j,app->depthCubemap);
-                    depthshadow_setViewportForDepthMapShadowRender(app, app->views.full);
-                    glUseProgram(app->depthMapBuffer.shaderProgram);
-                    unsigned int modelLoc = glGetUniformLocation(app->depthMapBuffer.shaderProgram, "model");
+                    depthshadow_configureFrameBuffer(buffer,GL_TEXTURE_CUBE_MAP_POSITIVE_X + j,renderState->depthCubemap);
+                    depthshadow_setViewportForDepthMapShadowRender(renderState, app->views.full);
+                    glUseProgram(renderState->depthMapBuffer.shaderProgram);
+                    unsigned int modelLoc = glGetUniformLocation(renderState->depthMapBuffer.shaderProgram, "model");
                     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
-                    glUniformMatrix4fv(glGetUniformLocation(app->depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, (const GLfloat*)&app->lightSpaceMatrix[app->lights[i].lightSpaceMatrixIndex[j]][0][0]);  
+                    glUniformMatrix4fv(glGetUniformLocation(renderState->depthMapBuffer.shaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, (const GLfloat*)&renderState->lightSpaceMatrix[app->lights[i].lightSpaceMatrixIndex[j]][0][0]);  
                     glBindVertexArray(buffer->VAO);
                     glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
 
                     // debug drawcalls
-                    if(app->debugDrawCalls){
-                            captureDrawCalls(app->shadowWidth,app->shadowHeight, app->drawCallsCounter++);
+                    if(renderState->debugDrawCalls){
+                            captureDrawCalls(renderState->shadowWidth,renderState->shadowHeight, renderState->drawCallsCounter++);
                     }
 
                     glBindVertexArray(0);
@@ -183,24 +184,24 @@ void depthshadow_renderToDepthTexture(AppState *app, GpuData *buffer,TransformCo
             break;
             case SPOT:
             case DIRECTIONAL:
-                depthshadow_configureFrameBuffer(buffer, GL_TEXTURE_2D,app->depthMap);
-                depthshadow_setViewportForDepthMapShadowRender(app, app->views.full);
-                glUseProgram(app->depthMapBuffer.shaderProgram);
-                unsigned int modelLoc = glGetUniformLocation(app->depthMapBuffer.shaderProgram, "model");
+                depthshadow_configureFrameBuffer(buffer, GL_TEXTURE_2D,renderState->depthMap);
+                depthshadow_setViewportForDepthMapShadowRender(renderState, app->views.full);
+                glUseProgram(renderState->depthMapBuffer.shaderProgram);
+                unsigned int modelLoc = glGetUniformLocation(renderState->depthMapBuffer.shaderProgram, "model");
                 glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &transformComponent->transform[0][0]);
-                GLint sm = glGetUniformLocation(app->depthMapBuffer.shaderProgram, "lightSpaceMatrix");
+                GLint sm = glGetUniformLocation(renderState->depthMapBuffer.shaderProgram, "lightSpaceMatrix");
                 glUniformMatrix4fv(
                     sm,       // location id to update on gpu
                     1,        // uploading one matrix
                     GL_FALSE, // No transpose of matrix
-                    (const GLfloat*)&app->lightSpaceMatrix[app->lights[i].lightSpaceMatrixIndex[0]][0][0]
+                    (const GLfloat*)&renderState->lightSpaceMatrix[app->lights[i].lightSpaceMatrixIndex[0]][0][0]
                 );  
                 glBindVertexArray(buffer->VAO);
                 glDrawArrays(GL_TRIANGLES, 0, buffer->vertexCount);
 
                 // debug drawcalls
-                if(app->debugDrawCalls){
-                        captureDrawCalls(app->shadowWidth,app->shadowHeight, app->drawCallsCounter++);
+                if(renderState->debugDrawCalls){
+                        captureDrawCalls(renderState->shadowWidth,renderState->shadowHeight, renderState->drawCallsCounter++);
                 }
 
                 glBindVertexArray(0);
@@ -432,7 +433,7 @@ void initializeShaderProgram(ShaderProgram* shaderProgram, const char* vertexPat
     shaderProgram->texture1Loc = glGetUniformLocation(shaderProgram->shaderProgram, "texture1");
 }
  */
-void renderMesh(AppState *app, GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material) {
+void renderMesh(RenderState *renderState, AppState *app, GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material) {
  
     // Check if camera is NULL
     if (camera == NULL) {
@@ -450,10 +451,10 @@ void renderMesh(AppState *app, GpuData* buffer,TransformComponent* transformComp
 
     GLint hasDiffuseMapLocation = glGetUniformLocation(buffer->shaderProgram, "material.hasDiffuseMap");
     if(material->isPostProcessMaterial){
-        if(!app->showDepthMap){
+        if(!renderState->showDepthMap){
             return;
         }
-        material->diffuseMap = app->depthMap;
+        material->diffuseMap = renderState->depthMap;
     }
     if (material->material_flags & MATERIAL_DIFFUSEMAP_ENABLED) {
         glUniform1i(hasDiffuseMapLocation, 1);
@@ -461,13 +462,13 @@ void renderMesh(AppState *app, GpuData* buffer,TransformComponent* transformComp
         glUniform1i(hasDiffuseMapLocation, 0);
     }
     GLint isBlinnLocation = glGetUniformLocation(buffer->shaderProgram, "blinn");
-    if(material->material_flags & MATERIAL_BLINN_ENABLED || app->blinnMode){
+    if(material->material_flags & MATERIAL_BLINN_ENABLED || renderState->blinnMode){
         glUniform1i(isBlinnLocation,1);
     }else {
         glUniform1i(isBlinnLocation,0);    
     }
     GLint gammaLocation = glGetUniformLocation(buffer->shaderProgram, "gamma");
-    if(app->gamma){
+    if(renderState->gamma){
         glUniform1i(gammaLocation,1);
     }else {
         glUniform1i(gammaLocation,0);    
@@ -481,12 +482,12 @@ void renderMesh(AppState *app, GpuData* buffer,TransformComponent* transformComp
 
     // Assign depthMap to texture3 slot
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, app->depthMap);
+    glBindTexture(GL_TEXTURE_2D, renderState->depthMap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "shadowMap"), 2);
 
     // Assign cubeDepthMap to texture4 slot
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, app->depthCubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, renderState->depthCubemap);
     glUniform1i(glGetUniformLocation(buffer->shaderProgram, "cubeShadowMap"), 3);
 
     // Set far plane uniform
@@ -1014,7 +1015,7 @@ void renderMesh(AppState *app, GpuData* buffer,TransformComponent* transformComp
     } */
 
     // Set light space matrix uniform
-    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "lightSpaceMatrix"), 9, GL_FALSE, &app->lightSpaceMatrix[0][0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(buffer->shaderProgram, "lightSpaceMatrix"), 9, GL_FALSE, &renderState->lightSpaceMatrix[0][0][0]);
       
     // Set viewPos uniform
     GLint viewPosLocation = glGetUniformLocation(buffer->shaderProgram, "viewPos");
@@ -1038,15 +1039,15 @@ void renderMesh(AppState *app, GpuData* buffer,TransformComponent* transformComp
    }
 
    // debug drawcalls
-   if(app->debugDrawCalls){
-        captureDrawCalls(app->views.full.rect.width,app->views.full.rect.height, app->drawCallsCounter++);
+   if(renderState->debugDrawCalls){
+        captureDrawCalls(app->views.full.rect.width,app->views.full.rect.height, renderState->drawCallsCounter++);
    }
 
    glBindVertexArray(0);
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-GLuint setupTexture(AppState *app, TextureData textureData){
+GLuint setupTexture(RenderState *renderState, TextureData textureData){
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -1072,10 +1073,10 @@ GLuint setupTexture(AppState *app, TextureData textureData){
         return 0;
     }
     if(textureData.channels == 4){
-        glTexImage2D(GL_TEXTURE_2D, 0, app->gamma ? GL_SRGB8_ALPHA8 : GL_RGBA, textureData.width, textureData.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data);
+        glTexImage2D(GL_TEXTURE_2D, 0, renderState->gamma ? GL_SRGB8_ALPHA8 : GL_RGBA, textureData.width, textureData.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data);
     }
     if(textureData.channels == 3){
-        glTexImage2D(GL_TEXTURE_2D, 0, app->gamma ? GL_SRGB : GL_RGB, textureData.width, textureData.height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData.data);
+        glTexImage2D(GL_TEXTURE_2D, 0, renderState->gamma ? GL_SRGB : GL_RGB, textureData.width, textureData.height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData.data);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureData.width, textureData.height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData.data);
     }
     glGenerateMipmap(GL_TEXTURE_2D);
