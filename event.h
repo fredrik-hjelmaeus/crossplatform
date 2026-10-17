@@ -1,6 +1,8 @@
 #ifndef EVENT_H
 #define EVENT_H
 
+typedef struct AppState AppState;
+
 /**
  * How it works:
  *  EventQueue & Subscribers array is the "Announcer"
@@ -48,7 +50,7 @@ typedef struct {
   } payload;
 } Event;
 
-typedef void(*EventCallback)(Event event, void* association);
+typedef void(*EventCallback)(AppState *app, Event event, void* association);
 
 typedef struct Subscriber {
   EventType eventType;
@@ -66,16 +68,16 @@ typedef struct Subscriber {
 #define MAX_SUBSCRIBERS_PER_EVENT 8
 
 void pushEvent(Event event);
-void processEvents(void);
-void dispatchEvent(Event event);
+void processEvents(AppState *app);
+void dispatchEvent(AppState *app, Event event);
 
 void subscribeToEvent(Subscriber sub);
 
 /**
  * Receiver callback functions.
  */
-void onDirectionLightChangeX(Event event, void* association);
-void onDirectionLightChangeY(Event event, void* association);
+void onDirectionLightChangeX(AppState *app, Event event, void* association);
+void onDirectionLightChangeY(AppState *app, Event event, void* association);
 
 #endif // EVENT_H
 

@@ -1,5 +1,5 @@
 #include "lighting.h"
-#include "globals.h"
+#include "app.h"
 #include "linmath.h"
 #include "shadows.h"
 #include <stdio.h>
@@ -7,8 +7,8 @@
 /**
  * @param index
  */
-void createPointLightSpace(int index){
-    Entity* light = &globals.entities[globals.lights[index].entityId];
+void createPointLightSpace(AppState *app, int index){
+    Entity* light = &app->entities[app->lights[index].entityId];
     float near_plane = 0.001f, far_plane = 60.0f;
     mat4x4 lightProjection, lightView;
     mat4x4_perspective(lightProjection,90,1.0,near_plane,far_plane);
@@ -33,7 +33,7 @@ void createPointLightSpace(int index){
 
     for(int i = 0; i < 6; i++){
         ASSERT(index > MAX_LIGHTS,"index larger than MAX_LIGHTS");
-        int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex[i]; 
+        int lightSpaceIndex = app->lights[index].lightSpaceMatrixIndex[i]; 
         ASSERT(lightSpaceIndex > MAX_LIGHTSPACES,"Light space index out of bounds");
 
         // 6 projections with diff. view targets, up,down,left,right,front,back HERE!<--
@@ -56,35 +56,35 @@ void createPointLightSpace(int index){
        // if(i == 5) mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 1.0f});
         if(i == 5) mat4x4_look_at(lightView, light->transformComponent->position,  targets[i], ups[i]);
 
-        mat4x4_mul(globals.lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
+        mat4x4_mul(app->lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
     }
 }
 
 /**
  * @param index
  */
-void createSpotLightSpace(int index){
+void createSpotLightSpace(AppState *app, int index){
     // ASSERT(true, "NOT YET IMPLEMENTED");
-    Entity* light = &globals.entities[globals.lights[index].entityId];
-    int lightSpaceIndex = globals.lights[index].lightSpaceMatrixIndex[0];
+    Entity* light = &app->entities[app->lights[index].entityId];
+    int lightSpaceIndex = app->lights[index].lightSpaceMatrixIndex[0];
     printf("lsi %i \n",lightSpaceIndex);
     mat4x4 lightProjection, lightView;
     float near_plane = 0.001f, far_plane = 60.0f;
     mat4x4_ortho(lightProjection, -60.0f, 60.0f, -60.0f, 60.0f, near_plane, far_plane);
     mat4x4_look_at(lightView, light->transformComponent->position, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f});
-    mat4x4_mul(globals.lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
+    mat4x4_mul(app->lightSpaceMatrix[lightSpaceIndex], (const float (*)[4])lightProjection, (const float (*)[4])lightView);
 }
 
-void createLightSpace(void){
-    for(int i = 0; i < globals.lightsCount; i++){
-        if(globals.lights[i].lightType == DIRECTIONAL){
-            createDirectionalLightSpace(i);
+void createLightSpace(AppState *app){
+    for(int i = 0; i < app->lightsCount; i++){
+        if(app->lights[i].lightType == DIRECTIONAL){
+            createDirectionalLightSpace(app, i);
         }
-        if(globals.lights[i].lightType == SPOT){
+        if(app->lights[i].lightType == SPOT){
             //createDirectionalLightSpace(i);
           //  createSpotLightSpace(i);
         }
-        if(globals.lights[i].lightType == POINT){
+        if(app->lights[i].lightType == POINT){
            // createDirectionalLightSpace(i);
             //createPointLightSpace(i);
         }

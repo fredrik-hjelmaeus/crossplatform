@@ -1,17 +1,18 @@
 #ifndef FH_SDL_H
 #define FH_SDL_H
-#include <SDL2/SDL.h>
-#include "globals.h"
 
-void setRenderDrawColor(int r, int g, int b, int a, struct Globals *globals);
-int pollEvent(struct Globals *globals);
-int initSdlWindow(struct Globals *globals);
-int createOpenGLContext(struct Globals *globals);
-void quit(struct Globals *globals);
-void swapWindow(struct Globals *globals);
-void toggleFullscreen(struct Globals *globals);
-void getWindowSize(struct Globals *globals, int *width, int *height);
-void setWindowTitle(struct Globals *globals, const char *title);
+typedef struct AppState AppState;
+#include <SDL2/SDL.h>
+
+void setRenderDrawColor(int r, int g, int b, int a, AppState *app);
+int pollEvent(AppState *app);
+int initSdlWindow(AppState *app);
+int createOpenGLContext(AppState *app);
+void quit(AppState *app);
+void swapWindow(AppState *app);
+void toggleFullscreen(AppState *app);
+void getWindowSize(AppState *app, int *width, int *height);
+void setWindowTitle(AppState *app, const char *title);
 const char *getKeyName(SDL_Keycode key);
 Uint32 getTicks(void);
 void delay(Uint32 milliseconds);

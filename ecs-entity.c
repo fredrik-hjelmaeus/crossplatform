@@ -1,13 +1,13 @@
 #include "ecs-entity.h"
-#include "globals.h"
+#include "app.h"
 
-Entity* addEntity(enum Tag tag){
+Entity* addEntity(AppState *app, enum Tag tag){
     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 0) {
-            globals.entities[i].alive = 1;
-            globals.entities[i].visible = 1;
-            globals.entities[i].tag = tag;
-            return &globals.entities[i];
+        if(app->entities[i].alive == 0) {
+            app->entities[i].alive = 1;
+            app->entities[i].visible = 1;
+            app->entities[i].tag = tag;
+            return &app->entities[i];
         }
     }
     // if we get here we are out of entities and need to increase the MAX_ENTITIES constant 

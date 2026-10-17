@@ -1,3 +1,4 @@
+#include "app.h"
 #include "camera.h"
 
 /**
@@ -36,7 +37,7 @@ Camera* initCamera(void) {
 
     return camera;
 }
-void updateCamera(Camera* camera){
+void updateCamera(AppState *app, Camera* camera){
     if(camera->mode == CAMERAMODE_FPS){
         // Look for view needs update flag & update/recalc view matrix if needed.
         if(camera->viewMatrixNeedsUpdate == 1){
@@ -84,23 +85,23 @@ void updateCamera(Camera* camera){
     }
     if(camera->mode == CAMERAMODE_ORBITAL){
       
-        if(globals.mouseLeftButtonPressed && globals.mouseDragged){
-            if(globals.mouseDragStart[0] < -9999.0f){
-                globals.mouseDragStart[0] = globals.mouseXpos;
-                globals.mouseDragStart[1] = globals.mouseYpos;
-      //          printf("drag start %f %f \n",globals.mouseDragStart[0],globals.mouseDragStart[1]);
+        if(app->mouseLeftButtonPressed && app->mouseDragged){
+            if(app->mouseDragStart[0] < -9999.0f){
+                app->mouseDragStart[0] = app->mouseXpos;
+                app->mouseDragStart[1] = app->mouseYpos;
+      //          printf("drag start %f %f \n",app->mouseDragStart[0],app->mouseDragStart[1]);
             }
            
-            float newMouseX = (float)globals.mouseXpos;
-            float newMouseY = (float)globals.mouseYpos;
-            float changeXThisFrame = newMouseX - globals.mouseDragPreviousFrame[0];
-            float changeYThisFrame = newMouseY - globals.mouseDragPreviousFrame[1];
+            float newMouseX = (float)app->mouseXpos;
+            float newMouseY = (float)app->mouseYpos;
+            float changeXThisFrame = newMouseX - app->mouseDragPreviousFrame[0];
+            float changeYThisFrame = newMouseY - app->mouseDragPreviousFrame[1];
 
-            globals.mouseDragPreviousFrame[0] = newMouseX;
-            globals.mouseDragPreviousFrame[1] = newMouseY;
+            app->mouseDragPreviousFrame[0] = newMouseX;
+            app->mouseDragPreviousFrame[1] = newMouseY;
 
-           // float changeXThisMouseDown = (float)globals.mouseXpos - globals.mouseDragStart[0];
-           // float changeYThisMouseDown = (float)globals.mouseYpos - globals.mouseDragStart[1];
+           // float changeXThisMouseDown = (float)app->mouseXpos - app->mouseDragStart[0];
+           // float changeYThisMouseDown = (float)app->mouseYpos - app->mouseDragStart[1];
 
            // float changeThisFrameX = 0.01;
           //  float changeThisFrameY = 0.01;
@@ -159,14 +160,14 @@ void updateCamera(Camera* camera){
 
          //   printf("changeThisFrameX %f \n",changeThisFrameX);
         }else {
-            if(globals.mouseDragStart[0] > -9999.0f){
-              //  float xDragOffset = globals.mouseXpos - globals.mouseDragStart[0];
-               // float yDragOffset = globals.mouseYpos - globals.mouseDragStart[1];
+            if(app->mouseDragStart[0] > -9999.0f){
+              //  float xDragOffset = app->mouseXpos - app->mouseDragStart[0];
+               // float yDragOffset = app->mouseYpos - app->mouseDragStart[1];
                 //printf("we dragged %f %f\n", xDragOffset, yDragOffset);
-                globals.mouseDragStart[0] = -10000.0f;
-                globals.mouseDragStart[1] = -10000.0f;
-                globals.mouseDragPreviousFrame[0] = 0.0f;
-                globals.mouseDragPreviousFrame[1] = 0.0f;
+                app->mouseDragStart[0] = -10000.0f;
+                app->mouseDragStart[1] = -10000.0f;
+                app->mouseDragPreviousFrame[0] = 0.0f;
+                app->mouseDragPreviousFrame[1] = 0.0f;
             }
               // create view/camera transformation
           /*   mat4x4 view;

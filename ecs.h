@@ -1,6 +1,8 @@
 #ifndef ECS_H
 #define ECS_H
 
+typedef struct AppState AppState;
+
 #include <stddef.h>
 #include "types.h"
 //#include "event-system.h"
@@ -19,7 +21,7 @@
  * Having the components already allocated on startup is faster, but uses more memory.
  * If component size grows too large, we might consider allocating them on the fly or have a memory pool for each component type?
 */
-void initECS(void);
+void initECS(AppState *app);
 
 void* allocateComponentMemory(size_t componentSize, const char* componentName);
 

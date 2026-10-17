@@ -1,12 +1,13 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+typedef struct AppState AppState;
+
 #include "types.h"    
-#include "globals.h" 
 #include "assets.h"
 
 Camera* initCamera(void);
-void updateCamera(Camera* camera);
+void updateCamera(AppState *app, Camera* camera);
 
 #endif // CAMERA_H
 

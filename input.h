@@ -1,8 +1,9 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include "globals.h"
+typedef struct AppState AppState;
 
-void input(struct Globals *globals);
+
+void input(AppState *app);
 
 #endif // INPUT_H

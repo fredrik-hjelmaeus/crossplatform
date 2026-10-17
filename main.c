@@ -2,7 +2,7 @@
 #include <time.h>
 #include "opengl_types.h"
 #include "types.h"
-#include "globals.h"
+#include "app.h"
 #include "linmath.h"
 #include "utils.h"
 #include "opengl.h"
@@ -53,9 +53,9 @@ int last_frame_time = 0;
 //------------------------------------------------------
 
 
-void initProgram(void){
-    if (!initSdlWindow(&globals)) exit(1);
-    initECS();
+void initProgram(AppState *app){
+    if (!initSdlWindow(app)) exit(1);
+    initECS(app);
 }
 
 /*
@@ -87,58 +87,58 @@ void calcCameraFront(Camera* camera, float xpos, float ypos){
             vec3_norm(camera->front, direction);
 }
 
-void handleKeyInput(void){
+void handleKeyInput(AppState *app){
          
-            processKeyInput(globals.event.key.keysym.sym, globals.currentSceneMode);
+            processKeyInput(app->event.key.keysym.sym, app->currentSceneMode);
             
-            const char *key = getKeyName(globals.event.key.keysym.sym);
+            const char *key = getKeyName(app->event.key.keysym.sym);
            
             if(strcmp(key, "C") == 0) {
-                globals.views.full.clearColor.r = randFloat(0.0,1.0);
-                globals.views.full.clearColor.g = randFloat(0.0,1.0);
-                globals.views.full.clearColor.b = randFloat(0.0,1.0);
+                app->views.full.clearColor.r = randFloat(0.0,1.0);
+                app->views.full.clearColor.g = randFloat(0.0,1.0);
+                app->views.full.clearColor.b = randFloat(0.0,1.0);
 
                 for(int i = 0; i < MAX_ENTITIES; i++){
-                    if(globals.entities[i].alive == 1 && globals.entities[i].lightComponent->active == 1){
-                        globals.entities[i].lightComponent->ambient.r = globals.views.full.clearColor.r;
-                        globals.entities[i].lightComponent->ambient.g = globals.views.full.clearColor.g;
-                        globals.entities[i].lightComponent->ambient.b = globals.views.full.clearColor.b;
+                    if(app->entities[i].alive == 1 && app->entities[i].lightComponent->active == 1){
+                        app->entities[i].lightComponent->ambient.r = app->views.full.clearColor.r;
+                        app->entities[i].lightComponent->ambient.g = app->views.full.clearColor.g;
+                        app->entities[i].lightComponent->ambient.b = app->views.full.clearColor.b;
                     }
                 }
                 //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
             }
             if(strcmp(key, "T") == 0) {
-                globals.culling = !globals.culling;
+                app->culling = !app->culling;
             }
             if(strcmp(key, "L") == 0) {
                 // Pressing L will write all drawcalls of a frame to disk as a pngs
-                globals.debugDrawCalls = true;
+                app->debugDrawCalls = true;
                 printf("Debug drawcalls enabled\n");
             }
             if(strcmp(key, "B") == 0) {
-                globals.drawBoundingBoxes = !globals.drawBoundingBoxes;
+                app->drawBoundingBoxes = !app->drawBoundingBoxes;
             }
             if(strcmp(key, "Escape") == 0) {
-                globals.running = 0;
+                app->running = 0;
             }
             if(strcmp(key, "F") == 0) {
-                toggleFullscreen(&globals);
+                toggleFullscreen(app);
             }
             if(strcmp(key, "W") == 0){
-                globals.views.main.camera->position[0] += globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[0];
-                globals.views.main.camera->position[1] += globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[1];
-                globals.views.main.camera->position[2] += globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[2];
+                app->views.main.camera->position[0] += app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[0];
+                app->views.main.camera->position[1] += app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[1];
+                app->views.main.camera->position[2] += app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[2];
 
                 // set view matrix needs update flag
-                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "S") == 0){
-                globals.views.main.camera->position[0] -= globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[0];
-                globals.views.main.camera->position[1] -= globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[1];
-                globals.views.main.camera->position[2] -= globals.views.main.camera->speed * globals.delta_time * globals.views.main.camera->front[2];
+                app->views.main.camera->position[0] -= app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[0];
+                app->views.main.camera->position[1] -= app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[1];
+                app->views.main.camera->position[2] -= app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[2];
 
                 // set view matrix needs update flag
-                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "A") == 0){
 
@@ -149,21 +149,21 @@ void handleKeyInput(void){
                 float crossProduct[3];
 
                 // copy position into newPos
-                memcpy(newPos, globals.views.main.camera->position, sizeof(newPos));
+                memcpy(newPos, app->views.main.camera->position, sizeof(newPos));
 
                 // cross product
-                vec3_mul_cross(crossProduct, globals.views.main.camera->front, globals.views.main.camera->up);
+                vec3_mul_cross(crossProduct, app->views.main.camera->front, app->views.main.camera->up);
 
                 // normalize
                 vec3_norm(newPos, crossProduct);
 
                 // move & assign new position
-                globals.views.main.camera->position[0] -= globals.views.main.camera->speed * globals.delta_time * newPos[0];
-                globals.views.main.camera->position[1] -= globals.views.main.camera->speed * globals.delta_time * newPos[1];
-                globals.views.main.camera->position[2] -= globals.views.main.camera->speed * globals.delta_time * newPos[2];
+                app->views.main.camera->position[0] -= app->views.main.camera->speed * app->delta_time * newPos[0];
+                app->views.main.camera->position[1] -= app->views.main.camera->speed * app->delta_time * newPos[1];
+                app->views.main.camera->position[2] -= app->views.main.camera->speed * app->delta_time * newPos[2];
 
                 // set view matrix needs update flag
-                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "D") == 0){
 
@@ -174,69 +174,69 @@ void handleKeyInput(void){
                 float crossProduct[3];
 
                 // copy position into newPos
-                memcpy(newPos, globals.views.main.camera->position, sizeof(newPos));
+                memcpy(newPos, app->views.main.camera->position, sizeof(newPos));
 
                 // cross product
-                vec3_mul_cross(crossProduct, globals.views.main.camera->front, globals.views.main.camera->up);
+                vec3_mul_cross(crossProduct, app->views.main.camera->front, app->views.main.camera->up);
 
                 // normalize
                 vec3_norm(newPos, crossProduct);
 
                 // move & assign new position
-                globals.views.main.camera->position[0] += globals.views.main.camera->speed * globals.delta_time * newPos[0];
-                globals.views.main.camera->position[1] += globals.views.main.camera->speed * globals.delta_time * newPos[1];
-                globals.views.main.camera->position[2] += globals.views.main.camera->speed * globals.delta_time * newPos[2];
+                app->views.main.camera->position[0] += app->views.main.camera->speed * app->delta_time * newPos[0];
+                app->views.main.camera->position[1] += app->views.main.camera->speed * app->delta_time * newPos[1];
+                app->views.main.camera->position[2] += app->views.main.camera->speed * app->delta_time * newPos[2];
 
                 // set view matrix needs update flag
-                globals.views.main.camera->viewMatrixNeedsUpdate = 1;
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "O") == 0){
                 // Change the camera to orthographic
-                globals.views.main.camera->isOrthographic = 1;
-                globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
+                app->views.main.camera->isOrthographic = 1;
+                app->views.main.camera->projectionMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "P") == 0){
                 // Change the camera to perspective
-                globals.views.main.camera->isOrthographic = 0;
-                globals.views.main.camera->projectionMatrixNeedsUpdate = 1;
+                app->views.main.camera->isOrthographic = 0;
+                app->views.main.camera->projectionMatrixNeedsUpdate = 1;
             }
             if(strcmp(key, "I") == 0){
-                if(globals.views.main.camera->mode == CAMERAMODE_ORBITAL){
-                    globals.views.main.camera->mode = CAMERAMODE_FPS;
+                if(app->views.main.camera->mode == CAMERAMODE_ORBITAL){
+                    app->views.main.camera->mode = CAMERAMODE_FPS;
                 }else{
-                    globals.views.main.camera->mode = CAMERAMODE_ORBITAL;
-                    globals.views.main.camera->target[0] = 0.0f;
-                    globals.views.main.camera->target[1] = 0.0f;
-                    globals.views.main.camera->target[2] = 0.0f;
+                    app->views.main.camera->mode = CAMERAMODE_ORBITAL;
+                    app->views.main.camera->target[0] = 0.0f;
+                    app->views.main.camera->target[1] = 0.0f;
+                    app->views.main.camera->target[2] = 0.0f;
                 }
             }
             if(strcmp(key, "U") == 0){
-                globals.blinnMode = !globals.blinnMode;
+                app->blinnMode = !app->blinnMode;
             }
             if(strcmp(key, "G") == 0){
-                globals.gamma = !globals.gamma;
+                app->gamma = !app->gamma;
             }
             if(strcmp(key, "H") == 0){
-                globals.showDepthMap = !globals.showDepthMap;
+                app->showDepthMap = !app->showDepthMap;
             }
             if(strcmp(key, "U") == 0){
-                globals.showUI = !globals.showUI;
+                app->showUI = !app->showUI;
             }
 }
 
-void displayFps(Uint32 ticks){
-    globals.frameCount++;
+void displayFps(AppState *app, Uint32 ticks){
+    app->frameCount++;
     
-    if(ticks/1000-globals.prevTick != 0){
+    if(ticks/1000-app->prevTick != 0){
         char str[10];
-        sprintf(str,"FPS: %d", globals.frameCount);
-        setWindowTitle(&globals, str);
-        globals.frameCount = 0;
+        sprintf(str,"FPS: %d", app->frameCount);
+        setWindowTitle(app, str);
+        app->frameCount = 0;
     }
-    globals.prevTick = ticks/1000;
+    app->prevTick = ticks/1000;
 }
 
-void update(void){
+void update(AppState *app){
 
     // Time 
     Uint32 ticks = getTicks();
@@ -248,25 +248,25 @@ void update(void){
     }
 
     // Set delta time in seconds
-    globals.delta_time = (getTicks() - last_frame_time) / 1000.0f;
+    app->delta_time = (getTicks() - last_frame_time) / 1000.0f;
 
-    displayFps(ticks);
+    displayFps(app, ticks);
     
     // Systems
-    cameraSystem();
-    processEvents();
-    uiPositionSystem();
-    uiInputSystem();
-    hoverAndClickSystem();
-    uiSliderSystem();
-    uiCheckboxSystem();
-    textCursorSystem();
-    movementSystem();
-    modelSystem();
-    globals.prevMouseLeftDown = globals.mouseLeftButtonPressed;
+    cameraSystem(app);
+    processEvents(app);
+    uiPositionSystem(app);
+    uiInputSystem(app);
+    hoverAndClickSystem(app);
+    uiSliderSystem(app);
+    uiCheckboxSystem(app);
+    textCursorSystem(app);
+    movementSystem(app);
+    modelSystem(app);
+    app->prevMouseLeftDown = app->mouseLeftButtonPressed;
 }
 
-void render(void){
+void render(AppState *app){
 
     // Clear the entire window
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -274,7 +274,7 @@ void render(void){
     glEnable(GL_DEPTH_TEST);
 
     // Set culling
-     if(globals.culling){
+     if(app->culling){
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
         glFrontFace(GL_CCW);
@@ -284,17 +284,17 @@ void render(void){
 
     // Render without ui on wasm
     #ifdef __EMSCRIPTEN__
-    setViewport(globals.views.full);
+    setViewport(app->views.full);
      for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1) {
-            if(globals.entities[i].meshComponent->active == 1) { // && globals.entities[i].uiComponent->active == 0
-                Color* diff = &globals.entities[i].materialComponent->diffuse;
-                Color* amb = &globals.entities[i].materialComponent->ambient;
-                Color* spec = &globals.entities[i].materialComponent->specular;
-                GLfloat shin = globals.entities[i].materialComponent->shininess;
-                GLuint diffMap = globals.entities[i].materialComponent->diffuseMap;
-                bool useDiffMap = globals.entities[i].materialComponent->useDiffuseMap;
-                renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,diff,amb,spec,shin,diffMap,globals.views.main.camera,useDiffMap);
+        if(app->entities[i].alive == 1) {
+            if(app->entities[i].meshComponent->active == 1) { // && app->entities[i].uiComponent->active == 0
+                Color* diff = &app->entities[i].materialComponent->diffuse;
+                Color* amb = &app->entities[i].materialComponent->ambient;
+                Color* spec = &app->entities[i].materialComponent->specular;
+                GLfloat shin = app->entities[i].materialComponent->shininess;
+                GLuint diffMap = app->entities[i].materialComponent->diffuseMap;
+                bool useDiffMap = app->entities[i].materialComponent->useDiffuseMap;
+                renderMesh(app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,diff,amb,spec,shin,diffMap,app->views.main.camera,useDiffMap);
             }
         }
     }
@@ -303,17 +303,17 @@ void render(void){
    
    // Render depth map
    // TODO: GL_CULL_FACE to avoid Peter panning?
-   if(globals.shadows){
-    createLightSpace();
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, globals.depthMapBuffer.FBO);
+   if(app->shadows){
+    createLightSpace(app);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, app->depthMapBuffer.FBO);
     
     glEnable(GL_DEPTH_TEST);
         for(int i = 0; i < MAX_ENTITIES; i++) {
-            if(globals.entities[i].alive == 1) {
-                if(globals.entities[i].meshComponent->active == 1) {
-                    if(globals.entities[i].uiComponent->active != 1){
-                        if(!globals.entities[i].materialComponent->isPostProcessMaterial){
-                            depthshadow_renderToDepthTexture(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent);
+            if(app->entities[i].alive == 1) {
+                if(app->entities[i].meshComponent->active == 1) {
+                    if(app->entities[i].uiComponent->active != 1){
+                        if(!app->entities[i].materialComponent->isPostProcessMaterial){
+                            depthshadow_renderToDepthTexture(app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent);
                         }
                     }
                 }
@@ -325,14 +325,14 @@ void render(void){
    }
   
    // Render main view & 3d objects
-   setViewportAndClear(globals.views.full);
-   setFontProjection(&globals.gpuFontData,globals.views.full);
+   setViewportAndClear(app, app->views.full);
+   setFontProjection(&app->gpuFontData,app->views.full);
     for(int i = 0; i < MAX_ENTITIES; i++) {
-        if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
-            if(globals.entities[i].meshComponent->active == 1) {
-                if(globals.entities[i].uiComponent->active != 1){
-                   if(!globals.entities[i].materialComponent->isPostProcessMaterial){
-                     renderMesh( globals.entities[i].meshComponent->gpuData, globals.entities[i].transformComponent, globals.views.main.camera,globals.entities[i].materialComponent );
+        if(app->entities[i].alive == 1 && app->entities[i].visible) {
+            if(app->entities[i].meshComponent->active == 1) {
+                if(app->entities[i].uiComponent->active != 1){
+                   if(!app->entities[i].materialComponent->isPostProcessMaterial){
+                     renderMesh(app,  app->entities[i].meshComponent->gpuData, app->entities[i].transformComponent, app->views.main.camera,app->entities[i].materialComponent );
                    }
                     
                 }
@@ -342,12 +342,12 @@ void render(void){
     
     // Render GL_LINES & GL_POINTS(particles)
     for(int i = 0; i < MAX_ENTITIES; i++){
-        if((globals.entities[i].alive == 1 && globals.entities[i].lineComponent->active == 1 && globals.entities[i].visible) 
-        || (globals.entities[i].alive == 1 && globals.entities[i].pointComponent->active == 1 && globals.entities[i].visible)){
-            if(globals.entities[i].lineComponent->active == 1){
-              renderLine(globals.entities[i].lineComponent->gpuData,globals.entities[i].transformComponent,globals.views.main.camera,globals.entities[i].lineComponent->color);
+        if((app->entities[i].alive == 1 && app->entities[i].lineComponent->active == 1 && app->entities[i].visible) 
+        || (app->entities[i].alive == 1 && app->entities[i].pointComponent->active == 1 && app->entities[i].visible)){
+            if(app->entities[i].lineComponent->active == 1){
+              renderLine(app->entities[i].lineComponent->gpuData,app->entities[i].transformComponent,app->views.main.camera,app->entities[i].lineComponent->color);
             }
-            if(globals.entities[i].pointComponent->active == 1){
+            if(app->entities[i].pointComponent->active == 1){
                 // NOTE: point Size is not drawing anything else than 1.0 in windows/wsl2.
                 // Get point size range ( use this to debug pointSize or later at init to tell support or not of pointsize )
                 //GLfloat    pointSizeRange[2];
@@ -355,11 +355,11 @@ void render(void){
                 // Print the point size range
                 //printf("Point size range: min = %f, max = %f\n", pointSizeRange[0], pointSizeRange[1]);
                 renderPoints(
-                    globals.entities[i].pointComponent->gpuData,
-                    globals.entities[i].transformComponent, 
-                    globals.views.main.camera, 
-                    globals.entities[i].pointComponent->color,
-                    globals.entities[i].pointComponent->pointSize
+                    app->entities[i].pointComponent->gpuData,
+                    app->entities[i].transformComponent, 
+                    app->views.main.camera, 
+                    app->entities[i].pointComponent->color,
+                    app->entities[i].pointComponent->pointSize
                 );
             }
              
@@ -369,18 +369,18 @@ void render(void){
     }
 
     // Render ui scene & ui objects
-    if(globals.showUI){
+    if(app->showUI){
         for(int i = 0; i < MAX_ENTITIES; i++) {
-            if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
-                if(globals.entities[i].meshComponent->active == 1) {
+            if(app->entities[i].alive == 1 && app->entities[i].visible) {
+                if(app->entities[i].meshComponent->active == 1) {
                             // render ui, could be overhead with switching viewports?. profile.    
-                            if(globals.drawBoundingBoxes){
-                                if(globals.entities[i].tag == BOUNDING_BOX){
-                                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
+                            if(app->drawBoundingBoxes){
+                                if(app->entities[i].tag == BOUNDING_BOX){
+                                    renderMesh(app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,app->views.ui.camera, app->entities[i].materialComponent);
                                 }
                             }else {
-                                if(globals.entities[i].uiComponent->active == 1 && globals.entities[i].tag != BOUNDING_BOX){
-                                    renderMesh(globals.entities[i].meshComponent->gpuData,globals.entities[i].transformComponent,globals.views.ui.camera, globals.entities[i].materialComponent);
+                                if(app->entities[i].uiComponent->active == 1 && app->entities[i].tag != BOUNDING_BOX){
+                                    renderMesh(app, app->entities[i].meshComponent->gpuData,app->entities[i].transformComponent,app->views.ui.camera, app->entities[i].materialComponent);
                                 }
                             }
                 }
@@ -388,29 +388,29 @@ void render(void){
         }
         
         // render ui text
-        setFontProjection(&globals.gpuFontData,globals.views.ui);
+        setFontProjection(&app->gpuFontData,app->views.ui);
         glDisable(GL_DEPTH_TEST);
         for(int i = 0; i < MAX_ENTITIES; i++) {
-            if(globals.entities[i].alive == 1 && globals.entities[i].visible) {
-                    if(globals.entities[i].uiComponent->active == 1){
-                        if(strlen(globals.entities[i].uiComponent->text) > 0){
+            if(app->entities[i].alive == 1 && app->entities[i].visible) {
+                    if(app->entities[i].uiComponent->active == 1){
+                        if(strlen(app->entities[i].uiComponent->text) > 0){
                         
                             // convert transform position to viewport space
                             vec2 result;
                             convertUIcoordinateToWindowcoordinates(
-                                globals.views.ui,
-                                globals.entities[i].transformComponent,
-                                globals.views.full.rect.height,
-                                globals.views.full.rect.width,
+                                app->views.ui,
+                                app->entities[i].transformComponent,
+                                app->views.full.rect.height,
+                                app->views.full.rect.width,
                                 result);
                         
                                 // align text center vertically
-                                result[1] -= (float)globals.characters[0].Size[1] / 4.0;
-                            renderText(
-                                &globals.gpuFontData, 
-                                globals.entities[i].uiComponent->text, 
+                                result[1] -= (float)app->characters[0].Size[1] / 4.0;
+                            renderText(app, 
+                                &app->gpuFontData, 
+                                app->entities[i].uiComponent->text, 
                                 result[0],result[1],
-                                globals.charScale,globals.textColor);
+                                app->charScale,app->textColor);
                         }
                     }
             }
@@ -423,21 +423,23 @@ void render(void){
     #endif
 
     // Swap the window buffers to show the new frame
-    swapWindow(&globals);
+    swapWindow(app);
 }
 
 
 #ifdef __EMSCRIPTEN__
-void emscriptenLoop() {
-    if(!globals.running){
+void emscriptenLoop(void *context) {
+    AppState *app = context;
+    if(!app->running){
         printf("Closing sdl canvas!\n");
-        quit(&globals);
+        quit(app);
         printf("Goodbye!\n");
         emscripten_cancel_main_loop();
+        return;
     }
-    input(&globals);
-    update();
-    render();
+    input(app);
+    update(app);
+    render(app);
 }
 #endif
 
@@ -451,27 +453,29 @@ int main(int argc, char **argv) {
     }
     printf("Platform is %s\n", PLATFORM); */
 
+    AppState appState = appDefaults();
+
     // Initialize Memory Arenas
-    arena_initMemory(&globals.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
-    arena_initMemory(&globals.uiArena, UI_MEMORY_SIZE * sizeof(char));
+    arena_initMemory(&appState.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
+    arena_initMemory(&appState.uiArena, UI_MEMORY_SIZE * sizeof(char));
    
     // Sub memory allocations
-    globals.materials = arena_Alloc(&globals.assetArena, globals.materialsCapacity * sizeof(Material));
+    appState.materials = arena_Alloc(&appState.assetArena, appState.materialsCapacity * sizeof(Material));
     // BELOW NOT YET IMPLEMENTED
-    //globals.textures = arena_Alloc(&globals.assetArena, globals.texturesCapacity * sizeof(Texture));
-    //globals.meshes = arena_Alloc(&globals.assetArena, globals.meshCapacity * sizeof(MeshComponent));
-    //globals.groups/models = arena_Alloc(&globals.assetArena, globals.modelsCapacity * sizeof(GroupComponent));
-    //globals.cameras = arena_Alloc(&globals.assetArena, globals.camerasCapacity * sizeof(Camera));
-    //globals.ui_elements = arena_Alloc(&globals.assetArena, globals.uiElementsCapacity * sizeof(UIComponent));
+    //app->textures = arena_Alloc(&app->assetArena, app->texturesCapacity * sizeof(Texture));
+    //app->meshes = arena_Alloc(&app->assetArena, app->meshCapacity * sizeof(MeshComponent));
+    //app->groups/models = arena_Alloc(&app->assetArena, app->modelsCapacity * sizeof(GroupComponent));
+    //app->cameras = arena_Alloc(&app->assetArena, app->camerasCapacity * sizeof(Camera));
+    //app->ui_elements = arena_Alloc(&app->assetArena, app->uiElementsCapacity * sizeof(UIComponent));
         
     //obj_runTests();
     
     // Initialize the random number generator
     srand((unsigned int)time(NULL));
     
-    initProgram();
+    initProgram(&appState);
    
-    if (!createOpenGLContext(&globals)) exit(1);
+    if (!createOpenGLContext(&appState)) exit(1);
     glEnable(GL_DEPTH_TEST);
 
     // Tests
@@ -483,40 +487,40 @@ int main(int argc, char **argv) {
     // Camera setup
     Camera* uiCamera = initCamera();
     uiCamera->isOrthographic = 1;
-    uiCamera->aspectRatio = globals.views.ui.rect.width / globals.views.ui.rect.height;
+    uiCamera->aspectRatio = appState.views.ui.rect.width / appState.views.ui.rect.height;
     uiCamera->left = (float)-width/2.0f;
     uiCamera->right = (float)width/2.0f;
     uiCamera->bottom = -(float)height/2.0f;
     uiCamera->top = (float)height/2.0f;
     uiCamera->near = -10.0f; // Set the near plane distance
     uiCamera->far = 10.0f;   // Set the far plane distance
-    globals.views.ui.camera = uiCamera;
+    appState.views.ui.camera = uiCamera;
     
     Camera* mainCamera = initCamera();
-    mainCamera->aspectRatio = globals.views.main.rect.width / globals.views.main.rect.height;
-    globals.views.main.camera = mainCamera;
+    mainCamera->aspectRatio = appState.views.main.rect.width / appState.views.main.rect.height;
+    appState.views.main.camera = mainCamera;
 
-    initScene(&globals);
+    initScene(&appState);
     
     //------------------------------------------------------
     // Main loop
     // -----------------------------------------------------
     // Wasm code
     #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(emscriptenLoop, 0, 1);
+    emscripten_set_main_loop_arg(emscriptenLoop, &appState, 0, 1);
     #else
     // native code
-    while(globals.running) {
-        input(&globals);
-        update();
-        render();
-        debugSystem();
+    while(appState.running) {
+        input(&appState);
+        update(&appState);
+        render(&appState);
+        debugSystem(&appState);
     }
 
     // -----------------------------------------------------
     // Quit
     // -----------------------------------------------------
-    quit(&globals);
+    quit(&appState);
     printf("Non emscripten shutdown complete!\n");
     return 0;
     #endif

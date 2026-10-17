@@ -1,17 +1,17 @@
 #include "fh-sdl.h"
-#include "globals.h"
+#include "app.h"
 #include <stdio.h>
 
-void setRenderDrawColor(int r, int g, int b, int a, struct Globals *globals) {
+void setRenderDrawColor(int r, int g, int b, int a, AppState *app) {
     // Initial renderer color
-    SDL_SetRenderDrawColor(globals->renderer, r, g, b, a);
+    SDL_SetRenderDrawColor(app->renderer, r, g, b, a);
 }
 
-int pollEvent(struct Globals *globals){
-    return SDL_PollEvent(&globals->event);
+int pollEvent(AppState *app){
+    return SDL_PollEvent(&app->event);
 }
 
-int initSdlWindow(struct Globals *globals) {
+int initSdlWindow(AppState *app) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "%s\n", SDL_GetError());
         return 0;
@@ -27,7 +27,7 @@ int initSdlWindow(struct Globals *globals) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 #endif
 
-    globals->window = SDL_CreateWindow(
+    app->window = SDL_CreateWindow(
         "FH Engine",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
@@ -35,43 +35,43 @@ int initSdlWindow(struct Globals *globals) {
         height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
     );
-    if (globals->window == NULL) {
+    if (app->window == NULL) {
         fprintf(stderr, "%s\n", SDL_GetError());
         return 0;
     }
     return 1;
 }
 
-int createOpenGLContext(struct Globals *globals) {
-    globals->gl_context = SDL_GL_CreateContext(globals->window);
-    if (globals->gl_context == NULL) {
+int createOpenGLContext(AppState *app) {
+    app->gl_context = SDL_GL_CreateContext(app->window);
+    if (app->gl_context == NULL) {
         fprintf(stderr, "Failed to create OpenGL context: %s\n", SDL_GetError());
         return 0;
     }
     return 1;
 }
 
-void quit(struct Globals *globals) {
-    if (globals->gl_context != NULL) SDL_GL_DeleteContext(globals->gl_context);
-    if (globals->renderer != NULL) SDL_DestroyRenderer(globals->renderer);
-    if (globals->window != NULL) SDL_DestroyWindow(globals->window);
+void quit(AppState *app) {
+    if (app->gl_context != NULL) SDL_GL_DeleteContext(app->gl_context);
+    if (app->renderer != NULL) SDL_DestroyRenderer(app->renderer);
+    if (app->window != NULL) SDL_DestroyWindow(app->window);
     SDL_Quit();
 }
 
-void swapWindow(struct Globals *globals) { SDL_GL_SwapWindow(globals->window); }
+void swapWindow(AppState *app) { SDL_GL_SwapWindow(app->window); }
 
-void toggleFullscreen(struct Globals *globals) {
-    Uint32 flags = SDL_GetWindowFlags(globals->window);
-    SDL_SetWindowFullscreen(globals->window,
+void toggleFullscreen(AppState *app) {
+    Uint32 flags = SDL_GetWindowFlags(app->window);
+    SDL_SetWindowFullscreen(app->window,
         (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
 }
 
-void getWindowSize(struct Globals *globals, int *width, int *height) {
-    SDL_GetWindowSize(globals->window, width, height);
+void getWindowSize(AppState *app, int *width, int *height) {
+    SDL_GetWindowSize(app->window, width, height);
 }
 
-void setWindowTitle(struct Globals *globals, const char *title) {
-    SDL_SetWindowTitle(globals->window, title);
+void setWindowTitle(AppState *app, const char *title) {
+    SDL_SetWindowTitle(app->window, title);
 }
 
 const char *getKeyName(SDL_Keycode key) { return SDL_GetKeyName(key); }

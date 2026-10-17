@@ -1,5 +1,5 @@
 #include "ecs.h"
-#include "globals.h"
+#include "app.h"
 #include "event.h"
 
 //
@@ -15,7 +15,7 @@
  * Having the components already allocated on startup is faster, but uses more memory.
  * If component size grows too large, we might consider allocating them on the fly or have a memory pool for each component type?
 */
-void initECS(void){
+void initECS(AppState *app){
     // Allocate memory for MAX_ENTITIES Components structs
     TransformComponent* transformComponents = allocateComponentMemory(sizeof(TransformComponent), "transform");
     GroupComponent* groupComponents = allocateComponentMemory(sizeof(GroupComponent), "group");
@@ -60,7 +60,7 @@ void initECS(void){
         initializeBoundingBoxComponent(entities[i].boundingBoxComponent);
     }
 
-    globals.entities = entities;
+    app->entities = entities;
 
     if(0){
         printf("lightComponent %zu\n",sizeof(LightComponent));

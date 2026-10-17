@@ -1,8 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-
-struct Globals;
+typedef struct AppState AppState;
 
 typedef enum {
   SCENE_MODE_NONE, // No input,event or update occurs
@@ -11,7 +10,7 @@ typedef enum {
   SCENE_MODE_COUNT,
 } SceneMode;
 
-void changeSceneMode(SceneMode mode, struct Globals *globals);
-void initScene(struct Globals *globals);
+void changeSceneMode(SceneMode mode,AppState *app);
+void initScene(AppState *app);
 
 #endif // SCENE_H

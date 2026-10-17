@@ -8,13 +8,13 @@ struct Material flatColorUiDarkGrayMat;
 struct Material flatColorUiGrayMat;
 struct Material uiBoundingBoxMat;
 
-void initAssets(void){
+void initAssets(AppState *app){
    TextureData containerTextureData = loadTexture("./Assets/container.jpg");
-   GLuint containerMap = setupTexture(containerTextureData);
+   GLuint containerMap = setupTexture(app, containerTextureData);
    TextureData containerTwoTextureData = loadTexture("./Assets/container2.png");
-   GLuint containerTwoMap = setupTexture(containerTwoTextureData);
+   GLuint containerTwoMap = setupTexture(app, containerTwoTextureData);
    TextureData containerTwoSpecTextureData = loadTexture("./Assets/container2_specular.png");
-   GLuint containerTwoSpecularMap = setupTexture(containerTwoSpecTextureData);
+   GLuint containerTwoSpecularMap = setupTexture(app, containerTwoSpecTextureData);
 
 
     objectMaterial = (struct Material){

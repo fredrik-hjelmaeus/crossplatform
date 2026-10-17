@@ -1,17 +1,19 @@
 #ifndef ECS_SYSTEMS_H
 #define ECS_SYSTEMS_H
 
+typedef struct AppState AppState;
+
 //#include "event-system.h"
 
-void cameraSystem(void);
-void uiPositionSystem(void);
-void movementSystem(void);
-void uiInputSystem(void);
-void hoverAndClickSystem(void);
-void textCursorSystem(void);
-void modelSystem(void);
-void debugSystem(void);
-void uiSliderSystem(void);
-void uiCheckboxSystem(void);
+void cameraSystem(AppState *app);
+void uiPositionSystem(AppState *app);
+void movementSystem(AppState *app);
+void uiInputSystem(AppState *app);
+void hoverAndClickSystem(AppState *app);
+void textCursorSystem(AppState *app);
+void modelSystem(AppState *app);
+void debugSystem(AppState *app);
+void uiSliderSystem(AppState *app);
+void uiCheckboxSystem(AppState *app);
 
 #endif

@@ -1,9 +1,10 @@
+#include "app.h"
 #include "input.h"
 #include "fh-sdl.h"
 #include "utils.h"
 #include "viewport.h"
 
-void handleKeyInput(void);
+void handleKeyInput(AppState *app);
 void calcCameraFront(Camera *camera, float xpos, float ypos);
 
 /**
@@ -11,74 +12,74 @@ void calcCameraFront(Camera *camera, float xpos, float ypos);
  * This is because this fn will become too large otherwise,and we wan't to group & handle events in a more structured way. 
  * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
  */
-void input(struct Globals *globals) {
+void input(AppState *app) {
     
     // Process events
-    while(pollEvent(globals)) {
+    while(pollEvent(app)) {
         
-        if(globals->event.type == SDL_QUIT) {
-            globals->running = 0;
+        if(app->event.type == SDL_QUIT) {
+            app->running = 0;
         } 
-        if (globals->event.type == SDL_MOUSEBUTTONDOWN) {
+        if (app->event.type == SDL_MOUSEBUTTONDOWN) {
             
             // A button was pressed
-            if (globals->event.button.button == SDL_BUTTON_LEFT) {
+            if (app->event.button.button == SDL_BUTTON_LEFT) {
                
-                if(globals->event.button.clicks == 2){
+                if(app->event.button.clicks == 2){
                    
-                    globals->mouseDoubleClick = true;
+                    app->mouseDoubleClick = true;
                 }
                 
                 // Left Button Pressed
-                globals->mouseLeftButtonPressed = true;
+                app->mouseLeftButtonPressed = true;
                 
-            } else if (globals->event.button.button == SDL_BUTTON_RIGHT) {
+            } else if (app->event.button.button == SDL_BUTTON_RIGHT) {
                 
               
             }
         } 
-        if(globals->event.type == SDL_KEYDOWN) {
+        if(app->event.type == SDL_KEYDOWN) {
             // If input element is focused, we don't handle keyboard events here but in the uiInputSystem
-            if(globals->focusedEntityId != -1){
+            if(app->focusedEntityId != -1){
                 return;
             }else {
-                handleKeyInput();
+                handleKeyInput(app);
             }
         }
             
-        if(globals->event.type == SDL_WINDOWEVENT && globals->event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
+        if(app->event.type == SDL_WINDOWEVENT && app->event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
-            getWindowSize(globals, &w, &h);
-            recalculateViewports(w,h,globals);
+            getWindowSize(app, &w, &h);
+            recalculateViewports(w,h,app);
             
             // TODO: use this for reprojection later: float aspect = (float)w / (float)h;
             //glViewport(0, 0, w / 2, h);
         }
        
-        if (globals->event.type == SDL_MOUSEBUTTONUP) {
+        if (app->event.type == SDL_MOUSEBUTTONUP) {
            // A button was released
-           globals->mouseLeftButtonPressed = false;
+           app->mouseLeftButtonPressed = false;
            
-           if(globals->cursorSelectionActive){
-                globals->deselectCondition = true;
+           if(app->cursorSelectionActive){
+                app->deselectCondition = true;
            }
-           globals->mouseDragged = false;
-           if(globals->focusedEntityId != -1 && globals->entities[globals->focusedEntityId].uiComponent->type == UITYPE_SLIDER){
-                globals->focusedEntityId = -1;
+           app->mouseDragged = false;
+           if(app->focusedEntityId != -1 && app->entities[app->focusedEntityId].uiComponent->type == UITYPE_SLIDER){
+                app->focusedEntityId = -1;
            }
            
             
         }
-        if (globals->event.type == SDL_MOUSEMOTION) {
-            if(globals->mouseLeftButtonPressed){
-                globals->mouseDragged = true;
+        if (app->event.type == SDL_MOUSEMOTION) {
+            if(app->mouseLeftButtonPressed){
+                app->mouseDragged = true;
             }
 
-            int xpos = globals->event.motion.x;
-            int ypos = globals->event.motion.y;
+            int xpos = app->event.motion.x;
+            int ypos = app->event.motion.y;
 
-            globals->mouseXpos = (float)xpos;
-            globals->mouseYpos = (float)ypos;
+            app->mouseXpos = (float)xpos;
+            app->mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
           /*   printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
@@ -88,24 +89,24 @@ void input(struct Globals *globals) {
               float x_ui =  (-1 * x_ndc) * ((float)width * 0.5);
               float y_ui =   y_ndc * ((float)height * 0.5);  
             //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
-            //printf("Mouse moved to %f, %f\n", globals->mouseXpos, globals->mouseYpos);
+            //printf("Mouse moved to %f, %f\n", app->mouseXpos, app->mouseYpos);
             SDLVector2 sdlMouseCoords = {xpos, ypos};
             UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
             printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y); */
             // END TEMP CODE------------------
 
             // Not sure this is used since we don't use viewports now?
-            if(isPointInsideRect(globals->views.main.rect, (vec2){xpos, ypos})){ 
+            if(isPointInsideRect(app->views.main.rect, (vec2){xpos, ypos})){ 
                // printf("Mouse is within main view\n ");
                 // Update the camera front vector
-                calcCameraFront(globals->views.main.camera,xpos, ypos);
+                calcCameraFront(app->views.main.camera,xpos, ypos);
                 // set view matrix needs update flag (so that we recalculate the view matrix with the new front vector)
-                globals->views.main.camera->viewMatrixNeedsUpdate = 1;
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
             }
-            if(isPointInsideRect(globals->views.ui.rect, (vec2){xpos, ypos})){
-                globals->views.ui.isMousePointerWithin = true;
+            if(isPointInsideRect(app->views.ui.rect, (vec2){xpos, ypos})){
+                app->views.ui.isMousePointerWithin = true;
             }else{
-                globals->views.ui.isMousePointerWithin = false;
+                app->views.ui.isMousePointerWithin = false;
             }
 
            

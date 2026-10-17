@@ -1,5 +1,5 @@
 #include "api.h"
-#include "globals.h"
+#include "app.h"
 #include "opengl.h"
 #include "ecs-entity.h"
 #include "shadows.h"
@@ -27,7 +27,7 @@ void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation){
  *  - transform data
  *  - material data
 */
-void createMesh(
+void createMesh(AppState *app, 
     GLfloat* verts,
     GLuint num_of_vertex, 
     GLuint* indices, // atm plug in some dummy-data if not used.
@@ -154,7 +154,7 @@ void createMesh(
         entity->materialComponent->isPostProcessMaterial = true;
     }
     if(saveMaterial){
-        entity->materialComponent->materialIndex = addMaterial(*material);
+        entity->materialComponent->materialIndex = addMaterial(app, *material);
     }else {
         // TODO: temp fix for createObjects. The do not set shininess correctly atm.
         entity->materialComponent->shininess = 32.0f;
@@ -192,7 +192,7 @@ void createMesh(
         //setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
         setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
         printf("post process mesh quad material id %d \n",entity->meshComponent->gpuData->shaderProgram);
-        //setupMaterial(&globals.postProcessBuffer, "shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl");
+        //setupMaterial(&app->postProcessBuffer, "shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl");
     }else if(entity->uiComponent->active == 1){
         setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
     }else {
@@ -209,7 +209,7 @@ void createMesh(
  * Create a object mesh
  * @param diffuse - color of the rectangle
 */
-void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
+void createObject(AppState *app, ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
     
    // vertex data
   //  int stride = 11;
@@ -220,16 +220,16 @@ void createObject(ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
         1, 2, 3   // second triangle
     }; 
 
-    Entity* entity = addEntity(MODEL);
+    Entity* entity = addEntity(app, MODEL);
     
-    createMesh((GLfloat*)obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&globals.materials[obj->materialIndex],GL_TRIANGLES,VERTS_COLOR_ONEUV,entity,false);
+    createMesh(app, (GLfloat*)obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&app->materials[obj->materialIndex],GL_TRIANGLES,VERTS_COLOR_ONEUV,entity,false);
 }
 /**
  * @brief Create a light
  * Create a light source in the scene.
  * @return {int} Entity id
  */
-int createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type){
+int createLight(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type){
     
    // vertex data
     /* GLfloat vertices[] = {
@@ -307,7 +307,7 @@ int createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 di
     float radiansOC = DEG_TO_RAD(degreesOC);
     float cosineOC = cosf(radiansOC);
 
-    Entity* entity = addEntity(MODEL);
+    Entity* entity = addEntity(app, MODEL);
     entity->lightComponent->active = 1;
     entity->lightComponent->direction[0] = direction[0];
     entity->lightComponent->direction[1] = direction[1];
@@ -325,11 +325,11 @@ int createLight(Material material,vec3 position,vec3 scale,vec3 rotation,vec3 di
     entity->lightComponent->castShadows = true;
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
-    ASSERT(globals.lightsCount < MAX_LIGHTS, "Too many lights");
-    globals.lights[globals.lightsCount].entityId = entity->id;
-    globals.lights[globals.lightsCount].lightType = type;
-    createDirectionalLightSpace(globals.lightsCount);
-    globals.lightsCount++;
+    ASSERT(app->lightsCount < MAX_LIGHTS, "Too many lights");
+    app->lights[app->lightsCount].entityId = entity->id;
+    app->lights[app->lightsCount].lightType = type;
+    createDirectionalLightSpace(app, app->lightsCount);
+    app->lightsCount++;
 
     if(type == DIRECTIONAL){
         vec3 result;
@@ -392,7 +392,7 @@ void createLine(vec3 position, vec3 endPosition,Entity* entity){
  * Create a Cube mesh
  * @param diffuse - color of the cube
 */
-void createCube(Material material,vec3 position,vec3 scale,vec3 rotation){
+void createCube(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
    GLfloat vertices[] = {
     -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
@@ -457,15 +457,15 @@ void createCube(Material material,vec3 position,vec3 scale,vec3 rotation){
         22, 23, 20
     };
 
-    Entity* entity = addEntity(MODEL);
+    Entity* entity = addEntity(app, MODEL);
 
     material.diffuseMapOpacity = 1.0;
     material.material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
     
-    createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+    createMesh(app, vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
      
 }
-void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
+void createPlane(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation){
     // vertex data
     GLfloat vertices[] = {
     // Positions          // Colors           // Texture Coords    // Normals
@@ -496,17 +496,17 @@ void createPlane(Material material,vec3 position,vec3 scale,vec3 rotation){
     material.diffuseMapOpacity = 1.0;
     material.material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
    
-    Entity* entity = addEntity(MODEL);
+    Entity* entity = addEntity(app, MODEL);
 
-    createMesh(vertices,6,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+    createMesh(app, vertices,6,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
 }
 
 // TODO: unfinished. Supposed to draw the frustum of the camera or light correctly.
-void debug_drawFrustum(void)
+void debug_drawFrustum(AppState *app)
 {
      //float near_plane = -0.05f, far_plane = 300.0f;
     //mat4x4_ortho(lightProjection, -10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-    Entity* entity = addEntity(MODEL);
+    Entity* entity = addEntity(app, MODEL);
    // vec3 position;
     //vec3 scale;
     vec3 rotation;
@@ -543,7 +543,7 @@ void debug_drawFrustum(void)
     createLine(startt,endt,entity);
     
     // Near plane bottom
-    Entity* entity4 = addEntity(MODEL);
+    Entity* entity4 = addEntity(app, MODEL);
     entity4->transformComponent->position[0] = 0;
     entity4->transformComponent->position[1] = 0;
     entity4->transformComponent->position[2] = 0;
@@ -566,7 +566,7 @@ void debug_drawFrustum(void)
     createLine(startb,endb,entity4);
    
     // Near plane right
-    Entity* entity2 = addEntity(MODEL);
+    Entity* entity2 = addEntity(app, MODEL);
     entity2->transformComponent->position[0] = 0;
     entity2->transformComponent->position[1] = 0;
     entity2->transformComponent->position[2] = 0;
@@ -588,7 +588,7 @@ void debug_drawFrustum(void)
     createLine(startr,endr,entity2);
 
     // Near plane left
-    Entity* entity3 = addEntity(MODEL);
+    Entity* entity3 = addEntity(app, MODEL);
     entity3->transformComponent->position[0] = 0;
     entity3->transformComponent->position[1] = 0;
     entity3->transformComponent->position[2] = 0;

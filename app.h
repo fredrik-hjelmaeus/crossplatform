@@ -1,5 +1,5 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#ifndef APP_H
+#define APP_H
 
 #include <SDL2/SDL.h>
 #include "types.h"
@@ -24,8 +24,7 @@
 static const int width = 800;  // If these change, the views defaults should be changed aswell.
 static const int height = 600; // If these change, the views defaults should be changed aswell.
 
-
-struct Globals {
+typedef struct AppState {
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Event event;
@@ -88,17 +87,16 @@ struct Globals {
     float cursorDragStart;
     unsigned int cursorTextSelection[2];
 
-    
     int frameCount;
     Uint32 prevTick;
     bool showUI;
     bool shadows;
-    
-};
 
-extern struct Globals globals;
-extern Camera uiCamera;
-extern Camera mainCamera;
+} AppState;
+
+AppState appDefaults(void);
+
+
 
 #define ASSET_MEMORY_SIZE 5000000
 #define UI_MEMORY_SIZE 5000000
@@ -116,4 +114,4 @@ extern Camera mainCamera;
     #define ASSERT(Expression, message) ((void)0)
 #endif 
 
-#endif // GLOBALS_H end
+#endif // APP_H end

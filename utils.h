@@ -1,6 +1,8 @@
 #ifndef UTILS_H   // If UTILS_H isn't defined...
 #define UTILS_H   // Define it (with no particular value)
 
+typedef struct AppState AppState;
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "stb_image.h"
@@ -48,7 +50,7 @@ Rectangle convertViewRectangleToSDLCoordinates(View view,int windowHeight);
 void convertUIcoordinateToWindowcoordinates(View view, TransformComponent* transformComponent, int windowHeight,int windowWidth,vec2 convertedPoint);
 void captureDrawCalls(int width, int height, int drawCallsCounter);
 float deg2rad(float degrees);
-GLuint setupTexture(TextureData textureData);
+GLuint setupTexture(AppState *app, TextureData textureData);
 void floatToString(float f,int len, char* c);
 
 // Memory
@@ -72,17 +74,17 @@ void arena_free(Arena* arena);  // Not evaluated/used yet, do this before using.
 #define DEG_TO_RAD(degrees) ((degrees) * (M_PI / 180.0f))
 
 // Materials
-int getMaterialByName(const char* name);
-int addMaterial(Material material);
-Material* getMaterial(int index);
+int getMaterialByName(AppState *app, const char* name);
+int addMaterial(AppState *app, Material material);
+Material* getMaterial(AppState *app, int index);
 
 // Parse obj files
 void obj_runTests(void);
 void obj_handleFaceLine(char* line, int* vf, int* tf, int* vn, int* vfCount, int* tfCount, int* vnCount, int* faceLineCount);
-char* obj_handleFilePath(const char* filepath);
-ObjGroup* obj_loadFile(const char* filepath);
-void obj_parseMaterial(const char* filepath);
-bool obj_processTextureMap(char* mtlLine,const char* mapType,GLuint* map);
+char* obj_handleFilePath(AppState *app, const char* filepath);
+ObjGroup* obj_loadFile(AppState *app, const char *filepath);
+void obj_parseMaterial(AppState *app, const char *filepath);
+bool obj_processTextureMap(AppState *app, char* mtlLine,const char* mapType,GLuint* map);
 
 // Math
 void vec3_subtract(vec3 a, vec3 b, vec3* result);

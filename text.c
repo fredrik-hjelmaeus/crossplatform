@@ -1,22 +1,22 @@
 #include "text.h"
 #include "types.h"
 #include "utils.h"
-#include "globals.h"
+#include "app.h"
 #include "fh-sdl.h"
 #include "api.h"
 #include "opengl.h"
 
-ClosestLetter getCharacterByIndex(int index){
+ClosestLetter getCharacterByIndex(AppState *app, int index){
 
-    const char* text = globals.entities[globals.focusedEntityId].uiComponent->text;
+    const char* text = app->entities[app->focusedEntityId].uiComponent->text;
     if(index > strlen(text)){
         printf("unhandled path");
         exit(1);
     }
-    float x = (float)globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.min[0]; 
-    float y = (float)globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.min[1] 
-    + ((float)globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.max[2] / 2);
-    float scale = globals.charScale;
+    float x = (float)app->entities[app->focusedEntityId].boundingBoxComponent->boundingBox.min[0]; 
+    float y = (float)app->entities[app->focusedEntityId].boundingBoxComponent->boundingBox.min[1] 
+    + ((float)app->entities[app->focusedEntityId].boundingBoxComponent->boundingBox.max[2] / 2);
+    float scale = app->charScale;
     float xpos = 0.0f;
     float ypos = 0.0f;
     float lastShift = 0.0f;
@@ -25,7 +25,7 @@ ClosestLetter getCharacterByIndex(int index){
     closestLetter.position = (Vector2){0.0f, 0.0f};
 
     for (unsigned char c = 0; c <= index; c++) {
-        Character ch = globals.characters[(unsigned char)text[c]];
+        Character ch = app->characters[(unsigned char)text[c]];
 
         // Calculate the position of the current character
         xpos = x + (float)ch.Bearing[0] * scale;
@@ -46,9 +46,9 @@ ClosestLetter getCharacterByIndex(int index){
     return closestLetter;
 }
 
-void deleteTextRange(unsigned int startIndex, unsigned int endIndex){
-    char* text = globals.entities[globals.focusedEntityId].uiComponent->text;
-    char* newText = (char*)arena_Alloc(&globals.assetArena, 99 * sizeof(char));
+void deleteTextRange(AppState *app, unsigned int startIndex, unsigned int endIndex){
+    char* text = app->entities[app->focusedEntityId].uiComponent->text;
+    char* newText = (char*)arena_Alloc(&app->assetArena, 99 * sizeof(char));
     
     int length = strlen(text);
     if(length == 0){
@@ -69,25 +69,25 @@ void deleteTextRange(unsigned int startIndex, unsigned int endIndex){
        j++;
     }
     newText[j] = '\0';
-    globals.entities[globals.focusedEntityId].uiComponent->text = newText;
-    globals.cursorSelectionActive = false;
-    globals.cursorTextSelection[0] = 0;
-    globals.cursorTextSelection[1] = 0;
+    app->entities[app->focusedEntityId].uiComponent->text = newText;
+    app->cursorSelectionActive = false;
+    app->cursorTextSelection[0] = 0;
+    app->cursorTextSelection[1] = 0;
 }
 
 
-void addIndexToCursorTextSelection(unsigned int index){
+void addIndexToCursorTextSelection(AppState *app, unsigned int index){
     // On the first call, initialize both to the index
-    if (globals.cursorTextSelection[0] == 0 && globals.cursorTextSelection[1] == 0) {
-        globals.cursorTextSelection[0] = index;
-        globals.cursorTextSelection[1] = index;
+    if (app->cursorTextSelection[0] == 0 && app->cursorTextSelection[1] == 0) {
+        app->cursorTextSelection[0] = index;
+        app->cursorTextSelection[1] = index;
         return;
     }
 
-    if (index < globals.cursorTextSelection[0]) {
-        globals.cursorTextSelection[0] = index;
-    } else if (index > globals.cursorTextSelection[1]) {
-        globals.cursorTextSelection[1] = index;
+    if (index < app->cursorTextSelection[0]) {
+        app->cursorTextSelection[0] = index;
+    } else if (index > app->cursorTextSelection[1]) {
+        app->cursorTextSelection[1] = index;
     }
 }
 /**
@@ -97,11 +97,11 @@ void addIndexToCursorTextSelection(unsigned int index){
  * @param mouseX The X position of the mouse in SDL coordinates.
  * @return Vector2 The position of the closest letter.
  */
-ClosestLetter getClosestLetterInText(UIComponent* uiComponent,BoundingBoxComponent* bbComponent, float mouseX){
+ClosestLetter getClosestLetterInText(AppState *app, UIComponent* uiComponent,BoundingBoxComponent* bbComponent, float mouseX){
     char* text = uiComponent->text;
     float x = (float)bbComponent->boundingBox.min[0];
-    float y = (float)bbComponent->boundingBox.min[1] + (((float)bbComponent->boundingBox.max[1] - (float)bbComponent->boundingBox.min[1]) / 2);   //(float)globals.characters[0].Size[1]; 
-    float scale = globals.charScale; // Character size, also set when renderText is called (they should be in sync)
+    float y = (float)bbComponent->boundingBox.min[1] + (((float)bbComponent->boundingBox.max[1] - (float)bbComponent->boundingBox.min[1]) / 2);   //(float)app->characters[0].Size[1]; 
+    float scale = app->charScale; // Character size, also set when renderText is called (they should be in sync)
     float xpos = 0.0f;
     float ypos = 0.0f;
     float bestCharX = (float)bbComponent->boundingBox.min[0] + (float)bbComponent->boundingBox.max[0];
@@ -114,7 +114,7 @@ ClosestLetter getClosestLetterInText(UIComponent* uiComponent,BoundingBoxCompone
     }
         
     for (unsigned char c = 0; c < strlen(text); c++) {
-        Character ch = globals.characters[(unsigned char)text[c]];
+        Character ch = app->characters[(unsigned char)text[c]];
 
         // Calculate the position of the current character
         xpos = x + (float)ch.Bearing[0] * scale;
@@ -166,23 +166,23 @@ ClosestLetter getClosestLetterInText(UIComponent* uiComponent,BoundingBoxCompone
 }
 
 // Select all text fn
-void selectAllText(int width, int height){
-    ASSERT(globals.focusedEntityId != -1, "No focused entity");
-    ASSERT(globals.cursorEntityId != -1, "No cursor entity");
-    int length = strlen(globals.entities[globals.focusedEntityId].uiComponent->text);
+void selectAllText(AppState *app, int width, int height){
+    ASSERT(app->focusedEntityId != -1, "No focused entity");
+    ASSERT(app->cursorEntityId != -1, "No cursor entity");
+    int length = strlen(app->entities[app->focusedEntityId].uiComponent->text);
     if(length == 0){
         return;
     }
 
-    globals.cursorSelectionActive = true;
+    app->cursorSelectionActive = true;
 
     // Calculate width of the input field
-    float xMin = globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.min[0];
-    float xMax = xMin + globals.entities[globals.focusedEntityId].boundingBoxComponent->boundingBox.max[0];
+    float xMin = app->entities[app->focusedEntityId].boundingBoxComponent->boundingBox.min[0];
+    float xMax = xMin + app->entities[app->focusedEntityId].boundingBoxComponent->boundingBox.max[0];
 
     // Find the first and last letter in the text using max and min x values of the input field
-    ClosestLetter firstLetter = getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent,globals.entities[globals.focusedEntityId].boundingBoxComponent, xMin );
-    ClosestLetter lastLetter =  getClosestLetterInText(globals.entities[globals.focusedEntityId].uiComponent,globals.entities[globals.focusedEntityId].boundingBoxComponent, xMax );
+    ClosestLetter firstLetter = getClosestLetterInText(app, app->entities[app->focusedEntityId].uiComponent,app->entities[app->focusedEntityId].boundingBoxComponent, xMin );
+    ClosestLetter lastLetter =  getClosestLetterInText(app, app->entities[app->focusedEntityId].uiComponent,app->entities[app->focusedEntityId].boundingBoxComponent, xMax );
 
     // Convert to UI coordinates
     SDLVector2 firstLetterSDLpos;
@@ -198,9 +198,9 @@ void selectAllText(int width, int height){
     float rectangleStartPos = firstLetterUIpos.x - (lastLetterUIpos.x * 0.5);
 
     // Set cursor to be a new width & position
-    globals.entities[globals.cursorEntityId].transformComponent->position[0] = rectangleStartPos;
-    globals.entities[globals.cursorEntityId].transformComponent->scale[0] = lastLetterUIpos.x;
-    globals.entities[globals.cursorEntityId].transformComponent->modelNeedsUpdate = 1;
+    app->entities[app->cursorEntityId].transformComponent->position[0] = rectangleStartPos;
+    app->entities[app->cursorEntityId].transformComponent->scale[0] = lastLetterUIpos.x;
+    app->entities[app->cursorEntityId].transformComponent->modelNeedsUpdate = 1;
     
 }
 
@@ -208,31 +208,31 @@ void selectAllText(int width, int height){
  * @brief Delete the character to the left of the cursor.
  * Triggers on backspace key press.
  */
-void handleDeleteButton(int width,int height){
-    if(strlen(globals.entities[globals.focusedEntityId].uiComponent->text) == 0){
+void handleDeleteButton(AppState *app, int width,int height){
+    if(strlen(app->entities[app->focusedEntityId].uiComponent->text) == 0){
         return;
     }
 
-    ClosestLetter closestLetter = findCharacterUnderCursor(width,height);
+    ClosestLetter closestLetter = findCharacterUnderCursor(app, width,height);
                  
     // Remove the letter to the left of the cursor
-    removeCharacter(closestLetter.characterIndex);
+    removeCharacter(app, closestLetter.characterIndex);
 }
 
-ClosestLetter findCharacterUnderCursor(int width,int height){
-    ASSERT(globals.focusedEntityId != -1, "No focused entity");
-    ASSERT(globals.cursorEntityId != -1, "No cursor entity");
+ClosestLetter findCharacterUnderCursor(AppState *app, int width,int height){
+    ASSERT(app->focusedEntityId != -1, "No focused entity");
+    ASSERT(app->cursorEntityId != -1, "No cursor entity");
 
     UIVector2 uiVec;
-    uiVec.x = globals.entities[globals.cursorEntityId].transformComponent->position[0];
-    uiVec.y = globals.entities[globals.cursorEntityId].transformComponent->position[1];
+    uiVec.x = app->entities[app->cursorEntityId].transformComponent->position[0];
+    uiVec.y = app->entities[app->cursorEntityId].transformComponent->position[1];
     SDLVector2 sdlVec = convertUIToSDL(uiVec, width, height);
   
     ASSERT(sdlVec.x >= 0, "Sdl cursor x position is negative");
     ASSERT(sdlVec.y >= 0, "Sdl cursor y position is negative");
-    return getClosestLetterInText(
-                    globals.entities[globals.focusedEntityId].uiComponent,
-                    globals.entities[globals.focusedEntityId].boundingBoxComponent,
+    return getClosestLetterInText(app, 
+                    app->entities[app->focusedEntityId].uiComponent,
+                    app->entities[app->focusedEntityId].boundingBoxComponent,
                     sdlVec.x
     );
 }
@@ -240,12 +240,12 @@ ClosestLetter findCharacterUnderCursor(int width,int height){
 /**
  * @brief Removes the character on the index. Example: "TextIn|put" -> removeCharacter(6) "TextInut"
  */
-void removeCharacter(int index){
+void removeCharacter(AppState *app, int index){
     if(index < 0){
         return;
     }
     
-    char* originalText = globals.entities[globals.focusedEntityId].uiComponent->text;
+    char* originalText = app->entities[app->focusedEntityId].uiComponent->text;
     int originalLength = strlen(originalText);
     
     // Allocate memory for the new string (original length - 1 character + null terminator)
@@ -266,7 +266,7 @@ void removeCharacter(int index){
     }
     textCopy[j] = '\0'; // null terminate
     
-    globals.entities[globals.focusedEntityId].uiComponent->text = textCopy; // assign
+    app->entities[app->focusedEntityId].uiComponent->text = textCopy; // assign
 }
 
 // TODO: temp solution, do not handle if caps lock is already active on program run.
@@ -349,9 +349,9 @@ char specialLeftShiftHandling(char c){
  * After this the projection matrix for the font need to be set using setFontProjection.
  * And then you can render text using renderText.
  */
-void initFont(void){
-    setupFontTextures("./Assets/ARIAL.TTF",globals.fontSize);
-    setupFontMesh(&globals.gpuFontData);
-    setupMaterial(&globals.gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
+void initFont(AppState *app){
+    setupFontTextures(app, "./Assets/ARIAL.TTF",app->fontSize);
+    setupFontMesh(&app->gpuFontData);
+    setupMaterial(&app->gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
 }
 

@@ -1,53 +1,55 @@
 #ifndef UI_H
 #define UI_H
 
+typedef struct AppState AppState;
+
 #include "types.h"
 #include "ecs-entity.h"
 
 //-------
 // UI API
 //-------
-void togglePanel(void *params);
-void lightDirectionChange(void *params);
-void toggleShadow(int entityId);
-void toggleGlobalShadows(void *params);
-void onButtonClick(void);
+void togglePanel(AppState *app, void *params);
+void lightDirectionChange(AppState *app, void *params);
+void toggleShadow(AppState *app, int entityId);
+void toggleGlobalShadows(AppState *app, void *params);
+void onButtonClick(AppState *app);
 /**
  * @brief Create a panel
  * Create a panel in ui. No visibility, only a bounding box.
  * @param material - material for bounding box
 */
-Entity* ui_createPanel(Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent);
+Entity* ui_createPanel(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent);
 /**
  * @brief Create a rectangle
  * Create a rectangle mesh
 */
-int ui_createRectangle(Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent);
+int ui_createRectangle(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent);
 /**
  * @brief Create a button
  * Create a button mesh in ui
 */
-void ui_createButton(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent);
+void ui_createButton(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent);
 /**
  * @brief Create a input field
  * Create a input mesh in ui
  * @return in - entity id
 */
-int ui_createTextInput(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent);
+int ui_createTextInput(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent);
 /**
  * @brief Create a text field
  * Create a mesh in ui
  * @return - int entity id
 */
-int ui_createTextField(Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent);
+int ui_createTextField(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent);
 /**
  * @brief Create a slider. 
  * @param eventType - The eventType is what is triggered when we use the slider
  * Usually the event trigger is on mouse down and mouse pos is deemed within ui slider bounding box.
  * @return - int entity id
  */
-int ui_createSlider(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation,EventType eventType, Entity* parent);
-void ui_createCheckbox(Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, int eventType,bool checked,Entity* parent);
+int ui_createSlider(AppState *app, Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, EventType eventType, Entity* parent);
+void ui_createCheckbox(AppState *app, Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, int eventType,bool checked,Entity* parent);
 
 // ----------------------------------
 // Association structs for UI elements.

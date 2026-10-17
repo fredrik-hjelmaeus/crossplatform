@@ -1,5 +1,5 @@
 #include "utils.h"
-#include "globals.h"
+#include "app.h"
 #include <ctype.h>
 #include "stb_image_write.h"
 
@@ -439,9 +439,9 @@ int findTrailingSpaces(const char* str){
  * Input:  D:\\OneDrive\\viz\\texturer\\Renderingking texturepack V3\\old bricks.jpg
  * result: /mnt/d/OneDrive/viz/texturer/Renderingking texturepack V3/old bricks.jpg
  */
-char* obj_handleFilePath(const char* filepath){
+char* obj_handleFilePath(AppState *app, const char* filepath){
 
-    char* newPath = (char*)arena_Alloc(&globals.assetArena, (strlen(filepath) + 1) * sizeof(char));
+    char* newPath = (char*)arena_Alloc(&app->assetArena, (strlen(filepath) + 1) * sizeof(char));
     if(isupper(filepath[0]) && filepath[1] == ':'){
         strcpy(newPath,"/mnt/");
         char lower = tolower(filepath[0]);
@@ -482,7 +482,7 @@ char* obj_handleFilePath(const char* filepath){
     return newPath;
 }
 
-bool obj_processTextureMap(char* mtlLine,const char* mapType,GLuint* map){
+bool obj_processTextureMap(AppState *app, char* mtlLine,const char* mapType,GLuint* map){
     
     if(strncmp(mtlLine, mapType, strlen(mapType)) == 0){
             char* token = strtok(mtlLine, " ");
@@ -494,10 +494,10 @@ bool obj_processTextureMap(char* mtlLine,const char* mapType,GLuint* map){
                 printf("TOKEN:%c\n", token[i]);
             } */
 
-            char* filepath = obj_handleFilePath(token);
+            char* filepath = obj_handleFilePath(app, token);
             TextureData texture = loadTexture(filepath);
             
-            *map = setupTexture(texture);
+            *map = setupTexture(app, texture);
             //printf("mapType %s ID: %d \n",mapType,map);
             return true;
     }
@@ -510,10 +510,10 @@ bool obj_processTextureMap(char* mtlLine,const char* mapType,GLuint* map){
  * spec: https://en.wikipedia.org/wiki/Wavefront_.obj_file
  * https://paulbourke.net/dataformats/mtl/
  */
-void obj_parseMaterial(const char *filepath){
+void obj_parseMaterial(AppState *app, const char *filepath){
     // Check if .mtl file with same name exists, if so load&parse it.
-    char* dest = (char*)arena_Alloc(&globals.assetArena, 99 * sizeof(char));
-    char* dot = (char*)arena_Alloc(&globals.assetArena, 99 * sizeof(char));
+    char* dest = (char*)arena_Alloc(&app->assetArena, 99 * sizeof(char));
+    char* dot = (char*)arena_Alloc(&app->assetArena, 99 * sizeof(char));
     strcpy(dot, "."); // Initialize dot with a period
     strcpy(dest,filepath);
     dest = strtok(dest, ".");
@@ -551,51 +551,51 @@ void obj_parseMaterial(const char *filepath){
            token = strtok(NULL, " ");
            token[strlen(token)] = '\0';
            // TODO: Does this clash with addMaterial-fn ?
-           globals.materials[globals.materialsCount].active = true;
-           globals.materials[globals.materialsCount].name = (char*)arena_Alloc(&globals.assetArena, (strlen(token) + 1) * sizeof(char));
-           strcpy(globals.materials[globals.materialsCount].name, token);
-           globals.materialsCount++;
-          // printf("new globals.materialsCount %d \n",globals.materialsCount);
+           app->materials[app->materialsCount].active = true;
+           app->materials[app->materialsCount].name = (char*)arena_Alloc(&app->assetArena, (strlen(token) + 1) * sizeof(char));
+           strcpy(app->materials[app->materialsCount].name, token);
+           app->materialsCount++;
+          // printf("new app->materialsCount %d \n",app->materialsCount);
         
-           ASSERT(globals.materialsCount < globals.materialsCapacity, "Material count exceeds capacity");
-           //printf("new material %s \n",globals.materials[globals.materialsCount-1].name);
+           ASSERT(app->materialsCount < app->materialsCapacity, "Material count exceeds capacity");
+           //printf("new material %s \n",app->materials[app->materialsCount-1].name);
            continue;
         }
         //Ka, ambient color
         if(strncmp(mtlLine, "Ka", 2) == 0){
-            sscanf(mtlLine, "Ka %f %f %f", &globals.materials[globals.materialsCount-1].ambient.r, &globals.materials[globals.materialsCount-1].ambient.g, &globals.materials[globals.materialsCount-1].ambient.b);
-            //printf("ambient color %f %f %f \n",globals.materials[globals.materialsCount-1].ambient.r, globals.materials[globals.materialsCount-1].ambient.g, globals.materials[globals.materialsCount-1].ambient.b);
+            sscanf(mtlLine, "Ka %f %f %f", &app->materials[app->materialsCount-1].ambient.r, &app->materials[app->materialsCount-1].ambient.g, &app->materials[app->materialsCount-1].ambient.b);
+            //printf("ambient color %f %f %f \n",app->materials[app->materialsCount-1].ambient.r, app->materials[app->materialsCount-1].ambient.g, app->materials[app->materialsCount-1].ambient.b);
             continue;
         }
         
         //Kd, diffuse color
         if(strncmp(mtlLine, "Kd", 2) == 0){
-            sscanf(mtlLine, "Kd %f %f %f", &globals.materials[globals.materialsCount-1].diffuse.r, &globals.materials[globals.materialsCount-1].diffuse.g, &globals.materials[globals.materialsCount-1].diffuse.b);
-            //printf("diffuse color %f %f %f \n",globals.materials[globals.materialsCount-1].diffuse.r, globals.materials[globals.materialsCount-1].diffuse.g, globals.materials[globals.materialsCount-1].diffuse.b);
+            sscanf(mtlLine, "Kd %f %f %f", &app->materials[app->materialsCount-1].diffuse.r, &app->materials[app->materialsCount-1].diffuse.g, &app->materials[app->materialsCount-1].diffuse.b);
+            //printf("diffuse color %f %f %f \n",app->materials[app->materialsCount-1].diffuse.r, app->materials[app->materialsCount-1].diffuse.g, app->materials[app->materialsCount-1].diffuse.b);
             continue;
         }
         //Ks, specular color
         if(strncmp(mtlLine, "Ks", 2) == 0){
-            sscanf(mtlLine, "Ks %f %f %f", &globals.materials[globals.materialsCount-1].specular.r, &globals.materials[globals.materialsCount-1].specular.g, &globals.materials[globals.materialsCount-1].specular.b);
-           // printf("specular color %f %f %f \n",globals.materials[globals.materialsCount-1].specular.r, globals.materials[globals.materialsCount-1].specular.g, globals.materials[globals.materialsCount-1].specular.b);
+            sscanf(mtlLine, "Ks %f %f %f", &app->materials[app->materialsCount-1].specular.r, &app->materials[app->materialsCount-1].specular.g, &app->materials[app->materialsCount-1].specular.b);
+           // printf("specular color %f %f %f \n",app->materials[app->materialsCount-1].specular.r, app->materials[app->materialsCount-1].specular.g, app->materials[app->materialsCount-1].specular.b);
             continue;
         }
         //Ke, emissive color
         if(strncmp(mtlLine, "Ke", 2) == 0){
-            sscanf(mtlLine, "Ke %f %f %f", &globals.materials[globals.materialsCount-1].emissive.r, &globals.materials[globals.materialsCount-1].emissive.g, &globals.materials[globals.materialsCount-1].emissive.b);
-            //printf("emissive color %f %f %f \n",globals.materials[globals.materialsCount-1].emissive.r, globals.materials[globals.materialsCount-1].emissive.g, globals.materials[globals.materialsCount-1].emissive.b);
+            sscanf(mtlLine, "Ke %f %f %f", &app->materials[app->materialsCount-1].emissive.r, &app->materials[app->materialsCount-1].emissive.g, &app->materials[app->materialsCount-1].emissive.b);
+            //printf("emissive color %f %f %f \n",app->materials[app->materialsCount-1].emissive.r, app->materials[app->materialsCount-1].emissive.g, app->materials[app->materialsCount-1].emissive.b);
             continue;
         }
         //Ns, shininess/specular exponent
         //d,  dissolve(transparency) & Tr, transparency
         if((strncmp(mtlLine, "d", 1) == 0)){
-           sscanf(mtlLine, "d %f", &globals.materials[globals.materialsCount-1].transparency);
-            //printf("transparency %f \n",globals.materials[globals.materialsCount-1].transparency);
+           sscanf(mtlLine, "d %f", &app->materials[app->materialsCount-1].transparency);
+            //printf("transparency %f \n",app->materials[app->materialsCount-1].transparency);
             continue;
         } 
         if((strncmp(mtlLine, "Ns", 2) == 0)){
-            sscanf(mtlLine, "Ns %f", &globals.materials[globals.materialsCount-1].transparency);
-            //printf("transparency %f \n",globals.materials[globals.materialsCount-1].transparency);
+            sscanf(mtlLine, "Ns %f", &app->materials[app->materialsCount-1].transparency);
+            //printf("transparency %f \n",app->materials[app->materialsCount-1].transparency);
             continue;
         } 
         
@@ -616,8 +616,8 @@ void obj_parseMaterial(const char *filepath){
         //     This is also known as index of refraction. (IOR)
         //Ni 1.45000
          if(strncmp(mtlLine, "Ni", 2) == 0){
-            sscanf(mtlLine, "Ni %f", &globals.materials[globals.materialsCount-1].ior);
-            //printf("optical density(ior) %f \n",globals.materials[globals.materialsCount-1].ior);
+            sscanf(mtlLine, "Ni %f", &app->materials[app->materialsCount-1].ior);
+            //printf("optical density(ior) %f \n",app->materials[app->materialsCount-1].ior);
             continue;
         } 
 
@@ -643,28 +643,28 @@ void obj_parseMaterial(const char *filepath){
         //  The options and their arguments are inserted between the 
         //  keyword and the "filename". 
         //  map_Ka -options args filename
-        if(obj_processTextureMap(mtlLine,"map_Ka", &globals.materials[globals.materialsCount-1].ambientMap)){
-            globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_AMBIENTMAP_ENABLED;
+        if(obj_processTextureMap(app, mtlLine,"map_Ka", &app->materials[app->materialsCount-1].ambientMap)){
+            app->materials[app->materialsCount-1].material_flags |= MATERIAL_AMBIENTMAP_ENABLED;
             continue;
         }
         //map_Kd   lemur.tga
-        if(obj_processTextureMap(mtlLine,"map_Kd", &globals.materials[globals.materialsCount-1].diffuseMap)){
-            globals.materials[globals.materialsCount-1].diffuseMapOpacity = 1.0;
-            globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
+        if(obj_processTextureMap(app, mtlLine,"map_Kd", &app->materials[app->materialsCount-1].diffuseMap)){
+            app->materials[app->materialsCount-1].diffuseMapOpacity = 1.0;
+            app->materials[app->materialsCount-1].material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
             continue;
         }
         //map_Ks   lemur.tga   specular color map
-        if(obj_processTextureMap(mtlLine,"map_Ks", &globals.materials[globals.materialsCount-1].specularMap)){
-            globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_SPECULARMAP_ENABLED;
+        if(obj_processTextureMap(app, mtlLine,"map_Ks", &app->materials[app->materialsCount-1].specularMap)){
+            app->materials[app->materialsCount-1].material_flags |= MATERIAL_SPECULARMAP_ENABLED;
             continue;
         }
         //map_Ns   lemur_spec.tga specular intensity map
-        if(obj_processTextureMap(mtlLine,"map_Ns", &globals.materials[globals.materialsCount-1].shininessMap)){
-            globals.materials[globals.materialsCount-1].material_flags |= MATERIAL_SHININESSMAP_ENABLED;
+        if(obj_processTextureMap(app, mtlLine,"map_Ns", &app->materials[app->materialsCount-1].shininessMap)){
+            app->materials[app->materialsCount-1].material_flags |= MATERIAL_SHININESSMAP_ENABLED;
             continue;
         }
         //map_d    lemur_alpha.tga (alpha)
-        if(obj_processTextureMap(mtlLine,"map_d", &globals.materials[globals.materialsCount-1].alpha)){
+        if(obj_processTextureMap(app, mtlLine,"map_d", &app->materials[app->materialsCount-1].alpha)){
             continue;
         } 
        
@@ -706,16 +706,16 @@ void obj_parseMaterial(const char *filepath){
 }
 
 /**
- * String search in globals.materials on provided name.
+ * String search in app->materials on provided name.
  * @param name name to search for.
- * @returns materialIndex in globals.materials or -1 if no hits
+ * @returns materialIndex in app->materials or -1 if no hits
  */
-int getMaterialByName(const char* name){
+int getMaterialByName(AppState *app, const char* name){
     //printf("getMaterialByName %s\n",name);
-    //printf("globals.materialsCount %d\n",globals.materialsCount);
-    for(int i = 0; i < globals.materialsCount; i++){
-      //  printf("globals.materials[i].name %s\n",globals.materials[i].name);
-        if(strncmp(globals.materials[i].name,name,strlen(name)-1) == 0){
+    //printf("app->materialsCount %d\n",app->materialsCount);
+    for(int i = 0; i < app->materialsCount; i++){
+      //  printf("app->materials[i].name %s\n",app->materials[i].name);
+        if(strncmp(app->materials[i].name,name,strlen(name)-1) == 0){
            // printf("found material %s at index %d\n",name,i);
             return i;
         } 
@@ -732,26 +732,28 @@ int getMaterialByName(const char* name){
 // obj specification: https://paulbourke.net/dataformats/obj/ 
 // mtl specification: https://paulbourke.net/dataformats/mtl/
 // & https://en.wikipedia.org/wiki/Wavefront_.obj_file
-ObjGroup* obj_loadFile(const char *filepath)
+ObjGroup* obj_loadFile(AppState *app, const char *filepath)
 {
     // How many vertices can we store in the obj file
     #define OBJDATA_MAX 300001
     
     // Allocate memory for the vertex data parsing
     // TODO: Setup some tempArena to store this memory, since it's only used during parsing.
-    int* vf = (int*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
-    int* tf = (int*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
-    int* vn = (int*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(int));
-    float* vArr = (float*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
-    float* tArr = (float*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
-    float* nArr = (float*)arena_Alloc(&globals.assetArena, OBJDATA_MAX * sizeof(float));
+    int* vf = (int*)arena_Alloc(&app->assetArena, OBJDATA_MAX * sizeof(int));
+    int* tf = (int*)arena_Alloc(&app->assetArena, OBJDATA_MAX * sizeof(int));
+    int* vn = (int*)arena_Alloc(&app->assetArena, OBJDATA_MAX * sizeof(int));
+    float* vArr = (float*)arena_Alloc(&app->assetArena, OBJDATA_MAX * sizeof(float));
+    float* tArr = (float*)arena_Alloc(&app->assetArena, OBJDATA_MAX * sizeof(float));
+    float* nArr = (float*)arena_Alloc(&app->assetArena, OBJDATA_MAX * sizeof(float));
 
-    // An obj can have multiple objects. Every object gets placed in objData. All objData gets placed in a objGroup.
+    // An obj can have multiple objects. 
+    // Every object gets placed in objData. 
+    // All objData gets placed in a objGroup.
     // This objGroup is what is returned.
-    ObjGroup* objGroup = (ObjGroup*)arena_Alloc(&globals.assetArena, sizeof(ObjGroup));
-    objGroup->name = (char*)arena_Alloc(&globals.assetArena, 100 * sizeof(char)); // TODO: unneccessary?
+    ObjGroup* objGroup = (ObjGroup*)arena_Alloc(&app->assetArena, sizeof(ObjGroup));
+    objGroup->name = (char*)arena_Alloc(&app->assetArena, 100 * sizeof(char)); // TODO: unneccessary?
     objGroup->name = filepath;
-    objGroup->objData = (ObjData*)arena_Alloc(&globals.assetArena, globals.objDataCapacity * sizeof(ObjData));
+    objGroup->objData = (ObjData*)arena_Alloc(&app->assetArena, app->objDataCapacity * sizeof(ObjData));
     objGroup->objectCount = 0;
    
     int vIndex = 0;
@@ -793,22 +795,23 @@ ObjGroup* obj_loadFile(const char *filepath)
         if((int)line[0] == 109){
             if(strncmp(line, "mtllib", 6) == 0){
                // NOTE: We don't actually use mtllib name yet. We just use filepath and change to .mtl.
-                obj_parseMaterial(filepath);
+                obj_parseMaterial(app, filepath);
             }
             continue;
         }
         // o, object
         if((int)line[0] == 111){
             printf(TEXT_COLOR_BLUE "new object: %s" TEXT_COLOR_RESET , line);
+            
             size_t lineLength = strlen(line);
             if(lineLength >= 100){
                 printf("Error: Object name too long. Exiting..");
                 exit(1);
             }
-          //  printf("--------------------\n");
+            
             printf("objGroup->objectCount %d\n",objGroup->objectCount);
             // Object name
-            objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
+            objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&app->assetArena, lineLength * sizeof(char));
             for(int i = 0; i < lineLength; i++){
                 objGroup->objData[objGroup->objectCount].name[i] = line[i];
             }  
@@ -825,8 +828,8 @@ ObjGroup* obj_loadFile(const char *filepath)
                 objGroup->objData[pi].num_of_vertices =  (num_faceLineCountCurrentObject * 3);  
             }
             objGroup->objectCount++;
-            if(objGroup->objectCount > globals.objDataCapacity){
-                printf("Error: Too many objects ,adjust globals.objDataCapacity. Exiting..");
+            if(objGroup->objectCount > app->objDataCapacity){
+                printf("Error: Too many objects ,adjust app->objDataCapacity. Exiting..");
                 exit(1);
             }
         }
@@ -840,7 +843,7 @@ ObjGroup* obj_loadFile(const char *filepath)
                 exit(1);
             }
             printf("objGroup->objectCount %d\n",objGroup->objectCount);
-            objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
+            objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&app->assetArena, lineLength * sizeof(char));
             for(int i = 0; i < lineLength; i++){
                 objGroup->objData[objGroup->objectCount].name[i] = line[i];
             }  
@@ -855,8 +858,8 @@ ObjGroup* obj_loadFile(const char *filepath)
                 objGroup->objData[pi].num_of_vertices =  (num_faceLineCountCurrentObject * 3);  
             }
             objGroup->objectCount++;
-            if(objGroup->objectCount > globals.objDataCapacity){
-                printf("Error: Too many objects ,adjust globals.objDataCapacity. Exiting..");
+            if(objGroup->objectCount > app->objDataCapacity){
+                printf("Error: Too many objects ,adjust app->objDataCapacity. Exiting..");
                 exit(1);
             } */
          /*    for(int i = 2; i < strlen(line); i++){
@@ -875,7 +878,7 @@ ObjGroup* obj_loadFile(const char *filepath)
                         exit(1);
                     }
                    // printf("usemtl objGroup->objectCount %d\n",objGroup->objectCount);
-                    objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&globals.assetArena, lineLength * sizeof(char));
+                    objGroup->objData[objGroup->objectCount].name = (char*)arena_Alloc(&app->assetArena, lineLength * sizeof(char));
                     for(int i = 0; i < lineLength; i++){
                         objGroup->objData[objGroup->objectCount].name[i] = line[i];
                     }  
@@ -892,8 +895,8 @@ ObjGroup* obj_loadFile(const char *filepath)
                     objGroup->objectCount++;
                
                  
-                    if(objGroup->objectCount > globals.objDataCapacity){
-                        printf("Error: Too many objects ,adjust globals.objDataCapacity. Exiting..");
+                    if(objGroup->objectCount > app->objDataCapacity){
+                        printf("Error: Too many objects ,adjust app->objDataCapacity. Exiting..");
                         exit(1);
                     }
                 }
@@ -902,7 +905,7 @@ ObjGroup* obj_loadFile(const char *filepath)
                 char *token = strtok(line, " ");
                 token = strtok(NULL, " ");
                 token[strlen(token)] = '\0';
-                int matIndex = getMaterialByName(token);
+                int matIndex = getMaterialByName(app, token);
                 ASSERT(objGroup->objectCount-1 >= 0, "Error: No object to assign material to");
            //     printf("object tp assign mtl: %s\n", objGroup->objData[objGroup->objectCount-1].name);
          //       printf("usemtl:::: %s %d\n", token, matIndex);
@@ -965,13 +968,13 @@ ObjGroup* obj_loadFile(const char *filepath)
     }else {
         // If file contain o object, this was specified there. But if not, we need to create a default object here.
         objGroup->objData[0].num_of_vertices = (faceLineCount * 3);
-        objGroup->objData[0].vertexData = (Vertex*)arena_Alloc(&globals.assetArena, objGroup->objData[0].num_of_vertices * sizeof(Vertex));
+        objGroup->objData[0].vertexData = (Vertex*)arena_Alloc(&app->assetArena, objGroup->objData[0].num_of_vertices * sizeof(Vertex));
     }
     
     // Allocate memory for the vertex data in objData
     if(objGroup->objectCount > 0){
         for(int i = 0; i < objGroup->objectCount; i++){
-            objGroup->objData[i].vertexData = (Vertex*)arena_Alloc(&globals.assetArena, objGroup->objData[i].num_of_vertices * sizeof(Vertex));
+            objGroup->objData[i].vertexData = (Vertex*)arena_Alloc(&app->assetArena, objGroup->objData[i].num_of_vertices * sizeof(Vertex));
         }
     }
 
@@ -1134,14 +1137,14 @@ TextureData loadTexture(char* path) {
     return textureData;
 }
 
-int addMaterial(Material material){
-    globals.materials[globals.materialsCount] = material;
-    globals.materialsCount++;
-    return globals.materialsCount-1;
+int addMaterial(AppState *app, Material material){
+    app->materials[app->materialsCount] = material;
+    app->materialsCount++;
+    return app->materialsCount-1;
 }
-Material* getMaterial(int index){
-    ASSERT(index < globals.materialsCount && index >= 0, "Material index out of bounds or not assigned");
-    return &globals.materials[index];
+Material* getMaterial(AppState *app, int index){
+    ASSERT(index < app->materialsCount && index >= 0, "Material index out of bounds or not assigned");
+    return &app->materials[index];
 }
 
 void vec3_subtract(vec3 a, vec3 b, vec3* result){

@@ -184,7 +184,7 @@ typedef struct GpuData {
 // Child struct in ObjGroup.
 typedef struct ObjData {
     char* name;
-    int materialIndex; // index in globals.materials
+    int materialIndex; // index in app->materials
     Vertex* vertexData;
     int num_of_vertices;
 } ObjData;
@@ -347,7 +347,7 @@ typedef struct LightComponent {
 
 typedef struct MaterialComponent {
     bool active;
-    int materialIndex; // index in globals.materials
+    int materialIndex; // index in app->materials
     Color ambient;
     Color diffuse;
     Color specular;
@@ -371,7 +371,7 @@ typedef struct Entity {
     bool visible;
     int tag;
     // TODO: Remove these pointers.
-    // Instead add the component arrays to globals and access specific
+    // Instead add the component arrays to app and access specific
     // component for the entity using transformComponent[entity->id]
     // This is a remnant of Array of structs we first had.
     TransformComponent* transformComponent;

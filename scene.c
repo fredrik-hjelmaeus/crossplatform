@@ -1,5 +1,5 @@
 #include "scene.h"
-#include "globals.h"
+#include "app.h"
 #include "assets.h"
 #include "ui.h"
 #include "api.h"
@@ -7,8 +7,8 @@
 #include "opengl.h"
 #include "text.h"
 
-void changeSceneMode(SceneMode mode,struct Globals *globals){
-  globals->currentSceneMode = mode;
+void changeSceneMode(SceneMode mode,AppState *app){
+  app->currentSceneMode = mode;
 }
 
 
@@ -18,27 +18,27 @@ void changeSceneMode(SceneMode mode,struct Globals *globals){
  * 3d objects put into main viewport will be in an 3d-enviroment and treated normally.
  * objects created in the ui viewport will be in a 2d-environment and act more like a web ui element.
 */
-void initScene(struct Globals *globals){
+void initScene(AppState *app){
 
-   changeSceneMode(SCENE_MODE_NORMAL,globals);
+   changeSceneMode(SCENE_MODE_NORMAL,app);
 
-   globals->views.main.camera->position[1] = 35.0f;
-   globals->views.main.camera->position[2] = 35.0f;
-   globals->views.main.camera->target[0] = 0.0f;
-   globals->views.main.camera->target[1] = 0.0f;
-   globals->views.main.camera->target[2] = 0.0f;
+   app->views.main.camera->position[1] = 35.0f;
+   app->views.main.camera->position[2] = 35.0f;
+   app->views.main.camera->target[0] = 0.0f;
+   app->views.main.camera->target[1] = 0.0f;
+   app->views.main.camera->target[2] = 0.0f;
     
     // Assets
-    initFont();
+    initFont(app);
    
-    setupMaterial(&globals->depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
+    setupMaterial(&app->depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
   
-    depthshadow_createFrameBuffer(&globals->depthMapBuffer);
-    depthshadow_createDepthTexture();
+    depthshadow_createFrameBuffer(&app->depthMapBuffer);
+    depthshadow_createDepthTexture(app);
     //depthshadow_createDepthCubemap();
-  //  depthshadow_configureFrameBuffer(&globals->depthMapBuffer);
-    //depthshadow_configureCubeMapFrameBuffer(&globals->depthMapBuffer);
-    initAssets();
+  //  depthshadow_configureFrameBuffer(&app->depthMapBuffer);
+    //depthshadow_configureCubeMapFrameBuffer(&app->depthMapBuffer);
+    initAssets(app);
   
  //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
   
@@ -54,7 +54,7 @@ void initScene(struct Globals *globals){
     ObjGroup* teapot = obj_loadFile("./Assets/teapot.obj");*/
   //  ObjGroup* dragon = obj_loadFile("./Assets/dragon.obj");   
    // ObjGroup* textured_objects = obj_loadFile("./Assets/textured_objects.obj");
-    ObjGroup* skp_arbetsrum = obj_loadFile("./Assets/arbetsrum_FINAL.obj");
+    ObjGroup* skp_arbetsrum = obj_loadFile(app, "./Assets/arbetsrum_FINAL.obj");
  
     // Main viewport objects (3d scene) x,y,z coords is a world space coordinate (not yet implemented?).
   
@@ -74,10 +74,10 @@ void initScene(struct Globals *globals){
         createObject(&truck->objData[i],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     } */
   
-    createObject(&skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&skp_arbetsrum->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&skp_arbetsrum->objData[2],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(&skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    createObject(app, &skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(app, &skp_arbetsrum->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(app, &skp_arbetsrum->objData[2],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    createObject(app, &skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
   /*   createObject(&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(&truck->objData[1],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -101,7 +101,7 @@ void initScene(struct Globals *globals){
     
 
     // lights
-    int lightId = createLight(lightMaterial,(vec3){5.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
+    int lightId = createLight(app, lightMaterial,(vec3){5.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
@@ -113,7 +113,7 @@ void initScene(struct Globals *globals){
     createLight(lightMaterial,(vec3){-8.7f, 0.2f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); */
 
     // Primitives
-    createPlane(objectMaterial, (vec3){0.0f, -3.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
+    createPlane(app, objectMaterial, (vec3){0.0f, -3.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
     //createCube(objectMaterial,(vec3){10.0f, 3.0f, 12.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
     // Frame buffer quad
@@ -127,12 +127,12 @@ void initScene(struct Globals *globals){
    // TODO: implement rotation, it is atm not affecting. 
  
     // UI Settings Panel
-    Entity* settingsPanel = ui_createPanel(uiBoundingBoxMat,(vec3){545.0f, 5.0f, 3.0f}, (vec3){250.0f, 350.0f, 1.0f},(vec3){0.0f, 0.0f, 0.0f},NULL);
+    Entity* settingsPanel = ui_createPanel(app, uiBoundingBoxMat,(vec3){545.0f, 5.0f, 3.0f}, (vec3){250.0f, 350.0f, 1.0f},(vec3){0.0f, 0.0f, 0.0f},NULL);
    
-    ui_createButton(flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", EVENT_TOGGLE_UI_PANEL, settingsPanel);
+    ui_createButton(app, flatColorUiGrayMat, (vec3){545.0f, 5.0f, 0.0f}, (vec3){250.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Header", EVENT_TOGGLE_UI_PANEL, settingsPanel);
  
-    ui_createTextInput(textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",EVENT_NONE,settingsPanel);
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 35.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
+    ui_createTextInput(app, textInputUiMat, (vec3){680.0f, 35.0f, 1.0f}, (vec3){110.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextInput",EVENT_NONE,settingsPanel);
+    ui_createTextField(app, flatColorUiDarkGrayMat, (vec3){555.0f, 35.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "TextField",settingsPanel);
     // Row 2 Slider
   //  ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Slider Text Field",settingsPanel);
    // ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, 65.0f, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},settingsPanel);
@@ -146,22 +146,22 @@ void initScene(struct Globals *globals){
 
     // Row 4 List
    
-    for(int i=0; i < globals->lightsCount; i++){
+    for(int i=0; i < app->lightsCount; i++){
         yPos += 35.0f;
         Event toggleShadow = {
             .type = TOGGLE_CAST_SHADOW,
-            .bPtr = &globals->entities[globals->lights[i].entityId].lightComponent->castShadows,
+            .bPtr = &app->entities[app->lights[i].entityId].lightComponent->castShadows,
             .subscriberCount = 0,
             .subscribers = {0}
         };
 
       // char* lightName[20];
-       char* textCopy = (char*)arena_Alloc(&globals->uiArena, 99 * sizeof(char));
-       sprintf(textCopy, "id: %d, type: %d", globals->lights[i].entityId,globals->lights[i].type);
+       char* textCopy = (char*)arena_Alloc(&app->uiArena, 99 * sizeof(char));
+       sprintf(textCopy, "id: %d, type: %d", app->lights[i].entityId,app->lights[i].type);
        // strcpy(lightName, "customtext"); // Copies "custom text" into the lightName array.
-       // itoa(globals->lights[i].entityId,lightName,10);
+       // itoa(app->lights[i].entityId,lightName,10);
        // lightName = 'c';
-       // sprintf(lightName,"%i", globals->lights[i].entityId); //globals->entities[globals->lights[i].entityId].id
+       // sprintf(lightName,"%i", app->lights[i].entityId); //app->entities[app->lights[i].entityId].id
         ui_createTextField(flatColorUiGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, textCopy , settingsPanel);
         ui_createCheckbox(flatColorUiGrayMat,flatColorUiDarkGrayMat, (vec3){650.0f, yPos, 1.0f}, (vec3){20.0f, 20.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},&toggleShadow,true,settingsPanel);
     } */
@@ -169,14 +169,14 @@ void initScene(struct Globals *globals){
     // Row 5 Slider
     float yPos = 135.0f;
     yPos += 35.0f;
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position x",settingsPanel);
-    int sliderId = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
-    int textInputId = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "0.00",EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
+    ui_createTextField(app, flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position x",settingsPanel);
+    int sliderId = ui_createSlider(app, flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
+    int textInputId = ui_createTextInput(app, textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "0.00",EVENT_LIGHT_DIR_X_CHANGED,settingsPanel);
     // Row 6 Slider
     yPos += 35.0f;
-    ui_createTextField(flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position y",settingsPanel);
-    int sliderIdSix = ui_createSlider(flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_Y_CHANGED,settingsPanel);
-    int textInputIdSix = ui_createTextInput(textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "5.00",EVENT_LIGHT_DIR_Y_CHANGED,settingsPanel);
+    ui_createTextField(app, flatColorUiDarkGrayMat, (vec3){555.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Position y",settingsPanel);
+    int sliderIdSix = ui_createSlider(app, flatColorUiGrayMat,textInputUiMat, (vec3){650.0f, yPos, 1.0f}, (vec3){75.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},EVENT_LIGHT_DIR_Y_CHANGED,settingsPanel);
+    int textInputIdSix = ui_createTextInput(app, textInputUiMat, (vec3){730.0f, yPos, 1.0f}, (vec3){60.0f, 25.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}, "5.00",EVENT_LIGHT_DIR_Y_CHANGED,settingsPanel);
     
 
     // Setup associations
@@ -234,25 +234,25 @@ void initScene(struct Globals *globals){
  //ui_createButton(uiMaterial, (vec3){150.0f, 0.0f, 0.0f}, (vec3){150.0f, 50.0f, 100.0f}, (vec3){0.0f, 0.0f, 0.0f}, "Rotate",onButtonClick);
   
    // TODO: create slider or input for ui using this
-  //printf("materials-list (%d): \n",globals->materialsCount);
-   // for(int i = 0; i < globals->materialsCount; i++){
-    //    printf("(%d),%s \n",i,globals->materials[i].name);
-   /*       printf("shininess %f \n",globals->materials[i].shininess);
-        printf("ambient.r %f \n",globals->materials[i].ambient.r);
-        printf("ambient.g %f \n",globals->materials[i].ambient.g);
-        printf("ambient.b %f \n",globals->materials[i].ambient.b);
-        printf("diffuse.r %f \n",globals->materials[i].diffuse.r);
-        printf("diffuse.g %f \n",globals->materials[i].diffuse.g);
-        printf("diffuse.b %f \n",globals->materials[i].diffuse.b);
-        printf("specular.r %f \n",globals->materials[i].specular.r);
-        printf("specular.g %f \n",globals->materials[i].specular.g);
-        printf("specular.b %f \n",globals->materials[i].specular.b);
-        printf("ior/Ni %f \n",globals->materials[i].ior);
-        printf("alpha %f \n",globals->materials[i].alpha); 
-        printf("diffuseMap %d \n",globals->materials[i].diffuseMap);
-        printf("ambientMap %d \n",globals->materials[i].ambientMap);
-        printf("specularMap %d \n",globals->materials[i].specularMap);
-        printf("shininessMap %d \n\n",globals->materials[i].shininessMap);  */
+  //printf("materials-list (%d): \n",app->materialsCount);
+   // for(int i = 0; i < app->materialsCount; i++){
+    //    printf("(%d),%s \n",i,app->materials[i].name);
+   /*       printf("shininess %f \n",app->materials[i].shininess);
+        printf("ambient.r %f \n",app->materials[i].ambient.r);
+        printf("ambient.g %f \n",app->materials[i].ambient.g);
+        printf("ambient.b %f \n",app->materials[i].ambient.b);
+        printf("diffuse.r %f \n",app->materials[i].diffuse.r);
+        printf("diffuse.g %f \n",app->materials[i].diffuse.g);
+        printf("diffuse.b %f \n",app->materials[i].diffuse.b);
+        printf("specular.r %f \n",app->materials[i].specular.r);
+        printf("specular.g %f \n",app->materials[i].specular.g);
+        printf("specular.b %f \n",app->materials[i].specular.b);
+        printf("ior/Ni %f \n",app->materials[i].ior);
+        printf("alpha %f \n",app->materials[i].alpha); 
+        printf("diffuseMap %d \n",app->materials[i].diffuseMap);
+        printf("ambientMap %d \n",app->materials[i].ambientMap);
+        printf("specularMap %d \n",app->materials[i].specularMap);
+        printf("shininessMap %d \n\n",app->materials[i].shininessMap);  */
  // }   
 
 }

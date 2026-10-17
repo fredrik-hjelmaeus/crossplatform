@@ -1,10 +1,11 @@
-#include "globals.h"
+#include "app.h"
 
 //------------------------------------------------------
 // Global variables / Initialization
 //------------------------------------------------------
-
-struct Globals globals = {
+AppState appDefaults(void) {
+    return (AppState){
+    
     .window=NULL,
     .renderer=NULL,
     .event={0},
@@ -75,5 +76,5 @@ struct Globals globals = {
     .prevTick = 0,
     .showUI = true,
     .shadows = true,
-    
-};
+    };
+}

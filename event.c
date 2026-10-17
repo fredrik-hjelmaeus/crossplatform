@@ -1,5 +1,5 @@
 #include "event.h"
-#include "globals.h"
+#include "app.h"
 #include "input-mapping.h"
 #include "ui.h"
 #include "utils.h"
@@ -13,7 +13,7 @@ Subscriber subscribers[EVENT_COUNT][MAX_SUBSCRIBERS_PER_EVENT];
 int subscriberCounts[EVENT_COUNT] = {0};
 
 // Action fn's
-void onDirectionLightChangeX(Event event, void* association){
+void onDirectionLightChangeX(AppState *app, Event event, void* association){
   ASSERT(event.type == EVENT_LIGHT_DIR_X_CHANGED,"wrong event type");
   ASSERT(association != NULL,"association not provided (NULL)");
   
@@ -26,25 +26,25 @@ void onDirectionLightChangeX(Event event, void* association){
     ASSERT(lightAssoc->textInputEntityId != -1, "textInputEntityId in association is invalid");
 
     int entityId = event.payload.transform.objectEntityId;
-    Entity* focusedEntity = &globals.entities[entityId];
+    Entity* focusedEntity = &app->entities[entityId];
 
     ASSERT(focusedEntity != NULL, "No focused Entity found");
     ASSERT(focusedEntity->transformComponent != NULL, "Missing transformcomponent");
 
     // Update light value
-    if(globals.entities[lightAssoc->lightEntityId].transformComponent->active){
-      globals.entities[lightAssoc->lightEntityId].transformComponent->position[0] = event.payload.transform.t * 10.0;
+    if(app->entities[lightAssoc->lightEntityId].transformComponent->active){
+      app->entities[lightAssoc->lightEntityId].transformComponent->position[0] = event.payload.transform.t * 10.0;
     }
     
     // Update ui slider value
-    if(globals.entities[lightAssoc->sliderEntityId].uiComponent->active){
-      Entity* sliderEntity = &globals.entities[lightAssoc->sliderEntityId];
+    if(app->entities[lightAssoc->sliderEntityId].uiComponent->active){
+      Entity* sliderEntity = &app->entities[lightAssoc->sliderEntityId];
       ASSERT(sliderEntity != NULL,"missing slider entity");
-      Entity* sliderBoundingBoxEntity = &globals.entities[sliderEntity->uiComponent->boundingBoxEntityId];
+      Entity* sliderBoundingBoxEntity = &app->entities[sliderEntity->uiComponent->boundingBoxEntityId];
       ASSERT(sliderBoundingBoxEntity != NULL,"missing slider bb entity");
       
       if(entityId == lightAssoc->textInputEntityId){
-        Entity* sliderRangeEntity = &globals.entities[sliderEntity->uiComponent->sliderRangeEntityId];
+        Entity* sliderRangeEntity = &app->entities[sliderEntity->uiComponent->sliderRangeEntityId];
         ASSERT(sliderRangeEntity != NULL,"missing slider range entity");
         
 
@@ -82,7 +82,7 @@ void onDirectionLightChangeX(Event event, void* association){
       }else {
         
         // Slider position change
-        float newMouseX = (float)globals.mouseXpos;
+        float newMouseX = (float)app->mouseXpos;
         float newPosX = absValue(newMouseX) - (width / 2.0);
 
         // Visual representation
@@ -103,17 +103,17 @@ void onDirectionLightChangeX(Event event, void* association){
     }
     
     // Update ui text input value
-    if(globals.entities[lightAssoc->textInputEntityId].alive && globals.entities[lightAssoc->textInputEntityId].uiComponent->active){
+    if(app->entities[lightAssoc->textInputEntityId].alive && app->entities[lightAssoc->textInputEntityId].uiComponent->active){
       floatToString(
         event.payload.transform.t, 
-        sizeof(globals.entities[lightAssoc->textInputEntityId].uiComponent->text),
-        globals.entities[lightAssoc->textInputEntityId].uiComponent->text
+        sizeof(app->entities[lightAssoc->textInputEntityId].uiComponent->text),
+        app->entities[lightAssoc->textInputEntityId].uiComponent->text
       ); 
     }
   }
  
 }
-void onDirectionLightChangeY(Event event, void* association){
+void onDirectionLightChangeY(AppState *app, Event event, void* association){
   ASSERT(event.type == EVENT_LIGHT_DIR_Y_CHANGED,"wrong event type");
   ASSERT(association != NULL,"association not provided (NULL)");
   
@@ -126,18 +126,18 @@ void onDirectionLightChangeY(Event event, void* association){
     ASSERT(lightAssoc->textInputEntityId != -1, "textInputEntityId in association is invalid");
 
     // Update light value
-    if(globals.entities[lightAssoc->lightEntityId].transformComponent->active){
-      globals.entities[lightAssoc->lightEntityId].transformComponent->position[1] = event.payload.transform.t * 10.0;
+    if(app->entities[lightAssoc->lightEntityId].transformComponent->active){
+      app->entities[lightAssoc->lightEntityId].transformComponent->position[1] = event.payload.transform.t * 10.0;
     }
     
     // Update ui slider value
-    if(globals.entities[lightAssoc->sliderEntityId].uiComponent->active){
-      globals.entities[lightAssoc->sliderEntityId].uiComponent->sliderValue = event.payload.transform.t;
+    if(app->entities[lightAssoc->sliderEntityId].uiComponent->active){
+      app->entities[lightAssoc->sliderEntityId].uiComponent->sliderValue = event.payload.transform.t;
     }
     
     // Update ui text input value
-    if(globals.entities[lightAssoc->textInputEntityId].alive && globals.entities[lightAssoc->textInputEntityId].uiComponent->active){
-      snprintf(globals.entities[lightAssoc->textInputEntityId].uiComponent->text,MAX_TEXT_LENGTH,"%0.2f",event.payload.transform.t);
+    if(app->entities[lightAssoc->textInputEntityId].alive && app->entities[lightAssoc->textInputEntityId].uiComponent->active){
+      snprintf(app->entities[lightAssoc->textInputEntityId].uiComponent->text,MAX_TEXT_LENGTH,"%0.2f",event.payload.transform.t);
     }
   }
  
@@ -156,15 +156,15 @@ void subscribeToEvent(Subscriber sub) {
     }
 }
 
-void dispatchEvent(Event event){
+void dispatchEvent(AppState *app, Event event){
   for(int i = 0; i < subscriberCounts[event.type]; i++){
-    subscribers[event.type][i].callback(event, subscribers[event.type][i].association);
+    subscribers[event.type][i].callback(app, event, subscribers[event.type][i].association);
   }
 }
 
-void processEvents(void){
+void processEvents(AppState *app){
   for(int i = 0; i < eventQueueCount; i++){
-    dispatchEvent(eventQueue[i]);
+    dispatchEvent(app, eventQueue[i]);
   }
 
   eventQueueCount = 0;

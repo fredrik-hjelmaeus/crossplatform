@@ -1,6 +1,6 @@
 #include "types.h"
 #include "utils.h"
-#include "globals.h"
+#include "app.h"
 #include "ui.h"
 
 
@@ -53,7 +53,7 @@ void tests_binary_conversion(void){
     printf(TEXT_COLOR_GREEN "SUCCESS \n" TEXT_COLOR_RESET);
 }
 
-void tests_events(void){
+void tests_events(AppState *app){
    // This is a test setup aswell as doc for event-flow.
    // Meant to be used mainly for one-entity or one-time occurances.
    // This leaves systems to do updates on batches and we can avoid having to
@@ -66,7 +66,7 @@ void tests_events(void){
    // 2. input mapping for keyboard input & mouse input etc.
 
    // Test of 1. ui mapping:
-   changeSceneMode(SCENE_MODE_NORMAL,&globals); // sets mode
+   changeSceneMode(SCENE_MODE_NORMAL,app); // sets mode
    
    LightDirectionAssociation* lightAss = (LightDirectionAssociation*)malloc(sizeof(LightDirectionAssociation));
    
@@ -85,12 +85,12 @@ void tests_events(void){
    Event translateObjectEvent = {.type = EVENT_LIGHT_DIR_X_CHANGED, .payload.transform = tpo };
    pushEvent(translateObjectEvent);
    
-   processEvents(); // walk eventqueue and executes events
+   processEvents(app); // walk eventqueue and executes events
 
    // Test of 2. -> input-mapping -> subscribe -> process -> event -> action
    // Incomplete/Broken atm.
    //addKeyBinding(102,translateObjectEvent,SCENE_MODE_NORMAL); // key mapping
-   //processKeyInput(102,globals.currentSceneMode); // trigger event / push to eventqueue
+   //processKeyInput(102,app->currentSceneMode); // trigger event / push to eventqueue
    //exit(0);
 
     printf("tests_events: ");
