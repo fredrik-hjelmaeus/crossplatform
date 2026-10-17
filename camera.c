@@ -1,3 +1,4 @@
+#include "input-state.h"
 #include "app.h"
 #include "camera.h"
 
@@ -37,7 +38,7 @@ Camera* initCamera(void) {
 
     return camera;
 }
-void updateCamera(AppState *app, Camera* camera){
+void updateCamera(InputState *inputState, Camera* camera){
     if(camera->mode == CAMERAMODE_FPS){
         // Look for view needs update flag & update/recalc view matrix if needed.
         if(camera->viewMatrixNeedsUpdate == 1){
@@ -85,23 +86,23 @@ void updateCamera(AppState *app, Camera* camera){
     }
     if(camera->mode == CAMERAMODE_ORBITAL){
       
-        if(app->mouseLeftButtonPressed && app->mouseDragged){
-            if(app->mouseDragStart[0] < -9999.0f){
-                app->mouseDragStart[0] = app->mouseXpos;
-                app->mouseDragStart[1] = app->mouseYpos;
-      //          printf("drag start %f %f \n",app->mouseDragStart[0],app->mouseDragStart[1]);
+        if(inputState->mouseLeftButtonPressed && inputState->mouseDragged){
+            if(inputState->mouseDragStart[0] < -9999.0f){
+                inputState->mouseDragStart[0] = inputState->mouseXpos;
+                inputState->mouseDragStart[1] = inputState->mouseYpos;
+      //          printf("drag start %f %f \n",inputState->mouseDragStart[0],inputState->mouseDragStart[1]);
             }
            
-            float newMouseX = (float)app->mouseXpos;
-            float newMouseY = (float)app->mouseYpos;
-            float changeXThisFrame = newMouseX - app->mouseDragPreviousFrame[0];
-            float changeYThisFrame = newMouseY - app->mouseDragPreviousFrame[1];
+            float newMouseX = (float)inputState->mouseXpos;
+            float newMouseY = (float)inputState->mouseYpos;
+            float changeXThisFrame = newMouseX - inputState->mouseDragPreviousFrame[0];
+            float changeYThisFrame = newMouseY - inputState->mouseDragPreviousFrame[1];
 
-            app->mouseDragPreviousFrame[0] = newMouseX;
-            app->mouseDragPreviousFrame[1] = newMouseY;
+            inputState->mouseDragPreviousFrame[0] = newMouseX;
+            inputState->mouseDragPreviousFrame[1] = newMouseY;
 
-           // float changeXThisMouseDown = (float)app->mouseXpos - app->mouseDragStart[0];
-           // float changeYThisMouseDown = (float)app->mouseYpos - app->mouseDragStart[1];
+           // float changeXThisMouseDown = (float)inputState->mouseXpos - inputState->mouseDragStart[0];
+           // float changeYThisMouseDown = (float)inputState->mouseYpos - inputState->mouseDragStart[1];
 
            // float changeThisFrameX = 0.01;
           //  float changeThisFrameY = 0.01;
@@ -160,14 +161,14 @@ void updateCamera(AppState *app, Camera* camera){
 
          //   printf("changeThisFrameX %f \n",changeThisFrameX);
         }else {
-            if(app->mouseDragStart[0] > -9999.0f){
-              //  float xDragOffset = app->mouseXpos - app->mouseDragStart[0];
-               // float yDragOffset = app->mouseYpos - app->mouseDragStart[1];
+            if(inputState->mouseDragStart[0] > -9999.0f){
+              //  float xDragOffset = inputState->mouseXpos - inputState->mouseDragStart[0];
+               // float yDragOffset = inputState->mouseYpos - inputState->mouseDragStart[1];
                 //printf("we dragged %f %f\n", xDragOffset, yDragOffset);
-                app->mouseDragStart[0] = -10000.0f;
-                app->mouseDragStart[1] = -10000.0f;
-                app->mouseDragPreviousFrame[0] = 0.0f;
-                app->mouseDragPreviousFrame[1] = 0.0f;
+                inputState->mouseDragStart[0] = -10000.0f;
+                inputState->mouseDragStart[1] = -10000.0f;
+                inputState->mouseDragPreviousFrame[0] = 0.0f;
+                inputState->mouseDragPreviousFrame[1] = 0.0f;
             }
               // create view/camera transformation
           /*   mat4x4 view;

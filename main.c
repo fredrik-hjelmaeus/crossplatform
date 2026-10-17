@@ -1,3 +1,4 @@
+#include "input-state.h"
 #include "render.h"
 #include <stdio.h>
 #include <time.h>
@@ -88,11 +89,11 @@ void calcCameraFront(Camera* camera, float xpos, float ypos){
             vec3_norm(camera->front, direction);
 }
 
-void handleKeyInput(RenderState *renderState, AppState *app){
+void handleKeyInput(InputState *inputState, RenderState *renderState, AppState *app){
          
-            processKeyInput(app->event.key.keysym.sym, app->currentSceneMode);
+            processKeyInput(inputState->event.key.keysym.sym, app->currentSceneMode);
             
-            const char *key = getKeyName(app->event.key.keysym.sym);
+            const char *key = getKeyName(inputState->event.key.keysym.sym);
            
             if(strcmp(key, "C") == 0) {
                 app->views.full.clearColor.r = randFloat(0.0,1.0);
@@ -237,7 +238,7 @@ void displayFps(AppState *app, Uint32 ticks){
     app->prevTick = ticks/1000;
 }
 
-void update(RenderState *renderState, AppState *app){
+void update(InputState *inputState, RenderState *renderState, AppState *app){
 
     // Time 
     Uint32 ticks = getTicks();
@@ -254,17 +255,17 @@ void update(RenderState *renderState, AppState *app){
     displayFps(app, ticks);
     
     // Systems
-    cameraSystem(app);
-    processEvents(app);
+    cameraSystem(inputState, app);
+    processEvents(inputState, app);
     uiPositionSystem(app);
-    uiInputSystem(app);
-    hoverAndClickSystem(app);
-    uiSliderSystem(app);
+    uiInputSystem(inputState, app);
+    hoverAndClickSystem(inputState, app);
+    uiSliderSystem(inputState, app);
     uiCheckboxSystem(renderState, app);
-    textCursorSystem(app);
+    textCursorSystem(inputState, app);
     movementSystem(app);
     modelSystem(app);
-    app->prevMouseLeftDown = app->mouseLeftButtonPressed;
+    inputState->prevMouseLeftDown = inputState->mouseLeftButtonPressed;
 }
 
 void render(RenderState *renderState, AppState *app){
@@ -432,12 +433,14 @@ void render(RenderState *renderState, AppState *app){
 typedef struct {
     AppState *app;
     RenderState *renderState;
+    InputState *inputState;
 } LoopContext;
 
 void emscriptenLoop(void *context) {
     LoopContext *loop = context;
     AppState *app = loop->app;
     RenderState *renderState = loop->renderState;
+    InputState *inputState = loop->inputState;
     if(!app->running){
         printf("Closing sdl canvas!\n");
         quit(renderState, app);
@@ -445,8 +448,8 @@ void emscriptenLoop(void *context) {
         emscripten_cancel_main_loop();
         return;
     }
-    input(renderState, app);
-    update(renderState, app);
+    input(inputState, renderState, app);
+    update(inputState, renderState, app);
     render(renderState, app);
 }
 #endif
@@ -463,6 +466,7 @@ int main(int argc, char **argv) {
 
     AppState appState = appDefaults();
     RenderState renderState = renderDefaults();
+    InputState inputState = inputDefaults();
 
     // Initialize Memory Arenas
     arena_initMemory(&appState.assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
@@ -516,13 +520,13 @@ int main(int argc, char **argv) {
     // -----------------------------------------------------
     // Wasm code
     #ifdef __EMSCRIPTEN__
-    LoopContext loop = {&appState, &renderState};
+    LoopContext loop = {&appState, &renderState, &inputState};
     emscripten_set_main_loop_arg(emscriptenLoop, &loop, 0, 1);
     #else
     // native code
     while(appState.running) {
-        input(&renderState, &appState);
-        update(&renderState, &appState);
+        input(&inputState, &renderState, &appState);
+        update(&inputState, &renderState, &appState);
         render(&renderState, &appState);
         debugSystem(&renderState);
     }

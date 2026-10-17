@@ -1,3 +1,4 @@
+#include "input-state.h"
 #include "render.h"
 #include "app.h"
 #include "input.h"
@@ -5,7 +6,7 @@
 #include "utils.h"
 #include "viewport.h"
 
-void handleKeyInput(RenderState *renderState, AppState *app);
+void handleKeyInput(InputState *inputState, RenderState *renderState, AppState *app);
 void calcCameraFront(Camera *camera, float xpos, float ypos);
 
 /**
@@ -13,42 +14,42 @@ void calcCameraFront(Camera *camera, float xpos, float ypos);
  * This is because this fn will become too large otherwise,and we wan't to group & handle events in a more structured way. 
  * For example, window resize events in perhaps a windowSystem, input affecting camera in a cameraSystem etc.
  */
-void input(RenderState *renderState, AppState *app) {
+void input(InputState *inputState, RenderState *renderState, AppState *app) {
     
     // Process events
-    while(pollEvent(app)) {
+    while(pollEvent(inputState)) {
         
-        if(app->event.type == SDL_QUIT) {
+        if(inputState->event.type == SDL_QUIT) {
             app->running = 0;
         } 
-        if (app->event.type == SDL_MOUSEBUTTONDOWN) {
+        if (inputState->event.type == SDL_MOUSEBUTTONDOWN) {
             
             // A button was pressed
-            if (app->event.button.button == SDL_BUTTON_LEFT) {
+            if (inputState->event.button.button == SDL_BUTTON_LEFT) {
                
-                if(app->event.button.clicks == 2){
+                if(inputState->event.button.clicks == 2){
                    
-                    app->mouseDoubleClick = true;
+                    inputState->mouseDoubleClick = true;
                 }
                 
                 // Left Button Pressed
-                app->mouseLeftButtonPressed = true;
+                inputState->mouseLeftButtonPressed = true;
                 
-            } else if (app->event.button.button == SDL_BUTTON_RIGHT) {
+            } else if (inputState->event.button.button == SDL_BUTTON_RIGHT) {
                 
               
             }
         } 
-        if(app->event.type == SDL_KEYDOWN) {
+        if(inputState->event.type == SDL_KEYDOWN) {
             // If input element is focused, we don't handle keyboard events here but in the uiInputSystem
             if(app->focusedEntityId != -1){
                 return;
             }else {
-                handleKeyInput(renderState, app);
+                handleKeyInput(inputState, renderState, app);
             }
         }
             
-        if(app->event.type == SDL_WINDOWEVENT && app->event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
+        if(inputState->event.type == SDL_WINDOWEVENT && inputState->event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
             int w, h; 
             getWindowSize(app, &w, &h);
             recalculateViewports(w,h,app);
@@ -57,30 +58,30 @@ void input(RenderState *renderState, AppState *app) {
             //glViewport(0, 0, w / 2, h);
         }
        
-        if (app->event.type == SDL_MOUSEBUTTONUP) {
+        if (inputState->event.type == SDL_MOUSEBUTTONUP) {
            // A button was released
-           app->mouseLeftButtonPressed = false;
+           inputState->mouseLeftButtonPressed = false;
            
            if(app->cursorSelectionActive){
                 app->deselectCondition = true;
            }
-           app->mouseDragged = false;
+           inputState->mouseDragged = false;
            if(app->focusedEntityId != -1 && app->entities[app->focusedEntityId].uiComponent->type == UITYPE_SLIDER){
                 app->focusedEntityId = -1;
            }
            
             
         }
-        if (app->event.type == SDL_MOUSEMOTION) {
-            if(app->mouseLeftButtonPressed){
-                app->mouseDragged = true;
+        if (inputState->event.type == SDL_MOUSEMOTION) {
+            if(inputState->mouseLeftButtonPressed){
+                inputState->mouseDragged = true;
             }
 
-            int xpos = app->event.motion.x;
-            int ypos = app->event.motion.y;
+            int xpos = inputState->event.motion.x;
+            int ypos = inputState->event.motion.y;
 
-            app->mouseXpos = (float)xpos;
-            app->mouseYpos = (float)ypos;
+            inputState->mouseXpos = (float)xpos;
+            inputState->mouseYpos = (float)ypos;
 
             // -----------TEMP CODE------------
           /*   printf("Mouse SDL coords: %d, %d\n", xpos, ypos);
@@ -90,7 +91,7 @@ void input(RenderState *renderState, AppState *app) {
               float x_ui =  (-1 * x_ndc) * ((float)width * 0.5);
               float y_ui =   y_ndc * ((float)height * 0.5);  
             //  printf("Mouse moved to NDC %f, %f\n", x_ndc, y_ndc);
-            //printf("Mouse moved to %f, %f\n", app->mouseXpos, app->mouseYpos);
+            //printf("Mouse moved to %f, %f\n", inputState->mouseXpos, inputState->mouseYpos);
             SDLVector2 sdlMouseCoords = {xpos, ypos};
             UIVector2 uiCoords = convertSDLToUI(sdlMouseCoords, width, height);
             printf("Mouse UI coords: %f, %f\n", uiCoords.x, uiCoords.y); */

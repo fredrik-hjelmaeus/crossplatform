@@ -1,3 +1,4 @@
+#include "input-state.h"
 #include "event.h"
 #include "app.h"
 #include "input-mapping.h"
@@ -13,7 +14,7 @@ Subscriber subscribers[EVENT_COUNT][MAX_SUBSCRIBERS_PER_EVENT];
 int subscriberCounts[EVENT_COUNT] = {0};
 
 // Action fn's
-void onDirectionLightChangeX(AppState *app, Event event, void* association){
+void onDirectionLightChangeX(InputState *inputState, AppState *app, Event event, void* association){
   ASSERT(event.type == EVENT_LIGHT_DIR_X_CHANGED,"wrong event type");
   ASSERT(association != NULL,"association not provided (NULL)");
   
@@ -82,7 +83,7 @@ void onDirectionLightChangeX(AppState *app, Event event, void* association){
       }else {
         
         // Slider position change
-        float newMouseX = (float)app->mouseXpos;
+        float newMouseX = (float)inputState->mouseXpos;
         float newPosX = absValue(newMouseX) - (width / 2.0);
 
         // Visual representation
@@ -113,7 +114,7 @@ void onDirectionLightChangeX(AppState *app, Event event, void* association){
   }
  
 }
-void onDirectionLightChangeY(AppState *app, Event event, void* association){
+void onDirectionLightChangeY(InputState *inputState, AppState *app, Event event, void* association){
   ASSERT(event.type == EVENT_LIGHT_DIR_Y_CHANGED,"wrong event type");
   ASSERT(association != NULL,"association not provided (NULL)");
   
@@ -156,15 +157,15 @@ void subscribeToEvent(Subscriber sub) {
     }
 }
 
-void dispatchEvent(AppState *app, Event event){
+void dispatchEvent(InputState *inputState, AppState *app, Event event){
   for(int i = 0; i < subscriberCounts[event.type]; i++){
-    subscribers[event.type][i].callback(app, event, subscribers[event.type][i].association);
+    subscribers[event.type][i].callback(inputState, app, event, subscribers[event.type][i].association);
   }
 }
 
-void processEvents(AppState *app){
+void processEvents(InputState *inputState, AppState *app){
   for(int i = 0; i < eventQueueCount; i++){
-    dispatchEvent(app, eventQueue[i]);
+    dispatchEvent(inputState, app, eventQueue[i]);
   }
 
   eventQueueCount = 0;

@@ -1,3 +1,4 @@
+#include "input-state.h"
 #include "render.h"
 #include "fh-sdl.h"
 #include "app.h"
@@ -8,8 +9,8 @@ void setRenderDrawColor(RenderState *renderState, int r, int g, int b, int a) {
     SDL_SetRenderDrawColor(renderState->renderer, r, g, b, a);
 }
 
-int pollEvent(AppState *app){
-    return SDL_PollEvent(&app->event);
+int pollEvent(InputState *inputState){
+    return SDL_PollEvent(&inputState->event);
 }
 
 int initSdlWindow(AppState *app) {

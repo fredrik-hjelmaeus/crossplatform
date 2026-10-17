@@ -25,21 +25,12 @@ static const int height = 600; // If these change, the views defaults should be 
 
 typedef struct AppState {
     SDL_Window* window;
-    SDL_Event event;
     int running;
     Entity* entities;
     int vertex_count;
     float delta_time;
     SceneMode currentSceneMode;
     Views views;
-    int firstMouse;
-    float mouseXpos;
-    float mouseYpos;
-    bool mouseLeftButtonPressed;
-    bool prevMouseLeftDown;
-    bool mouseDragged;
-    vec2 mouseDragStart;
-    vec2 mouseDragPreviousFrame;
     Character characters[128];
     int fontSize;
     Color textColor;
@@ -55,9 +46,9 @@ typedef struct AppState {
     int materialsCount;
     int materialsCapacity;
     int objDataCapacity;
+    // UI focus and text selection stay here for now; they describe editing state.
     int focusedEntityId;
     float charScale;
-    bool mouseDoubleClick;
 
     // Cursor
     int cursorEntityId;

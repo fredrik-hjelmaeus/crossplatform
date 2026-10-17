@@ -1,6 +1,8 @@
 #ifndef EVENT_H
 #define EVENT_H
 
+typedef struct InputState InputState;
+
 typedef struct AppState AppState;
 
 /**
@@ -50,7 +52,7 @@ typedef struct {
   } payload;
 } Event;
 
-typedef void(*EventCallback)(AppState *app, Event event, void* association);
+typedef void(*EventCallback)(InputState *inputState, AppState *app, Event event, void* association);
 
 typedef struct Subscriber {
   EventType eventType;
@@ -68,16 +70,16 @@ typedef struct Subscriber {
 #define MAX_SUBSCRIBERS_PER_EVENT 8
 
 void pushEvent(Event event);
-void processEvents(AppState *app);
-void dispatchEvent(AppState *app, Event event);
+void processEvents(InputState *inputState, AppState *app);
+void dispatchEvent(InputState *inputState, AppState *app, Event event);
 
 void subscribeToEvent(Subscriber sub);
 
 /**
  * Receiver callback functions.
  */
-void onDirectionLightChangeX(AppState *app, Event event, void* association);
-void onDirectionLightChangeY(AppState *app, Event event, void* association);
+void onDirectionLightChangeX(InputState *inputState, AppState *app, Event event, void* association);
+void onDirectionLightChangeY(InputState *inputState, AppState *app, Event event, void* association);
 
 #endif // EVENT_H
 

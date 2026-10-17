@@ -7,7 +7,6 @@ AppState appDefaults(void) {
     return (AppState){
     
     .window=NULL,
-    .event={0},
     .running=1,
     .entities=NULL,
     .vertex_count=0,
@@ -19,17 +18,7 @@ AppState appDefaults(void) {
     },
     .currentSceneMode=SCENE_MODE_NONE,
 
-    // Mouse
-    .firstMouse=1,
-    .mouseXpos=0.0f,
-    .mouseYpos=0.0f,
-    .mouseLeftButtonPressed=false, // mouse down check every frame
-    .prevMouseLeftDown=false,
-    .mouseDoubleClick=false,
     .deselectCondition=false,
-    .mouseDragged=false,
-    .mouseDragStart={-10000.0f,-10000.0f},
-    .mouseDragPreviousFrame={0.0f,0.0f},
 
     .charScale=0.5f,
     .fontSize=26,

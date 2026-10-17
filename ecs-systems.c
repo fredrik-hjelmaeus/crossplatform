@@ -1,3 +1,4 @@
+#include "input-state.h"
 #include "render.h"
 #include "ecs-systems.h"
 #include "fh-sdl.h"
@@ -53,10 +54,10 @@ void moveCursor(AppState *app, float x){
  * BUG:  Too far typing to into the right of input field bugs out
  * BUG:  BackSpace in middle of a text should remove left character
  */
-void uiInputSystem(AppState *app){
+void uiInputSystem(InputState *inputState, AppState *app){
     if(app->focusedEntityId != -1){
-         if(app->event.type == SDL_KEYDOWN) {
-            const char* key = getKeyName(app->event.key.keysym.sym);
+         if(inputState->event.type == SDL_KEYDOWN) {
+            const char* key = getKeyName(inputState->event.key.keysym.sym);
             
             bool isSpaceKey = false;
             bool isSelectionActive = app->cursorSelectionActive;
@@ -262,7 +263,7 @@ void movementSystem(AppState *app){
                 if(app->entities[i].uiComponent->active == 1){
                   //  printf("entity %d \n", i);
                     //printf("confirmed active ui\n");
-                   /*  if(isPointInsideRect(app->entities[i].uiComponent->boundingBox, (vec2){ app->event.motion.x, app->event.motion.y})){
+                   /*  if(isPointInsideRect(app->entities[i].uiComponent->boundingBox, (vec2){ inputState->event.motion.x, inputState->event.motion.y})){
                     app->entities[i].transformComponent->scale[0] += 1.5f;
                     app->entities[i].transformComponent->modelNeedsUpdate = 1; */
                      /*    printf("bb x %d ", app->entities[i].uiComponent->boundingBox.x);
@@ -327,9 +328,9 @@ void movementSystem(AppState *app){
  * Atm we are not handling everything about the camera here, just the update of projection & view.
  * Movement is handled in the input function, but will eventually be moved here.
  */
-void cameraSystem(AppState *app){
-    updateCamera(app, app->views.main.camera);
-    updateCamera(app, app->views.ui.camera);
+void cameraSystem(InputState *inputState, AppState *app){
+    updateCamera(inputState, app->views.main.camera);
+    updateCamera(inputState, app->views.ui.camera);
 }
 
 /**
@@ -416,7 +417,7 @@ void uiPositionSystem(AppState *app){
     }
 }
 
-void hoverAndClickSystem(AppState *app){
+void hoverAndClickSystem(InputState *inputState, AppState *app){
     int newCursor = SDL_SYSTEM_CURSOR_ARROW;
     for(int i = 0; i < MAX_ENTITIES; i++) {
         if(app->entities[i].alive == 1) {
@@ -429,11 +430,11 @@ void hoverAndClickSystem(AppState *app){
 
                     if(
                         app->views.ui.isMousePointerWithin && 
-                        isPointInsideBoundingBox(app->entities[i].boundingBoxComponent->boundingBox, (vec2){ app->mouseXpos, app->mouseYpos})
+                        isPointInsideBoundingBox(app->entities[i].boundingBoxComponent->boundingBox, (vec2){ inputState->mouseXpos, inputState->mouseYpos})
                     ){
 
                         // Left Click or just hover?
-                        if(app->mouseLeftButtonPressed && app->prevMouseLeftDown == false){
+                        if(inputState->mouseLeftButtonPressed && inputState->prevMouseLeftDown == false){
                             if(!app->entities[i].uiComponent->clicked && app->entities[i].uiComponent->type == UITYPE_BUTTON){
                                 if(app->entities[i].uiComponent->eventType == EVENT_TOGGLE_UI_PANEL){
                                     if(!app->entities[i].uiComponent->parent){
@@ -478,7 +479,7 @@ void hoverAndClickSystem(AppState *app){
                         }
 
                         // Appearance changes when mouse down (instead of hovered it should be focusedEntity ?)
-                        if(app->entities[i].uiComponent->hovered && app->mouseLeftButtonPressed){
+                        if(app->entities[i].uiComponent->hovered && inputState->mouseLeftButtonPressed){
                             app->entities[i].materialComponent->diffuseMapOpacity = app->entities[i].materialComponent->diffuseMapOpacity * 0.5f;
                             app->entities[i].materialComponent->diffuse.r = 0.5f;
                             app->entities[i].materialComponent->diffuse.g = 0.0f;
@@ -512,11 +513,11 @@ void hoverAndClickSystem(AppState *app){
     changeCursor(newCursor);
 }
 
-void uiSliderSystem(AppState *app){
+void uiSliderSystem(InputState *inputState, AppState *app){
     if(
         app->focusedEntityId != -1 
         && app->entities[app->focusedEntityId].uiComponent->type == UITYPE_SLIDER
-        && app->mouseDragged
+        && inputState->mouseDragged
         ){
           
             // Draggable range
@@ -526,7 +527,7 @@ void uiSliderSystem(AppState *app){
             float minRange = sliderRangeEntity->boundingBoxComponent->boundingBox.min[0]; 
             float maxRange = sliderRangeEntity->boundingBoxComponent->boundingBox.max[0]; 
             float rangeX   = focusedEntity->uiComponent->sliderRange;  
-            float newMouseX = (float)app->mouseXpos;
+            float newMouseX = (float)inputState->mouseXpos;
             float t = (newMouseX - minRange) / rangeX;
             if(t > 1.0f){
                 t = 1.0f;
@@ -548,28 +549,28 @@ void uiSliderSystem(AppState *app){
     }
 }
 
-void textCursorSystem(AppState *app){
+void textCursorSystem(InputState *inputState, AppState *app){
     
     if(app->focusedEntityId != -1){
         if(app->entities[app->focusedEntityId].uiComponent->type == UITYPE_SLIDER){
             return;
         }
         bool cursorExist = app->cursorEntityId != -1;
-     //   bool onBlur = !isPointInsideRect(app->entities[app->focusedEntityId].uiComponent->boundingBox, (vec2){ app->mouseXpos, app->mouseYpos});
+     //   bool onBlur = !isPointInsideRect(app->entities[app->focusedEntityId].uiComponent->boundingBox, (vec2){ inputState->mouseXpos, inputState->mouseYpos});
 
         if(cursorExist){
             
-            if(app->mouseLeftButtonPressed){
+            if(inputState->mouseLeftButtonPressed){
                 
                 // click and drag to select text
-                if(app->mouseDragged){
+                if(inputState->mouseDragged){
                    
                     // Find closest letter to cursor on dragstart
                     if(app->cursorDragStart == -1.0f){
                         ClosestLetter closestStartLetter = getClosestLetterInText(app, 
                             app->entities[app->focusedEntityId].uiComponent,
                             app->entities[app->focusedEntityId].boundingBoxComponent, 
-                            app->mouseXpos);
+                            inputState->mouseXpos);
                         addIndexToCursorTextSelection(app, (unsigned int)closestStartLetter.characterIndex);
                         SDLVector2 sdlVec;
                         sdlVec.x = closestStartLetter.position.x;
@@ -583,7 +584,7 @@ void textCursorSystem(AppState *app){
                     ClosestLetter closestEndLetter = getClosestLetterInText(app, 
                         app->entities[app->focusedEntityId].uiComponent,
                         app->entities[app->focusedEntityId].boundingBoxComponent, 
-                        app->mouseXpos);
+                        inputState->mouseXpos);
                     addIndexToCursorTextSelection(app, (unsigned int)closestEndLetter.characterIndex);
                     SDLVector2 sdlVec;
                     sdlVec.x = closestEndLetter.position.x;
@@ -606,18 +607,18 @@ void textCursorSystem(AppState *app){
                 }
                 
                 // Double click select all text
-                if(app->mouseDoubleClick == 1 && app->cursorSelectionActive == false){
+                if(inputState->mouseDoubleClick == 1 && app->cursorSelectionActive == false){
                     selectAllText(app, width,height);
-                    app->mouseDoubleClick = 0;
+                    inputState->mouseDoubleClick = 0;
                 }
 
                 // Single click, place cursor where mouse clicked
-                if(app->mouseDoubleClick == 0 && app->cursorSelectionActive == false){
+                if(inputState->mouseDoubleClick == 0 && app->cursorSelectionActive == false){
 
                     ClosestLetter closestLetter = getClosestLetterInText(app, 
                         app->entities[app->focusedEntityId].uiComponent, 
                         app->entities[app->focusedEntityId].boundingBoxComponent, 
-                        app->mouseXpos);
+                        inputState->mouseXpos);
                     SDLVector2 sdlVec;
                     sdlVec.x = closestLetter.position.x;
                     sdlVec.y = closestLetter.position.y;         
@@ -660,7 +661,7 @@ void textCursorSystem(AppState *app){
             ClosestLetter closestLetter = getClosestLetterInText(app, 
                 app->entities[app->focusedEntityId].uiComponent, 
                 app->entities[app->focusedEntityId].boundingBoxComponent, 
-                app->mouseXpos
+                inputState->mouseXpos
             );
             printf("closest letter position x %f\n", closestLetter.position.x);
             printf("closest letter position y %f\n", closestLetter.position.y);

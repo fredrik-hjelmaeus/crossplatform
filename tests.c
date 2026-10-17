@@ -1,3 +1,4 @@
+#include "input-state.h"
 #include "types.h"
 #include "utils.h"
 #include "app.h"
@@ -53,7 +54,7 @@ void tests_binary_conversion(void){
     printf(TEXT_COLOR_GREEN "SUCCESS \n" TEXT_COLOR_RESET);
 }
 
-void tests_events(AppState *app){
+void tests_events(InputState *inputState, AppState *app){
    // This is a test setup aswell as doc for event-flow.
    // Meant to be used mainly for one-entity or one-time occurances.
    // This leaves systems to do updates on batches and we can avoid having to
@@ -85,7 +86,7 @@ void tests_events(AppState *app){
    Event translateObjectEvent = {.type = EVENT_LIGHT_DIR_X_CHANGED, .payload.transform = tpo };
    pushEvent(translateObjectEvent);
    
-   processEvents(app); // walk eventqueue and executes events
+   processEvents(inputState, app); // walk eventqueue and executes events
 
    // Test of 2. -> input-mapping -> subscribe -> process -> event -> action
    // Incomplete/Broken atm.
