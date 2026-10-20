@@ -29,6 +29,7 @@ typedef struct AppState {
     Entity* entities;
     int vertex_count;
     float delta_time;
+    int last_frame_time;
     SceneMode currentSceneMode;
     Views views;
     Character characters[128];
@@ -64,9 +65,15 @@ typedef struct AppState {
 
 } AppState;
 
+typedef struct InputState InputState;
+typedef struct RenderState RenderState;
+
 AppState appDefaults(void);
+void update(InputState *inputState, RenderState *renderState, AppState *app);
 
-
+void initProgram(AppState *app);
+void appInit(AppState *app, RenderState *renderState);
+int appRun(AppState *app, RenderState *renderState, InputState *inputState);
 
 #define ASSET_MEMORY_SIZE 5000000
 #define UI_MEMORY_SIZE 5000000
