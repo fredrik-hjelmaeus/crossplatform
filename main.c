@@ -23,7 +23,6 @@
 #include "input.h"
 #include "viewport.h"
 #include "lighting.h"
-#include "camera.h"
 
 
 #ifdef __EMSCRIPTEN__
@@ -165,22 +164,6 @@ int main(int argc, char **argv) {
     tests_events();
     return 0; */
     
-    // Camera setup
-    Camera* uiCamera = initCamera();
-    uiCamera->isOrthographic = 1;
-    uiCamera->aspectRatio = appState.views.ui.rect.width / appState.views.ui.rect.height;
-    uiCamera->left = (float)-width/2.0f;
-    uiCamera->right = (float)width/2.0f;
-    uiCamera->bottom = -(float)height/2.0f;
-    uiCamera->top = (float)height/2.0f;
-    uiCamera->near = -10.0f; // Set the near plane distance
-    uiCamera->far = 10.0f;   // Set the far plane distance
-    appState.views.ui.camera = uiCamera;
-    
-    Camera* mainCamera = initCamera();
-    mainCamera->aspectRatio = appState.views.main.rect.width / appState.views.main.rect.height;
-    appState.views.main.camera = mainCamera;
-
     initScene(&renderState, &appState);
     
     //------------------------------------------------------

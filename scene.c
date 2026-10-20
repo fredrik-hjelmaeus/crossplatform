@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "opengl.h"
 #include "text.h"
+#include "camera.h"
 
 void changeSceneMode(SceneMode mode,AppState *app){
   app->currentSceneMode = mode;
@@ -20,6 +21,22 @@ void changeSceneMode(SceneMode mode,AppState *app){
  * objects created in the ui viewport will be in a 2d-environment and act more like a web ui element.
 */
 void initScene(RenderState *renderState, AppState *app){
+
+   // Camera setup
+   Camera* uiCamera = initCamera();
+   uiCamera->isOrthographic = 1;
+   uiCamera->aspectRatio = app->views.ui.rect.width / app->views.ui.rect.height;
+   uiCamera->left = (float)-width/2.0f;
+   uiCamera->right = (float)width/2.0f;
+   uiCamera->bottom = -(float)height/2.0f;
+   uiCamera->top = (float)height/2.0f;
+   uiCamera->near = -10.0f; // Set the near plane distance
+   uiCamera->far = 10.0f;   // Set the far plane distance
+   app->views.ui.camera = uiCamera;
+
+   Camera* mainCamera = initCamera();
+   mainCamera->aspectRatio = app->views.main.rect.width / app->views.main.rect.height;
+   app->views.main.camera = mainCamera;
 
    changeSceneMode(SCENE_MODE_NORMAL,app);
 
