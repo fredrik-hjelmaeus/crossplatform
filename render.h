@@ -32,6 +32,9 @@ typedef struct RenderState {
     bool shadows;
 } RenderState;
 
+typedef struct AppState AppState;
+
 RenderState renderDefaults(void);
+void render(RenderState *renderState, AppState *app);
 
 #endif // RENDER_H

@@ -9,6 +9,7 @@ typedef struct AppState AppState;
 #include "assets.h"
 
 Camera* initCamera(void);
+void calcCameraFront(Camera* camera, float xpos, float ypos);
 void updateCamera(InputState *inputState, Camera* camera);
 
 #endif // CAMERA_H

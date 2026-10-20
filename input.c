@@ -5,9 +5,11 @@
 #include "fh-sdl.h"
 #include "utils.h"
 #include "viewport.h"
+#include "camera.h"
+#include "input-mapping.h"
+#include "ecs.h"
 
-void handleKeyInput(InputState *inputState, RenderState *renderState, AppState *app);
-void calcCameraFront(Camera *camera, float xpos, float ypos);
+static void handleKeyInput(InputState *inputState, RenderState *renderState, AppState *app);
 
 /**
  * Atm we handle all events right here. Eventually we wan't to store the polled events in a queue and process them in the update loop instead.
@@ -115,3 +117,141 @@ void input(InputState *inputState, RenderState *renderState, AppState *app) {
         }
     }
 }
+
+static void handleKeyInput(InputState *inputState, RenderState *renderState, AppState *app){
+         
+            processKeyInput(inputState->event.key.keysym.sym, app->currentSceneMode);
+            
+            const char *key = getKeyName(inputState->event.key.keysym.sym);
+           
+            if(strcmp(key, "C") == 0) {
+                app->views.full.clearColor.r = randFloat(0.0,1.0);
+                app->views.full.clearColor.g = randFloat(0.0,1.0);
+                app->views.full.clearColor.b = randFloat(0.0,1.0);
+
+                for(int i = 0; i < MAX_ENTITIES; i++){
+                    if(app->entities[i].alive == 1 && app->entities[i].lightComponent->active == 1){
+                        app->entities[i].lightComponent->ambient.r = app->views.full.clearColor.r;
+                        app->entities[i].lightComponent->ambient.g = app->views.full.clearColor.g;
+                        app->entities[i].lightComponent->ambient.b = app->views.full.clearColor.b;
+                    }
+                }
+                //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
+            }
+            if(strcmp(key, "T") == 0) {
+                renderState->culling = !renderState->culling;
+            }
+            if(strcmp(key, "L") == 0) {
+                // Pressing L will write all drawcalls of a frame to disk as a pngs
+                renderState->debugDrawCalls = true;
+                printf("Debug drawcalls enabled\n");
+            }
+            if(strcmp(key, "B") == 0) {
+                renderState->drawBoundingBoxes = !renderState->drawBoundingBoxes;
+            }
+            if(strcmp(key, "Escape") == 0) {
+                app->running = 0;
+            }
+            if(strcmp(key, "F") == 0) {
+                toggleFullscreen(app);
+            }
+            if(strcmp(key, "W") == 0){
+                app->views.main.camera->position[0] += app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[0];
+                app->views.main.camera->position[1] += app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[1];
+                app->views.main.camera->position[2] += app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[2];
+
+                // set view matrix needs update flag
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
+            }
+            if(strcmp(key, "S") == 0){
+                app->views.main.camera->position[0] -= app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[0];
+                app->views.main.camera->position[1] -= app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[1];
+                app->views.main.camera->position[2] -= app->views.main.camera->speed * app->delta_time * app->views.main.camera->front[2];
+
+                // set view matrix needs update flag
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
+            }
+            if(strcmp(key, "A") == 0){
+
+                // Do a cross product to get the right vector for strafing
+
+                // allocate memory for calculation.
+                float newPos[3];
+                float crossProduct[3];
+
+                // copy position into newPos
+                memcpy(newPos, app->views.main.camera->position, sizeof(newPos));
+
+                // cross product
+                vec3_mul_cross(crossProduct, app->views.main.camera->front, app->views.main.camera->up);
+
+                // normalize
+                vec3_norm(newPos, crossProduct);
+
+                // move & assign new position
+                app->views.main.camera->position[0] -= app->views.main.camera->speed * app->delta_time * newPos[0];
+                app->views.main.camera->position[1] -= app->views.main.camera->speed * app->delta_time * newPos[1];
+                app->views.main.camera->position[2] -= app->views.main.camera->speed * app->delta_time * newPos[2];
+
+                // set view matrix needs update flag
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
+            }
+            if(strcmp(key, "D") == 0){
+
+                // Do a cross product to get the right vector for strafing
+
+                // allocate memory for calculation.
+                float newPos[3];
+                float crossProduct[3];
+
+                // copy position into newPos
+                memcpy(newPos, app->views.main.camera->position, sizeof(newPos));
+
+                // cross product
+                vec3_mul_cross(crossProduct, app->views.main.camera->front, app->views.main.camera->up);
+
+                // normalize
+                vec3_norm(newPos, crossProduct);
+
+                // move & assign new position
+                app->views.main.camera->position[0] += app->views.main.camera->speed * app->delta_time * newPos[0];
+                app->views.main.camera->position[1] += app->views.main.camera->speed * app->delta_time * newPos[1];
+                app->views.main.camera->position[2] += app->views.main.camera->speed * app->delta_time * newPos[2];
+
+                // set view matrix needs update flag
+                app->views.main.camera->viewMatrixNeedsUpdate = 1;
+            }
+            if(strcmp(key, "O") == 0){
+                // Change the camera to orthographic
+                app->views.main.camera->isOrthographic = 1;
+                app->views.main.camera->projectionMatrixNeedsUpdate = 1;
+            }
+            if(strcmp(key, "P") == 0){
+                // Change the camera to perspective
+                app->views.main.camera->isOrthographic = 0;
+                app->views.main.camera->projectionMatrixNeedsUpdate = 1;
+            }
+            if(strcmp(key, "I") == 0){
+                if(app->views.main.camera->mode == CAMERAMODE_ORBITAL){
+                    app->views.main.camera->mode = CAMERAMODE_FPS;
+                }else{
+                    app->views.main.camera->mode = CAMERAMODE_ORBITAL;
+                    app->views.main.camera->target[0] = 0.0f;
+                    app->views.main.camera->target[1] = 0.0f;
+                    app->views.main.camera->target[2] = 0.0f;
+                }
+            }
+            if(strcmp(key, "U") == 0){
+                renderState->blinnMode = !renderState->blinnMode;
+            }
+            if(strcmp(key, "G") == 0){
+                renderState->gamma = !renderState->gamma;
+            }
+            if(strcmp(key, "H") == 0){
+                renderState->showDepthMap = !renderState->showDepthMap;
+            }
+            if(strcmp(key, "U") == 0){
+                app->showUI = !app->showUI;
+            }
+}
+

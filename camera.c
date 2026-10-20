@@ -1,6 +1,7 @@
 #include "input-state.h"
 #include "app.h"
 #include "camera.h"
+#include "utils.h"
 
 /**
  * @brief Create a camera
@@ -184,3 +185,33 @@ void updateCamera(InputState *inputState, Camera* camera){
         }
     }
 }
+
+/*
+* @brief Calculate the front vector of the camera & assign it to the global camera struct
+*/
+void calcCameraFront(Camera* camera, float xpos, float ypos){
+            float yaw = -90.0f;
+            float pitch = 0.0f;
+            float lastX = 400, lastY = 300;
+            float xoffset = xpos - lastX;
+            float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
+
+            const float sensitivity = 0.1f;
+            xoffset *= sensitivity;
+            yoffset *= sensitivity;
+
+            yaw   += xoffset;
+            pitch += yoffset; 
+
+            if(pitch > 89.0f)
+                pitch =  89.0f;
+            if(pitch < -89.0f)
+                pitch = -89.0f;
+
+            vec3 direction;
+            direction[0] = cos(deg2rad(yaw)) * cos(deg2rad(pitch));
+            direction[1] = sin(deg2rad(pitch));
+            direction[2] = sin(deg2rad(yaw)) * cos(deg2rad(pitch));
+            vec3_norm(camera->front, direction);
+}
+

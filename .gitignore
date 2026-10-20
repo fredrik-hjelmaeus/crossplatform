@@ -22,3 +22,5 @@ a.out.dSYM/
 .main.c.swp
 a.out
 *.out
+a.out
+REFACTOR_PLAN.md
