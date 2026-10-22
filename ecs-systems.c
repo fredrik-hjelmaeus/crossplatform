@@ -418,15 +418,27 @@ void uiPositionSystem(AppState *app){
 }
 
 void hoverAndClickSystem(InputState *inputState, AppState *app){
+    
     int newCursor = SDL_SYSTEM_CURSOR_ARROW;
+    
     for(int i = 0; i < MAX_ENTITIES; i++) {
+        
         if(app->entities[i].alive == 1) {
-            if(app->entities[i].transformComponent->active == 1 && app->entities[i].uiComponent->active == 1 && app->entities[i].boundingBoxComponent->active == 1 && app->entities[i].materialComponent->active == 1){
+            if(
+                app->entities[i].transformComponent->active == 1 && 
+                app->entities[i].uiComponent->active == 1 && 
+                app->entities[i].boundingBoxComponent->active == 1 && 
+                app->entities[i].materialComponent->active == 1
+            ){
 
                     // UI text and non-UI is not handled by this system.
-                    if(app->entities[i].uiComponent->type == UITYPE_TEXT || app->entities[i].uiComponent->type == UITYPE_NONE){
-                        continue;
-                    }
+                    if(
+                        app->entities[i].uiComponent->type == UITYPE_TEXT || 
+                        app->entities[i].uiComponent->type == UITYPE_NONE
+                      )
+                        {
+                            continue;
+                        }
 
                     if(
                         app->views.ui.isMousePointerWithin && 
@@ -702,10 +714,21 @@ void modelSystem(AppState *app){
                     mat4x4_identity(model);
 
                     // set model position
-                    mat4x4_translate(model, app->entities[i].transformComponent->position[0],app->entities[i].transformComponent->position[1],app->entities[i].transformComponent->position[2]);
+                    mat4x4_translate(
+                        model, 
+                        app->entities[i].transformComponent->position[0],
+                        app->entities[i].transformComponent->position[1],
+                        app->entities[i].transformComponent->position[2]
+                    );
 
                     // set model scale
-                    mat4x4_scale_aniso(model, (const float (*)[4])model, app->entities[i].transformComponent->scale[0],app->entities[i].transformComponent->scale[1],app->entities[i].transformComponent->scale[2]);
+                    mat4x4_scale_aniso(
+                        model, 
+                        (const float (*)[4])model, 
+                        app->entities[i].transformComponent->scale[0],
+                        app->entities[i].transformComponent->scale[1],
+                        app->entities[i].transformComponent->scale[2]
+                    );
                 
                     // rotate model on x, y, and z axes
                     // The cast on model tells the compiler that you're aware of the 
