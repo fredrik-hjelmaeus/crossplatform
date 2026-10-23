@@ -70,29 +70,34 @@ void updateProjection(Camera* camera)
     camera->projectionMatrixNeedsUpdate = 0;
 }
 
+void updateView(Camera* camera)
+{
+     // create view/camera transformation
+    mat4x4 view;
+    mat4x4_identity(view);
+
+    // camera up
+    mat4x4_look_at(view,camera->position, camera->target, camera->up);
+
+    // Copy the view matrix to camera.view
+    memcpy(camera->view, view, sizeof(mat4x4));
+
+    camera->viewMatrixNeedsUpdate = 0;
+}
+
 void updateCamera(InputState *inputState, Camera* camera){
 
     if(camera->mode == CAMERAMODE_FPS)
     {
+        // target / center 
+        camera->target[0] = camera->position[0] + camera->front[0];
+        camera->target[1] = camera->position[1] + camera->front[1];
+        camera->target[2] = camera->position[2] + camera->front[2];
+
         // Look for view needs update flag & update/recalc view matrix if needed.
         if(camera->viewMatrixNeedsUpdate == 1)
         {
-            // create view/camera transformation
-            mat4x4 view;
-            mat4x4_identity(view);
-
-            // target / center 
-            camera->target[0] = camera->position[0] + camera->front[0];
-            camera->target[1] = camera->position[1] + camera->front[1];
-            camera->target[2] = camera->position[2] + camera->front[2];
-
-            // camera up
-            mat4x4_look_at(view,camera->position, camera->target, camera->up);
-
-            // Copy the view matrix to camera.view
-            memcpy(camera->view, view, sizeof(mat4x4));
-
-            camera->viewMatrixNeedsUpdate = 0;
+           updateView(camera);
         }
 
         // Look for projection needs update flag & 
@@ -137,29 +142,6 @@ void updateCamera(InputState *inputState, Camera* camera){
             inputState->mouseDragPreviousFrame[0] = newMouseX;
             inputState->mouseDragPreviousFrame[1] = newMouseY;
 
-           // float changeXThisMouseDown = (float)inputState->mouseXpos - inputState->mouseDragStart[0];
-           // float changeYThisMouseDown = (float)inputState->mouseYpos - inputState->mouseDragStart[1];
-
-           // float changeThisFrameX = 0.01;
-          //  float changeThisFrameY = 0.01;
-
-          /*   printf("changeXThisMouseDown %f \n",changeXThisMouseDown);
-            printf("changeYThisMouseDown %f \n",changeYThisMouseDown);
-            printf("changeXThisFrame %f \n",changeXThisFrame);
-            printf("changeYThisFrame %f \n",changeYThisFrame);  */
-         /*    if(changeXThisFrame > 0){
-                printf("right \n");
-                changeThisFrameX = -0.01;
-            }else{
-                printf("left \n");
-            }
-            if(changeYThisFrame > 0){
-                printf("down \n");
-                changeThisFrameY = -0.01;
-            }else{
-                printf("up \n");
-            } */
-
             vec3 cameraVector;
             vec3_subtract(camera->position, camera->target, &cameraVector);
             //float radius = vec3_length(cameraVector);
@@ -172,25 +154,11 @@ void updateCamera(InputState *inputState, Camera* camera){
             vec3 newCameraPos;
             toCartesianXYZ(mag,dir+changeX,elev+changeY,&newCameraPos);
             
-           camera->position[0] = newCameraPos[0];
-           camera->position[1] = newCameraPos[1];
-           camera->position[2] = newCameraPos[2];
+            camera->position[0] = newCameraPos[0];
+            camera->position[1] = newCameraPos[1];
+            camera->position[2] = newCameraPos[2];
 
-            // create view/camera transformation
-            mat4x4 view;
-            mat4x4_identity(view);
-
-            // camera up
-            mat4x4_look_at(view,camera->position, camera->target, camera->up);
-
-            // Copy the view matrix to camera.view
-            memcpy(camera->view, view, sizeof(mat4x4));
-
-            camera->viewMatrixNeedsUpdate = 0; 
-
-           // printf("new camera position %f %f %f \n",camera->position[0],camera->position[1],camera->position[2]);
-
-         //   printf("changeThisFrameX %f \n",changeThisFrameX);
+            camera->viewMatrixNeedsUpdate = 1;
         }
         else 
         {
@@ -201,20 +169,11 @@ void updateCamera(InputState *inputState, Camera* camera){
                 inputState->mouseDragPreviousFrame[0] = -10000.0f;
                 inputState->mouseDragPreviousFrame[1] = -10000.0f;
             }
+        }
 
-          
-
-              // create view/camera transformation
-          /*   mat4x4 view;
-            mat4x4_identity(view);
-
-            // camera up
-            mat4x4_look_at(view,camera->position, camera->target, camera->up);
-
-            // Copy the view matrix to camera.view
-            memcpy(camera->view, view, sizeof(mat4x4));
-
-            camera->viewMatrixNeedsUpdate = 0; */
+        if(camera->viewMatrixNeedsUpdate == 1)
+        {
+            updateView(camera);
         }
     }
 }
@@ -338,4 +297,6 @@ void toggleCameraMode(Camera *camera){
         camera->target[1] = 0.0f;
         camera->target[2] = 0.0f;
     }
+    
+    camera->viewMatrixNeedsUpdate = 1;
 }

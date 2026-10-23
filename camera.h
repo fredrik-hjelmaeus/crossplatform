@@ -12,6 +12,7 @@ Camera* initCamera(void);
 void calcCameraFront(Camera* camera, float xpos, float ypos);
 void updateCamera(InputState *inputState, Camera* camera);
 void updateProjection(Camera* camera);
+void updateView(Camera* camera);
 
 void moveCameraForward(Camera *camera, float deltaTime);
 void moveCameraBackward(Camera *camera, float deltaTime);
