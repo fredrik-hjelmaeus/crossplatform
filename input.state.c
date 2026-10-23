@@ -12,6 +12,6 @@ InputState inputDefaults(void)
         .mouseDoubleClick=false,
         .mouseDragged=false,
         .mouseDragStart={-10000.0f,-10000.0f},
-        .mouseDragPreviousFrame={0.0f,0.0f},
+        .mouseDragPreviousFrame={-10000.0f,-10000.0f},
     };
 }

@@ -88,14 +88,21 @@ void updateCamera(InputState *inputState, Camera* camera){
     if(camera->mode == CAMERAMODE_ORBITAL){
       
         if(inputState->mouseLeftButtonPressed && inputState->mouseDragged){
-            if(inputState->mouseDragStart[0] < -9999.0f){
-                inputState->mouseDragStart[0] = inputState->mouseXpos;
-                inputState->mouseDragStart[1] = inputState->mouseYpos;
-      //          printf("drag start %f %f \n",inputState->mouseDragStart[0],inputState->mouseDragStart[1]);
+            
+            float *dragStart = inputState->mouseDragStart;
+            float *prevDrag  = inputState->mouseDragPreviousFrame;
+            float newMouseX =  inputState->mouseXpos;
+            float newMouseY =  inputState->mouseYpos;
+            
+            if(dragStart[0] < -9999.0f)
+            {
+                dragStart[0] = inputState->mouseXpos;
+                dragStart[1] = inputState->mouseYpos;
+                
+                prevDrag[0] = newMouseX;
+                prevDrag[1] = newMouseY;
             }
-           
-            float newMouseX = (float)inputState->mouseXpos;
-            float newMouseY = (float)inputState->mouseYpos;
+
             float changeXThisFrame = newMouseX - inputState->mouseDragPreviousFrame[0];
             float changeYThisFrame = newMouseY - inputState->mouseDragPreviousFrame[1];
 
@@ -125,10 +132,6 @@ void updateCamera(InputState *inputState, Camera* camera){
                 printf("up \n");
             } */
 
-          
-
-      
-
             vec3 cameraVector;
             vec3_subtract(camera->position, camera->target, &cameraVector);
             //float radius = vec3_length(cameraVector);
@@ -141,7 +144,6 @@ void updateCamera(InputState *inputState, Camera* camera){
             vec3 newCameraPos;
             toCartesianXYZ(mag,dir+changeX,elev+changeY,&newCameraPos);
             
-          
            camera->position[0] = newCameraPos[0];
            camera->position[1] = newCameraPos[1];
            camera->position[2] = newCameraPos[2];
@@ -168,8 +170,8 @@ void updateCamera(InputState *inputState, Camera* camera){
                 //printf("we dragged %f %f\n", xDragOffset, yDragOffset);
                 inputState->mouseDragStart[0] = -10000.0f;
                 inputState->mouseDragStart[1] = -10000.0f;
-                inputState->mouseDragPreviousFrame[0] = 0.0f;
-                inputState->mouseDragPreviousFrame[1] = 0.0f;
+                inputState->mouseDragPreviousFrame[0] = -10000.0f;
+                inputState->mouseDragPreviousFrame[1] = -10000.0f;
             }
               // create view/camera transformation
           /*   mat4x4 view;
@@ -215,3 +217,94 @@ void calcCameraFront(Camera* camera, float xpos, float ypos){
             vec3_norm(camera->front, direction);
 }
 
+
+void moveCameraForward(Camera *camera, float deltaTime){
+    camera->position[0] += camera->speed * deltaTime * camera->front[0];
+    camera->position[1] += camera->speed * deltaTime * camera->front[1];
+    camera->position[2] += camera->speed * deltaTime * camera->front[2];
+
+    // set view matrix needs update flag
+    camera->viewMatrixNeedsUpdate = 1;
+}
+
+void moveCameraBackward(Camera *camera, float deltaTime){
+    camera->position[0] -= camera->speed * deltaTime * camera->front[0];
+    camera->position[1] -= camera->speed * deltaTime * camera->front[1];
+    camera->position[2] -= camera->speed * deltaTime * camera->front[2];
+
+    // set view matrix needs update flag
+    camera->viewMatrixNeedsUpdate = 1;
+}
+
+void strafeCameraLeft(Camera *camera, float deltaTime){
+    // Do a cross product to get the right vector for strafing
+
+    // allocate memory for calculation.
+    float newPos[3];
+    float crossProduct[3];
+
+    // copy position into newPos
+    memcpy(newPos, camera->position, sizeof(newPos));
+
+    // cross product
+    vec3_mul_cross(crossProduct, camera->front, camera->up);
+
+    // normalize
+    vec3_norm(newPos, crossProduct);
+
+    // move & assign new position
+    camera->position[0] -= camera->speed * deltaTime * newPos[0];
+    camera->position[1] -= camera->speed * deltaTime * newPos[1];
+    camera->position[2] -= camera->speed * deltaTime * newPos[2];
+
+    // set view matrix needs update flag
+    camera->viewMatrixNeedsUpdate = 1;
+}
+
+void strafeCameraRight(Camera *camera, float deltaTime){
+    // Do a cross product to get the right vector for strafing
+
+    // allocate memory for calculation.
+    float newPos[3];
+    float crossProduct[3];
+
+    // copy position into newPos
+    memcpy(newPos, camera->position, sizeof(newPos));
+
+    // cross product
+    vec3_mul_cross(crossProduct, camera->front, camera->up);
+
+    // normalize
+    vec3_norm(newPos, crossProduct);
+
+    // move & assign new position
+    camera->position[0] += camera->speed * deltaTime * newPos[0];
+    camera->position[1] += camera->speed * deltaTime * newPos[1];
+    camera->position[2] += camera->speed * deltaTime * newPos[2];
+
+    // set view matrix needs update flag
+    camera->viewMatrixNeedsUpdate = 1;
+}
+
+void setCameraOrthographic(Camera *camera){
+    // Change the camera to orthographic
+    camera->isOrthographic = 1;
+    camera->projectionMatrixNeedsUpdate = 1;
+}
+
+void setCameraPerspective(Camera *camera){
+    // Change the camera to perspective
+    camera->isOrthographic = 0;
+    camera->projectionMatrixNeedsUpdate = 1;
+}
+
+void toggleCameraMode(Camera *camera){
+    if(camera->mode == CAMERAMODE_ORBITAL){
+        camera->mode = CAMERAMODE_FPS;
+    }else{
+        camera->mode = CAMERAMODE_ORBITAL;
+        camera->target[0] = 0.0f;
+        camera->target[1] = 0.0f;
+        camera->target[2] = 0.0f;
+    }
+}

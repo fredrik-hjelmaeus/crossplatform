@@ -15,4 +15,6 @@ typedef enum {
 void changeSceneMode(SceneMode mode,AppState *app);
 void initScene(RenderState *renderState, AppState *app);
 
+void randomizeSceneAmbientColor(AppState *app);
+
 #endif // SCENE_H

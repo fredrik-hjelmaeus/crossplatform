@@ -274,3 +274,18 @@ void initScene(RenderState *renderState, AppState *app){
  // }   
 
 }
+
+void randomizeSceneAmbientColor(AppState *app){
+    app->views.full.clearColor.r = randFloat(0.0,1.0);
+    app->views.full.clearColor.g = randFloat(0.0,1.0);
+    app->views.full.clearColor.b = randFloat(0.0,1.0);
+
+    for(int i = 0; i < MAX_ENTITIES; i++){
+        if(app->entities[i].alive == 1 && app->entities[i].lightComponent->active == 1){
+            app->entities[i].lightComponent->ambient.r = app->views.full.clearColor.r;
+            app->entities[i].lightComponent->ambient.g = app->views.full.clearColor.g;
+            app->entities[i].lightComponent->ambient.b = app->views.full.clearColor.b;
+        }
+    }
+    //glClearColor(randFloat(0.0,1.0),randFloat(0.0,1.0),randFloat(0.0,1.0), 1.0);
+}
