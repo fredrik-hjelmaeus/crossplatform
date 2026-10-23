@@ -6,9 +6,11 @@
 /**
  * @brief Create a camera
  */
-Camera* initCamera(void) {
+Camera* initCamera(void) 
+{
     Camera* camera = (Camera*)malloc(sizeof(Camera));
-    if (camera == NULL) {
+    if (camera == NULL) 
+    {
         // Handle memory allocation failure
         return NULL;
     }
@@ -39,10 +41,42 @@ Camera* initCamera(void) {
 
     return camera;
 }
+
+
+// There are 4 scenarios where you would need to recalc. the projection matrix:
+// - Window Resize / Change in aspect ratio
+// - Camera projection type change, perspective to orthographic or vice versa
+// - Change in FOV
+// - Change in near/far plane
+void updateProjection(Camera* camera)
+{
+    mat4x4 projection;
+    mat4x4_identity(projection);
+
+    if (camera->isOrthographic) 
+    {
+        // Calculate orthographic projection matrix
+        mat4x4_ortho(projection, camera->left, camera->right, camera->bottom, camera->top, camera->near, camera->far);
+    } 
+    else 
+    {
+        // Calculate perspective projection matrix
+        mat4x4_perspective(projection, camera->fov, camera->aspectRatio, camera->near, camera->far);
+    }
+    
+    // Copy the projection matrix to camera.projection
+    memcpy(camera->projection, projection, sizeof(mat4x4));
+
+    camera->projectionMatrixNeedsUpdate = 0;
+}
+
 void updateCamera(InputState *inputState, Camera* camera){
-    if(camera->mode == CAMERAMODE_FPS){
+
+    if(camera->mode == CAMERAMODE_FPS)
+    {
         // Look for view needs update flag & update/recalc view matrix if needed.
-        if(camera->viewMatrixNeedsUpdate == 1){
+        if(camera->viewMatrixNeedsUpdate == 1)
+        {
             // create view/camera transformation
             mat4x4 view;
             mat4x4_identity(view);
@@ -61,33 +95,27 @@ void updateCamera(InputState *inputState, Camera* camera){
             camera->viewMatrixNeedsUpdate = 0;
         }
 
-        // Look for projection needs update flag & update/recalc projection matrix if needed.
-        // There are 4 scenarios where you would need to recalc. the projection matrix:
-        // - Window Resize / Change in aspect ratio
-        // - Camera projection type change, perspective to orthographic or vice versa
-        // - Change in FOV
-        // - Change in near/far plane
-        if(camera->projectionMatrixNeedsUpdate == 1){ 
-            mat4x4 projection;
-            mat4x4_identity(projection);
-
-            if (camera->isOrthographic) {
-                // Calculate orthographic projection matrix
-                mat4x4_ortho(projection, camera->left, camera->right, camera->bottom, camera->top, camera->near, camera->far);
-            } else {
-                // Calculate perspective projection matrix
-                mat4x4_perspective(projection, camera->fov, camera->aspectRatio, camera->near, camera->far);
-            }
-            
-            // Copy the projection matrix to camera.projection
-            memcpy(camera->projection, projection, sizeof(mat4x4));
-
-            camera->projectionMatrixNeedsUpdate = 0;
+        // Look for projection needs update flag & 
+        // update/recalc projection matrix if needed.
+        if(camera->projectionMatrixNeedsUpdate == 1)
+        { 
+           updateProjection(camera);
         }
     }
-    if(camera->mode == CAMERAMODE_ORBITAL){
-      
-        if(inputState->mouseLeftButtonPressed && inputState->mouseDragged){
+    
+    if(camera->mode == CAMERAMODE_ORBITAL)
+    {
+
+        // Look for projection needs update flag & 
+        // update/recalc projection matrix if needed.
+        if(camera->projectionMatrixNeedsUpdate == 1)
+        { 
+            updateProjection(camera);
+        }
+
+        // Are we dragging or not?
+        if(inputState->mouseLeftButtonPressed && inputState->mouseDragged)
+        {
             
             float *dragStart = inputState->mouseDragStart;
             float *prevDrag  = inputState->mouseDragPreviousFrame;
@@ -163,16 +191,19 @@ void updateCamera(InputState *inputState, Camera* camera){
            // printf("new camera position %f %f %f \n",camera->position[0],camera->position[1],camera->position[2]);
 
          //   printf("changeThisFrameX %f \n",changeThisFrameX);
-        }else {
-            if(inputState->mouseDragStart[0] > -9999.0f){
-              //  float xDragOffset = inputState->mouseXpos - inputState->mouseDragStart[0];
-               // float yDragOffset = inputState->mouseYpos - inputState->mouseDragStart[1];
-                //printf("we dragged %f %f\n", xDragOffset, yDragOffset);
+        }
+        else 
+        {
+            if(inputState->mouseDragStart[0] > -9999.0f)
+            {
                 inputState->mouseDragStart[0] = -10000.0f;
                 inputState->mouseDragStart[1] = -10000.0f;
                 inputState->mouseDragPreviousFrame[0] = -10000.0f;
                 inputState->mouseDragPreviousFrame[1] = -10000.0f;
             }
+
+          
+
               // create view/camera transformation
           /*   mat4x4 view;
             mat4x4_identity(view);
