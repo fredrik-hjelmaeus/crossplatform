@@ -4,7 +4,7 @@
 #include "utils.h"
 
 /**
- * @brief Create a camera
+ * Create a camera
  */
 Camera* initCamera(void) 
 {
@@ -24,7 +24,7 @@ Camera* initCamera(void)
     memcpy(camera->front, front, sizeof(vec3));
     memcpy(camera->up, up, sizeof(vec3));
     memcpy(camera->target, target, sizeof(vec3));
-    // Initialize other fields as needed
+    
     camera->speed = 0.05f;
     camera->viewMatrixNeedsUpdate = 1;
     camera->projectionMatrixNeedsUpdate = 1;
@@ -72,7 +72,7 @@ void updateProjection(Camera* camera)
 
 void updateView(Camera* camera)
 {
-     // create view/camera transformation
+    // create view/camera transformation
     mat4x4 view;
     mat4x4_identity(view);
 
@@ -85,7 +85,8 @@ void updateView(Camera* camera)
     camera->viewMatrixNeedsUpdate = 0;
 }
 
-void updateCamera(InputState *inputState, Camera* camera){
+void updateCamera(InputState *inputState, Camera* camera)
+{
 
     if(camera->mode == CAMERAMODE_FPS)
     {
@@ -118,6 +119,26 @@ void updateCamera(InputState *inputState, Camera* camera){
             updateProjection(camera);
         }
 
+        vec3 offsetFromTarget;
+        vec3_subtract(camera->position, camera->target, &offsetFromTarget);
+        float mag = magnitude(offsetFromTarget);  // radius distance to target from camera
+        
+        // Handle what happens if camera target & position 
+        // is at the same position (radius == 0)
+        const float minRadius = 0.01;
+        if (mag < minRadius) 
+        {
+            offsetFromTarget[0] = minRadius;
+            offsetFromTarget[1] = 0.0f;
+            offsetFromTarget[2] = 0.0f;
+            mag = minRadius;
+
+            camera->position[0] = camera->target[0] + minRadius;
+            camera->position[1] = camera->target[1];
+            camera->position[2] = camera->target[2];
+            camera->viewMatrixNeedsUpdate = 1;
+        }
+
         // Are we dragging or not?
         if(inputState->mouseLeftButtonPressed && inputState->mouseDragged)
         {
@@ -142,21 +163,31 @@ void updateCamera(InputState *inputState, Camera* camera){
             inputState->mouseDragPreviousFrame[0] = newMouseX;
             inputState->mouseDragPreviousFrame[1] = newMouseY;
 
-            vec3 cameraVector;
-            vec3_subtract(camera->position, camera->target, &cameraVector);
-            //float radius = vec3_length(cameraVector);
-            float mag = magnitude(cameraVector);
-            float dir = direction(cameraVector);
-            float elev = elevation(cameraVector);
+            // Create orbiting values (Spherical coordinates)
+            float dir = direction(offsetFromTarget);  // Horizontal angle around the target
+            float elev = elevation(offsetFromTarget); // Vertical angle around the target
            
+            // Rotate velocity in spherical coordinates
             float changeX = M_PI / 360 * changeXThisFrame;
             float changeY = M_PI / 360 * changeYThisFrame;
-            vec3 newCameraPos;
-            toCartesianXYZ(mag,dir+changeX,elev+changeY,&newCameraPos);
+
+            // Clamp elevation to avoid flip or divide by zero
+            float elevClamp = deg2rad(89.0f);
+            elev = elev+changeY;
+            if(elev > elevClamp){
+                elev = elevClamp;
+            }
+            if(elev < -elevClamp){
+                elev = -elevClamp;
+            }
+
+            // Convert spherical coords. to cartesian (x,y,z) "regular" coordinate values
+            vec3 rotatedOffset;
+            toCartesianXYZ(mag,dir+changeX,elev,&rotatedOffset);
             
-            camera->position[0] = newCameraPos[0];
-            camera->position[1] = newCameraPos[1];
-            camera->position[2] = newCameraPos[2];
+            camera->position[0] = rotatedOffset[0] + camera->target[0];
+            camera->position[1] = rotatedOffset[1] + camera->target[1];
+            camera->position[2] = rotatedOffset[2] + camera->target[2];
 
             camera->viewMatrixNeedsUpdate = 1;
         }
@@ -182,6 +213,7 @@ void updateCamera(InputState *inputState, Camera* camera){
 * @brief Calculate the front vector of the camera & assign it to the global camera struct
 */
 void calcCameraFront(Camera* camera, float xpos, float ypos){
+            
             float yaw = -90.0f;
             float pitch = 0.0f;
             float lastX = 400, lastY = 300;
@@ -208,7 +240,8 @@ void calcCameraFront(Camera* camera, float xpos, float ypos){
 }
 
 
-void moveCameraForward(Camera *camera, float deltaTime){
+void moveCameraForward(Camera *camera, float deltaTime)
+{
     camera->position[0] += camera->speed * deltaTime * camera->front[0];
     camera->position[1] += camera->speed * deltaTime * camera->front[1];
     camera->position[2] += camera->speed * deltaTime * camera->front[2];
@@ -217,7 +250,8 @@ void moveCameraForward(Camera *camera, float deltaTime){
     camera->viewMatrixNeedsUpdate = 1;
 }
 
-void moveCameraBackward(Camera *camera, float deltaTime){
+void moveCameraBackward(Camera *camera, float deltaTime)
+{
     camera->position[0] -= camera->speed * deltaTime * camera->front[0];
     camera->position[1] -= camera->speed * deltaTime * camera->front[1];
     camera->position[2] -= camera->speed * deltaTime * camera->front[2];
@@ -226,7 +260,8 @@ void moveCameraBackward(Camera *camera, float deltaTime){
     camera->viewMatrixNeedsUpdate = 1;
 }
 
-void strafeCameraLeft(Camera *camera, float deltaTime){
+void strafeCameraLeft(Camera *camera, float deltaTime)
+{
     // Do a cross product to get the right vector for strafing
 
     // allocate memory for calculation.
@@ -251,7 +286,8 @@ void strafeCameraLeft(Camera *camera, float deltaTime){
     camera->viewMatrixNeedsUpdate = 1;
 }
 
-void strafeCameraRight(Camera *camera, float deltaTime){
+void strafeCameraRight(Camera *camera, float deltaTime)
+{
     // Do a cross product to get the right vector for strafing
 
     // allocate memory for calculation.
@@ -276,22 +312,28 @@ void strafeCameraRight(Camera *camera, float deltaTime){
     camera->viewMatrixNeedsUpdate = 1;
 }
 
-void setCameraOrthographic(Camera *camera){
+void setCameraOrthographic(Camera *camera)
+{
     // Change the camera to orthographic
     camera->isOrthographic = 1;
     camera->projectionMatrixNeedsUpdate = 1;
 }
 
-void setCameraPerspective(Camera *camera){
+void setCameraPerspective(Camera *camera)
+{
     // Change the camera to perspective
     camera->isOrthographic = 0;
     camera->projectionMatrixNeedsUpdate = 1;
 }
 
-void toggleCameraMode(Camera *camera){
-    if(camera->mode == CAMERAMODE_ORBITAL){
+void toggleCameraMode(Camera *camera)
+{
+    if(camera->mode == CAMERAMODE_ORBITAL)
+    {
         camera->mode = CAMERAMODE_FPS;
-    }else{
+    }
+    else
+    {
         camera->mode = CAMERAMODE_ORBITAL;
         camera->target[0] = 0.0f;
         camera->target[1] = 0.0f;

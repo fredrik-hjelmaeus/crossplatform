@@ -1162,8 +1162,18 @@ float magnitude(vec3 v){
 float direction(vec3 v){
    return atan2f(v[2],v[0]);
 }
+// Calcs the angle from the vertical component divided by the radius
 float elevation(vec3 v) {
-    return asinf(v[1] / magnitude(v));
+    float mag = magnitude(v);
+    if(mag == 0) {
+        mag = 0.001;
+    }
+    float ratio = v[1] / mag;
+
+    if (ratio > 1.0f)  ratio = 1.0f;
+    if (ratio < -1.0f) ratio = -1.0f;
+
+    return asinf(ratio);
 }
 
 void toCartesianXYZ(float magnitude, float direction, float elevation, vec3* result) {
