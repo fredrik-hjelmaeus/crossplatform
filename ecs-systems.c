@@ -802,3 +802,37 @@ void uiCheckboxSystem(RenderState *renderState, AppState *app){
         firstRun = false;
     } 
 }
+
+void helperSystem(AppState *app){
+    for(int i = 0; i < MAX_ENTITIES; i++)
+    {
+          if(app->entities[i].alive 
+            && app->entities[i].helperComponent->active
+            )
+            {
+                if(app->entities[i].helperComponent->entityRefId > -1)
+                {
+                    Entity *helperEntity = &app->entities[i];
+                    HelperComponent *helper = app->entities[i].helperComponent;
+                    int refId = app->entities[i].helperComponent->entityRefId;
+                    Entity *light = &app->entities[refId];
+                    
+                    if(light->alive && light->generation == helper->entityRefGeneration)
+                    {
+                        helperEntity->transformComponent->position[0] = light->transformComponent->position[0];
+                        helperEntity->transformComponent->position[1] = light->transformComponent->position[1];
+                        helperEntity->transformComponent->position[2] = light->transformComponent->position[2];
+                        helperEntity->transformComponent->modelNeedsUpdate = 1;
+                    }
+                    else 
+                    {
+                        deleteEntity(&app->entities[i]);
+                    }
+                }
+                else 
+                {
+                    deleteEntity(&app->entities[i]);
+                }
+            }
+    }
+}

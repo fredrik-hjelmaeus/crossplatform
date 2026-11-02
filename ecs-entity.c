@@ -6,6 +6,7 @@ Entity* addEntity(AppState *app, enum Tag tag){
         if(app->entities[i].alive == 0) {
             app->entities[i].alive = 1;
             app->entities[i].visible = 1;
+            app->entities[i].generation++;
             app->entities[i].tag = tag;
             return &app->entities[i];
         }
@@ -28,4 +29,5 @@ void deleteEntity(Entity* entity){
     entity->lineComponent->active = 0;
     entity->pointComponent->active = 0;
     entity->boundingBoxComponent->active = 0;
+    entity->helperComponent->active = 0;
 }

@@ -51,7 +51,9 @@ void initScene(RenderState *renderState, AppState *app){
    
     setupMaterial(&renderState->depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
   
+    // Depth buffer
     depthshadow_createFrameBuffer(&renderState->depthMapBuffer);
+    // Depth texture
     depthshadow_createDepthTexture(renderState);
     //depthshadow_createDepthCubemap();
   //  depthshadow_configureFrameBuffer(&renderState->depthMapBuffer);
@@ -119,7 +121,16 @@ void initScene(RenderState *renderState, AppState *app){
     
 
     // lights
-    int lightId = createLight(renderState, app, lightMaterial,(vec3){5.0f,5.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},DIRECTIONAL);
+    int lightId = createLight(
+      renderState, 
+      app, 
+      lightMaterial,
+      (vec3){5.0f,5.0f, 0.0f}, // Pos
+      (vec3){1.0f, 1.0f, 1.0f}, // Scale
+      (vec3){0.0f, 0.0f, 0.0f}, // Rot
+      (vec3){0.0f, -5.0f, -5.0f}, // Dir
+      DIRECTIONAL
+    );
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);

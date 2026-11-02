@@ -230,7 +230,17 @@ void createObject(AppState *app, ObjData* obj,vec3 position,vec3 scale,vec3 rota
  * Create a light source in the scene.
  * @return {int} Entity id
  */
-int createLight(RenderState *renderState, AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,vec3 direction,LightType type){
+int createLight(
+    RenderState *renderState, 
+    AppState *app, 
+    Material material,
+    vec3 position,
+    vec3 scale,
+    vec3 rotation,
+    vec3 direction,
+    LightType type
+)
+{
     
    // vertex data
     /* GLfloat vertices[] = {
@@ -324,41 +334,47 @@ int createLight(RenderState *renderState, AppState *app, Material material,vec3 
     entity->lightComponent->outerCutOff = cosineOC;
     entity->lightComponent->type = type;
     entity->lightComponent->castShadows = true;
+
+    setTransformData(entity, position, scale, rotation);
     
     // TODO: This is a temporary solution, need to implement a better way to handle lights.
     ASSERT(app->lightsCount < MAX_LIGHTS, "Too many lights");
     app->lights[app->lightsCount].entityId = entity->id;
     app->lights[app->lightsCount].lightType = type;
+    
     createDirectionalLightSpace(renderState, app, app->lightsCount);
     app->lightsCount++;
 
     if(type == DIRECTIONAL){
-        vec3 result;
+        vec3 endPosition;
         vec3 normalized_direction;
         vec3_norm(normalized_direction,direction);
         float scalar = 10.0f;
         vec3 scaled_direction;
         vec3_scale(scaled_direction, normalized_direction, scalar);
-        // multiply normalized direction with a float here
-        vec3_add(result, scaled_direction, position);
-        //createLine(position, result, entity);
-        //GLfloat positions[] = { position[0], position[1], position[2] , result[0], result[1], result[2] };
-   //     createPoints(positions,2,entity);
-        setTransformData(entity,position,scale,rotation);
-       //  createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
-        //createMesh(vertices,36,indices,0,result,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
         
-       // return;
+        // multiply normalized direction with a float here
+        vec3_add(endPosition, scaled_direction, position);
+        
+        vec3 localStartPosition = {0.0f, 0.0f, 0.0f};
+        Entity* entityHelper = addEntity(app, HELPER);
+        createLine(entityHelper, localStartPosition, scaled_direction);
+        
+        entityHelper->helperComponent->active = 1;
+        entityHelper->helperComponent->entityRefId = entity->id;
+        entityHelper->helperComponent->entityRefGeneration = entity->generation;
     }
-    //createMesh(vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
+    
     return entity->id;
 }
 /**
  * @brief Create a line segment between two points
+ * @param entity - entity to add line to
  * @param position - start position
  * @param endPosition - end position
  */
-void createLine(vec3 position, vec3 endPosition,Entity* entity){
+void createLine(Entity *entity, vec3 position, vec3 endPosition){
+
     entity->lineComponent->active = 1;
     entity->lineComponent->start[0] = position[0];
     entity->lineComponent->start[1] = position[1];
@@ -368,9 +384,9 @@ void createLine(vec3 position, vec3 endPosition,Entity* entity){
     entity->lineComponent->end[2] = endPosition[2];
     entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
     // TODO: transform pos is start of segment, should it be mid-point?
-    entity->transformComponent->position[0] = position[0];
-    entity->transformComponent->position[1] = position[1];
-    entity->transformComponent->position[2] = position[2];
+    entity->transformComponent->position[0] = 0;
+    entity->transformComponent->position[1] = 0;
+    entity->transformComponent->position[2] = 0;
     entity->transformComponent->scale[0] = 1.0f;
     entity->transformComponent->scale[1] = 1.0f;
     entity->transformComponent->scale[2] = 1.0f;
@@ -541,7 +557,8 @@ void debug_drawFrustum(AppState *app)
     endt[0]   = 2.0f;
     endt[1]   = 10.0f;
     endt[2]   = 0.0f;
-    createLine(startt,endt,entity);
+    Entity* entityHelper = addEntity(app, HELPER);
+    createLine(entityHelper, startt,endt);
     
     // Near plane bottom
     Entity* entity4 = addEntity(app, MODEL);
@@ -564,7 +581,9 @@ void debug_drawFrustum(AppState *app)
     endb[0]   = 2.0f;
     endb[1]   = 10.0f;
     endb[2]   = 1.0f;
-    createLine(startb,endb,entity4);
+    
+    Entity* entityHelper2 = addEntity(app, HELPER);
+    createLine(entityHelper2, startb,endb);
    
     // Near plane right
     Entity* entity2 = addEntity(app, MODEL);
@@ -586,7 +605,8 @@ void debug_drawFrustum(AppState *app)
     endr[0] = 1.0f;
     endr[1] = 10.0f;
     endr[2] = 2.0f;
-    createLine(startr,endr,entity2);
+    Entity* entityHelper3 = addEntity(app, HELPER);
+    createLine(entityHelper3, startr,endr);
 
     // Near plane left
     Entity* entity3 = addEntity(app, MODEL);
@@ -608,7 +628,8 @@ void debug_drawFrustum(AppState *app)
     endl[0] = 0.0f;
     endl[1] = 10.0f;
     endl[2] = 2.0f;
-    createLine(startl,endl,entity3);
+    Entity* entityHelper4 = addEntity(app, HELPER);
+    createLine(entityHelper4, startl,endl);
     
 }
 

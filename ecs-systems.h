@@ -19,5 +19,6 @@ void modelSystem(AppState *app);
 void debugSystem(RenderState *renderState);
 void uiSliderSystem(InputState *inputState, AppState *app);
 void uiCheckboxSystem(RenderState *renderState, AppState *app);
+void helperSystem(AppState *app);
 
 #endif

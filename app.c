@@ -99,6 +99,7 @@ void update(InputState *inputState, RenderState *renderState, AppState *app){
     uiCheckboxSystem(renderState, app);
     textCursorSystem(inputState, app);
     movementSystem(app);
+    helperSystem(app);
     modelSystem(app);
     inputState->prevMouseLeftDown = inputState->mouseLeftButtonPressed;
 }

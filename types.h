@@ -242,6 +242,7 @@ enum Tag {
     BOUNDING_BOX = 2,
     TEXT = 3,
     LIGHT = 4,
+    HELPER = 5,
 };
 typedef struct Vector2{
     float x;
@@ -365,8 +366,15 @@ typedef struct BoundingBoxComponent {
     BoundingBox boundingBox;
 } BoundingBoxComponent;
 
+typedef struct HelperComponent {
+    bool active;
+    int entityRefId;
+    unsigned int entityRefGeneration;
+} HelperComponent;
+
 typedef struct Entity {
     int id;
+    unsigned int generation;
     bool alive;
     bool visible;
     int tag;
@@ -383,6 +391,7 @@ typedef struct Entity {
     LineComponent* lineComponent;
     PointComponent* pointComponent;
     BoundingBoxComponent* boundingBoxComponent;
+    HelperComponent* helperComponent;
 } Entity;
 
 typedef vec3 Point;

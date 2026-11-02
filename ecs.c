@@ -26,6 +26,7 @@ void initECS(AppState *app){
     LineComponent* lineComponents = allocateComponentMemory(sizeof(LineComponent), "line");
     PointComponent* pointComponents = allocateComponentMemory(sizeof(PointComponent), "point");
     BoundingBoxComponent* boundingBoxComponents = allocateComponentMemory(sizeof(BoundingBoxComponent), "boundingBox");
+    HelperComponent* helperComponents = allocateComponentMemory(sizeof(HelperComponent), "helper");
 
     // Allocate memory for MAX_ENTITIES Entity structs
     Entity* entities = (Entity*)calloc(MAX_ENTITIES, sizeof(Entity));
@@ -38,6 +39,11 @@ void initECS(AppState *app){
     for (int i = 0; i < MAX_ENTITIES; i++) {
         entities[i].alive = 0;
         entities[i].id = i;
+        /**
+         *  We re-use entities, so use this to verify it's not and old or new entity.
+         *  In addEntity we go to next generation++.
+         */
+        entities[i].generation = 0; 
         entities[i].tag = UNINITIALIZED;
         // TODO: remove when Entity struct is changed (see Entity-struct)
         entities[i].transformComponent = &transformComponents[i]; // TODO: remove
@@ -58,6 +64,8 @@ void initECS(AppState *app){
         initializePointComponent(entities[i].pointComponent);
         entities[i].boundingBoxComponent = &boundingBoxComponents[i]; // TODO: remove
         initializeBoundingBoxComponent(entities[i].boundingBoxComponent);
+        entities[i].helperComponent = &helperComponents[i]; // TODO: remove
+        initializeHelperComponent(entities[i].helperComponent);
     }
 
     app->entities = entities;
@@ -248,4 +256,11 @@ void initializeBoundingBoxComponent(BoundingBoxComponent *boundingBoxComponent)
     boundingBoxComponent->boundingBox.max[0] = 0.0f;
     boundingBoxComponent->boundingBox.max[1] = 0.0f;
     boundingBoxComponent->boundingBox.max[2] = 0.0f;
+}
+
+void initializeHelperComponent(HelperComponent *helperComponent)
+{
+    helperComponent->active = 0;
+    helperComponent->entityRefGeneration = 0;
+    helperComponent->entityRefId = -1;
 }

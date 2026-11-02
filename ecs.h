@@ -34,6 +34,7 @@ void initializeLightComponent(LightComponent* lightComponent);
 void initializeLineComponent(LineComponent* lineComponent);
 void initializePointComponent(PointComponent* pointComponent);
 void initializeBoundingBoxComponent(BoundingBoxComponent* boundingBoxComponent);
+void initializeHelperComponent(HelperComponent* helperComponent);
 
 void initializeMatrix4(float (*matrix)[4][4]);
 

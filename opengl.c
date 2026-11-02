@@ -9,11 +9,11 @@
  * @brief Setup buffer to render GL_LINES. Very similar to setupMesh, 
  * only difference is that we only need position attributes & not prepared for indexed draws using a EBO.
 */
-void setupLine(GLfloat* lines, int lineCount, GpuData* buffer) {
+void setupLine(GLfloat* lines, int vertexCount, GpuData* buffer) {
 
     buffer->numIndicies = 0;
     buffer->drawMode = GL_LINES;
-    buffer->vertexCount = lineCount;
+    buffer->vertexCount = vertexCount;
     glGenVertexArrays(1, &(buffer->VAO));
     glGenBuffers(1, &(buffer->VBO));
     glGenBuffers(1, &buffer->EBO);
@@ -23,7 +23,7 @@ void setupLine(GLfloat* lines, int lineCount, GpuData* buffer) {
     glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
 
     // Copy vertices to buffer
-    glBufferData(GL_ARRAY_BUFFER, lineCount * sizeof(Line), lines, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertexCount * 3 * sizeof(GLfloat), lines, GL_STATIC_DRAW);
     
     //printf("Line: %f %f %f %f %f %f\n",lines[0],lines[1],lines[2],lines[3],lines[4],lines[5]);
 

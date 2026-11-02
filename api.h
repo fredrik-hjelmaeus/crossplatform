@@ -57,18 +57,15 @@ void createCube(AppState *app, Material material,vec3 position,vec3 scale,vec3 r
 void createPlane(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation);
 /**
  * @brief Create a line segment between two points
+ * @param entity - entity to add line to
  * @param position - start position
  * @param endPosition - end position
  */
-void createLine(vec3 position, vec3 endPosition,Entity* entity);
+void createLine(Entity *entity, vec3 position, vec3 endPosition);
 
 void debug_drawFrustum(AppState *app);
 
 void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation);
-
-
-
-
 
 
 #endif // API_H
