@@ -12,6 +12,7 @@
 #include "api.h"
 #include "event.h"
 #include "ui.h"
+#include "opengl.h"
 
 void deleteEntity(Entity* entity);
 
@@ -823,6 +824,11 @@ void helperSystem(AppState *app){
                         helperEntity->transformComponent->position[1] = light->transformComponent->position[1];
                         helperEntity->transformComponent->position[2] = light->transformComponent->position[2];
                         helperEntity->transformComponent->modelNeedsUpdate = 1;
+
+                        // Update the indivual points(4) for the line.
+                        // This is needed because rectangle representing line
+                        // needs to be re-calc. on all camera changes
+                        updateLine(app, helperEntity);
                     }
                     else 
                     {

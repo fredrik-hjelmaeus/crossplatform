@@ -3,13 +3,14 @@
 #include "linmath.h"
 #include "app.h"
 #include "opengl.h"
+#include "api.h"
 
 
 /** 
  * @brief Setup buffer to render GL_LINES. Very similar to setupMesh, 
  * only difference is that we only need position attributes & not prepared for indexed draws using a EBO.
 */
-void setupLine(GLfloat* lines, int vertexCount, GpuData* buffer) {
+void setupSimpleLine(GLfloat* lines, int vertexCount, GpuData* buffer) {
 
     buffer->numIndicies = 0;
     buffer->drawMode = GL_LINES;
@@ -38,23 +39,52 @@ void setupLine(GLfloat* lines, int vertexCount, GpuData* buffer) {
     glBindVertexArray(0);
 }
 
-void updateLine(LineComponent* lineComponent){
-    GLfloat lines[] = {
-        lineComponent->start[0], lineComponent->start[1], lineComponent->start[2], 
-        lineComponent->end[0], lineComponent->end[1], lineComponent->end[2]
-    };
-    // print out the line
-  //  printf("Line: %f %f %f %f %f %f\n",lines[0],lines[1],lines[2],lines[3],lines[4],lines[5]);
+/**
+ * Draws a mesh line using GL_TRIANGLES
+ */
+void setupLine(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
 
-    glBindBuffer(GL_ARRAY_BUFFER, lineComponent->gpuData->VBO);
+    buffer->numIndicies = indexCount;
+    buffer->drawMode = GL_TRIANGLES;
+    buffer->vertexCount = vertexCount;
+    glGenVertexArrays(1, &(buffer->VAO));
+    glGenBuffers(1, &(buffer->VBO));
+    glGenBuffers(1, &buffer->EBO);
+    glBindVertexArray(buffer->VAO);
+
+    // Bind/Activate VBO
+    glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
+
+    // Copy vertices to buffer
+    glBufferData(GL_ARRAY_BUFFER, vertexCount * 3 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+
+     // Bind/Activate EBO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->EBO);
+
+    // Copy indices to buffer
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_STATIC_DRAW);
     
-    glBufferSubData(GL_ARRAY_BUFFER,
-                    0,
-                    sizeof(lines),  // 3 floats for position
-                    lines);          // pointer to vertex data
-                                    
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+
+    // Unbind VBO/buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    lineComponent->color = (Color){1.0f,0.0f,1.0f,1.0f};
+
+    // Unbind VAO/vertex array
+    glBindVertexArray(0);
+}
+
+void updateLine(AppState *app, Entity *entity)
+{
+    LineComponent *line = entity->lineComponent;
+
+    vec3 corners[4];
+    calcLineVertices(app, corners, entity, line->end, line->start);
+
+    glBindBuffer(GL_ARRAY_BUFFER, line->gpuData->VBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(corners), corners);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 /** 
@@ -359,7 +389,13 @@ void renderLine(GpuData* buffer,TransformComponent* transformComponent, Camera* 
   // Bind buffer
   glBindVertexArray(buffer->VAO);
   
-  glDrawArrays(buffer->drawMode,0,buffer->vertexCount);
+  //glDrawArrays(buffer->drawMode,0,buffer->vertexCount); <-- use this with simpleLine
+  glDrawElements(
+    GL_TRIANGLES,
+    buffer->numIndicies,
+    GL_UNSIGNED_INT,
+    (void*)0
+);
 
   // Unbind buffer
   glBindVertexArray(0);

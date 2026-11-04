@@ -57,11 +57,13 @@ void createCube(AppState *app, Material material,vec3 position,vec3 scale,vec3 r
 void createPlane(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation);
 /**
  * @brief Create a line segment between two points
+ * @param app - needed for camera access
  * @param entity - entity to add line to
  * @param position - start position
  * @param endPosition - end position
  */
-void createLine(Entity *entity, vec3 position, vec3 endPosition);
+void createLine(AppState *app, Entity *entity, vec3 position, vec3 endPosition);
+void calcLineVertices(AppState *app, vec3* corners,Entity *entity,vec3 endPosition,vec3 position);
 
 void debug_drawFrustum(AppState *app);
 

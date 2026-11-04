@@ -358,7 +358,10 @@ int createLight(
         
         vec3 localStartPosition = {0.0f, 0.0f, 0.0f};
         Entity* entityHelper = addEntity(app, HELPER);
-        createLine(entityHelper, localStartPosition, scaled_direction);
+        setTransformData(entityHelper, position,
+                 (vec3){1, 1, 1}, (vec3){0, 0, 0});
+
+        createLine(app, entityHelper, localStartPosition, scaled_direction);
         
         entityHelper->helperComponent->active = 1;
         entityHelper->helperComponent->entityRefId = entity->id;
@@ -367,13 +370,51 @@ int createLight(
     
     return entity->id;
 }
+void calcLineVertices(AppState *app,vec3 *corners,Entity* entity,vec3 endPosition,vec3 position)
+{
+    vec3 lineDir;
+    vec3_sub(lineDir,endPosition,position);
+    vec3_norm(lineDir, lineDir);
+
+    vec3 midpoint = {
+        (position[0] + endPosition[0]) * 0.5f,
+        (position[1] + endPosition[1]) * 0.5f,
+        (position[2] + endPosition[2]) * 0.5f
+    };
+
+    // Convert world camera pos to local camera pos
+    vec3 localCameraPosition;
+    vec3_sub(
+        localCameraPosition, 
+        app->views.main.camera->position,
+        entity->transformComponent->position // helper entity has the world position
+    );
+
+    vec3 cameraDir;
+    vec3_sub(cameraDir, midpoint, localCameraPosition);
+    vec3_norm(cameraDir, cameraDir);
+
+    vec3 offsetDir;
+    vec3_mul_cross( offsetDir, lineDir, cameraDir );
+    vec3_norm(offsetDir,offsetDir);
+
+    float thickness = 0.05;
+    vec3 offset;
+    vec3_scale(offset, offsetDir, thickness*0.5);
+
+    vec3_sub(corners[0], position, offset);
+    vec3_sub(corners[1], endPosition,   offset);
+    vec3_add(corners[2], position, offset);
+    vec3_add(corners[3], endPosition,   offset);
+}
+
 /**
  * @brief Create a line segment between two points
  * @param entity - entity to add line to
  * @param position - start position
  * @param endPosition - end position
  */
-void createLine(Entity *entity, vec3 position, vec3 endPosition){
+void createLine(AppState *app, Entity *entity, vec3 position, vec3 endPosition){
 
     entity->lineComponent->active = 1;
     entity->lineComponent->start[0] = position[0];
@@ -383,24 +424,26 @@ void createLine(Entity *entity, vec3 position, vec3 endPosition){
     entity->lineComponent->end[1] = endPosition[1];
     entity->lineComponent->end[2] = endPosition[2];
     entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
-    // TODO: transform pos is start of segment, should it be mid-point?
-    entity->transformComponent->position[0] = 0;
-    entity->transformComponent->position[1] = 0;
-    entity->transformComponent->position[2] = 0;
-    entity->transformComponent->scale[0] = 1.0f;
-    entity->transformComponent->scale[1] = 1.0f;
-    entity->transformComponent->scale[2] = 1.0f;
-    entity->transformComponent->rotation[0] = 0.0f;
-    entity->transformComponent->rotation[1] = 0.0f;
-    entity->transformComponent->rotation[2] = 0.0f;
-    entity->transformComponent->modelNeedsUpdate = 1;
+    
+    vec3 corners[4];
+    calcLineVertices(app, corners,entity,endPosition,position);
 
-    GLfloat lines[] = {
-        position[0], position[1], position[2], 
-        endPosition[0], endPosition[1], endPosition[2]
+    GLfloat vertices[] = {
+        corners[0][0], corners[0][1], corners[0][2], 
+        corners[1][0], corners[1][1], corners[1][2],
+        corners[2][0], corners[2][1], corners[2][2],
+        corners[3][0], corners[3][1], corners[3][2],
     };
 
-    setupLine(lines,2,entity->lineComponent->gpuData);
+    // 0 --------- 1
+    //
+    //
+    // 2 --------- 3
+    GLuint indicies[] = {
+        0,1,2, 1,3,2
+    };
+
+    setupLine((Vertex*)vertices,4,indicies,6,entity->lineComponent->gpuData);
     setupMaterial(entity->lineComponent->gpuData,"shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
 }
 
@@ -558,7 +601,7 @@ void debug_drawFrustum(AppState *app)
     endt[1]   = 10.0f;
     endt[2]   = 0.0f;
     Entity* entityHelper = addEntity(app, HELPER);
-    createLine(entityHelper, startt,endt);
+    createLine(app, entityHelper, startt,endt);
     
     // Near plane bottom
     Entity* entity4 = addEntity(app, MODEL);
@@ -583,7 +626,7 @@ void debug_drawFrustum(AppState *app)
     endb[2]   = 1.0f;
     
     Entity* entityHelper2 = addEntity(app, HELPER);
-    createLine(entityHelper2, startb,endb);
+    createLine(app, entityHelper2, startb,endb);
    
     // Near plane right
     Entity* entity2 = addEntity(app, MODEL);
@@ -606,7 +649,7 @@ void debug_drawFrustum(AppState *app)
     endr[1] = 10.0f;
     endr[2] = 2.0f;
     Entity* entityHelper3 = addEntity(app, HELPER);
-    createLine(entityHelper3, startr,endr);
+    createLine(app, entityHelper3, startr,endr);
 
     // Near plane left
     Entity* entity3 = addEntity(app, MODEL);
@@ -629,7 +672,7 @@ void debug_drawFrustum(AppState *app)
     endl[1] = 10.0f;
     endl[2] = 2.0f;
     Entity* entityHelper4 = addEntity(app, HELPER);
-    createLine(entityHelper4, startl,endl);
+    createLine(app, entityHelper4, startl,endl);
     
 }
 

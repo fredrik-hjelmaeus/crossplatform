@@ -25,7 +25,7 @@ void initScene(RenderState *renderState, AppState *app){
    // Camera setup
    Camera* uiCamera = initCamera();
    uiCamera->isOrthographic = 1;
-   uiCamera->aspectRatio = app->views.ui.rect.width / app->views.ui.rect.height;
+   uiCamera->aspectRatio = (float)app->views.ui.rect.width / (float)app->views.ui.rect.height;
    uiCamera->left = (float)-width/2.0f;
    uiCamera->right = (float)width/2.0f;
    uiCamera->bottom = -(float)height/2.0f;

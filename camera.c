@@ -61,7 +61,7 @@ void updateProjection(Camera* camera)
     else 
     {
         // Calculate perspective projection matrix
-        mat4x4_perspective(projection, camera->fov, camera->aspectRatio, camera->near, camera->far);
+        mat4x4_perspective(projection, deg2rad(camera->fov), camera->aspectRatio, camera->near, camera->far);
     }
     
     // Copy the projection matrix to camera.projection
