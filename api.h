@@ -63,11 +63,9 @@ void createPlane(AppState *app, Material material,vec3 position,vec3 scale,vec3 
  * @param endPosition - end position
  */
 void createLine(AppState *app, Entity *entity, vec3 position, vec3 endPosition);
-void calcLineVertices(AppState *app, vec3* corners,Entity *entity,vec3 endPosition,vec3 position);
 
 void debug_drawFrustum(AppState *app);
 
 void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation);
-
 
 #endif // API_H

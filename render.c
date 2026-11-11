@@ -115,11 +115,18 @@ void render(RenderState *renderState, AppState *app){
     }
     
     // Render GL_LINES & GL_POINTS(particles)
+    GLboolean cullingWasEnabled = glIsEnabled(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
     for(int i = 0; i < MAX_ENTITIES; i++){
         if((app->entities[i].alive == 1 && app->entities[i].lineComponent->active == 1 && app->entities[i].visible) 
         || (app->entities[i].alive == 1 && app->entities[i].pointComponent->active == 1 && app->entities[i].visible)){
             if(app->entities[i].lineComponent->active == 1){
-              renderLine(app->entities[i].lineComponent->gpuData,app->entities[i].transformComponent,app->views.main.camera,app->entities[i].lineComponent->color);
+                renderLine(
+                    app->entities[i].transformComponent,
+                    app->entities[i].lineComponent,
+                    app->views.main.camera,
+                    app
+                );
             }
             if(app->entities[i].pointComponent->active == 1){
                 // NOTE: point Size is not drawing anything else than 1.0 in windows/wsl2.
@@ -140,6 +147,9 @@ void render(RenderState *renderState, AppState *app){
                
             
         }
+    }
+    if(cullingWasEnabled){
+        glEnable(GL_CULL_FACE);
     }
 
     // Render ui scene & ui objects

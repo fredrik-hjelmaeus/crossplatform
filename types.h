@@ -274,9 +274,6 @@ typedef struct MeshComponent {
     GpuData* gpuData;
 } MeshComponent;
 
-// This is a line segment component atm. 
-// If we want to draw a line with more than 2 points,
-// we adapt this component (by adding vertices?) or create a separate component for that. TBD.
 typedef struct LineComponent {
     bool active;
     vec3 start;
@@ -286,7 +283,7 @@ typedef struct LineComponent {
     Color color;
     //int lineCount; see createPolyline 
     //vec3* linePositions; see createPolyline 
-    // line width (See OpenGL_ES_3.0_Programming_Guide page 205)
+    float width;//(See OpenGL_ES_3.0_Programming_Guide page 205)
     // line type, dotted (GL_LINE_STIPPLE )
     // line dotted pattern ( glLineStipple)
     // line smooth? (GL_LINE_SMOOTH) seems unsupported by oges3.0

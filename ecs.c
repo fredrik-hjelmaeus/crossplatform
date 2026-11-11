@@ -218,7 +218,7 @@ void initializeLineComponent(LineComponent* lineComponent){
     lineComponent->gpuData->VAO = 0;
     lineComponent->gpuData->VBO = 0;
     lineComponent->gpuData->EBO = 0;
-    lineComponent->gpuData->drawMode = GL_LINES; // Default draw mode
+    lineComponent->gpuData->drawMode = GL_TRIANGLES; // Default draw mode
     lineComponent->gpuData->numIndicies = 0;
     lineComponent->color.r = 0.0f;
     lineComponent->color.g = 0.0f;
@@ -230,6 +230,7 @@ void initializeLineComponent(LineComponent* lineComponent){
     lineComponent->end[0] = 0.0f;
     lineComponent->end[1] = 0.0f;
     lineComponent->end[2] = 0.0f;
+    lineComponent->width = 3.0f;
 }
 
 void initializePointComponent(PointComponent* pointComponent){

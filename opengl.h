@@ -23,11 +23,9 @@ GLuint setupTexture(RenderState *renderState, TextureData textureData);
 void setupFontTextures(AppState *app, char* fontPath,int fontSize);
 void setupFontMesh(GpuData *buffer);
 void renderText(AppState *app, GpuData *buffer, char *text, float x, float y, float scale, Color color);
-void renderLine(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,Color lineColor);
+void renderLine(TransformComponent* transformComponent,LineComponent* lineComponent, Camera* camera,AppState *app);
 void renderPoints(GpuData* buffer, TransformComponent* transformComponent, Camera* camera, Color pointColor,float pointSize);
-void setupSimpleLine(GLfloat* lines, int lineCount, GpuData* buffer);
-void setupLine(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
-void updateLine(AppState *app, Entity* entity);
+void setupLine(GLfloat* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
 void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
 // Shadow maps

@@ -6,43 +6,11 @@
 #include "api.h"
 
 
-/** 
- * @brief Setup buffer to render GL_LINES. Very similar to setupMesh, 
- * only difference is that we only need position attributes & not prepared for indexed draws using a EBO.
-*/
-void setupSimpleLine(GLfloat* lines, int vertexCount, GpuData* buffer) {
-
-    buffer->numIndicies = 0;
-    buffer->drawMode = GL_LINES;
-    buffer->vertexCount = vertexCount;
-    glGenVertexArrays(1, &(buffer->VAO));
-    glGenBuffers(1, &(buffer->VBO));
-    glGenBuffers(1, &buffer->EBO);
-    glBindVertexArray(buffer->VAO);
-
-    // Bind/Activate VBO
-    glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
-
-    // Copy vertices to buffer
-    glBufferData(GL_ARRAY_BUFFER, vertexCount * 3 * sizeof(GLfloat), lines, GL_STATIC_DRAW);
-    
-    //printf("Line: %f %f %f %f %f %f\n",lines[0],lines[1],lines[2],lines[3],lines[4],lines[5]);
-
-    // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);
-
-    // Unbind VBO/buffer
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // Unbind VAO/vertex array
-    glBindVertexArray(0);
-}
-
 /**
  * Draws a mesh line using GL_TRIANGLES
+ * For now a segment only, so two vertices max
  */
-void setupLine(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
+void setupLine(GLfloat* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
 
     buffer->numIndicies = indexCount;
     buffer->drawMode = GL_TRIANGLES;
@@ -56,7 +24,7 @@ void setupLine(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
     glBindBuffer(GL_ARRAY_BUFFER, buffer->VBO);
 
     // Copy vertices to buffer
-    glBufferData(GL_ARRAY_BUFFER, vertexCount * 3 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertexCount * 2 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
 
      // Bind/Activate EBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->EBO);
@@ -65,7 +33,7 @@ void setupLine(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_STATIC_DRAW);
     
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
 
     // Unbind VBO/buffer
@@ -73,18 +41,6 @@ void setupLine(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
 
     // Unbind VAO/vertex array
     glBindVertexArray(0);
-}
-
-void updateLine(AppState *app, Entity *entity)
-{
-    LineComponent *line = entity->lineComponent;
-
-    vec3 corners[4];
-    calcLineVertices(app, corners, entity, line->end, line->start);
-
-    glBindBuffer(GL_ARRAY_BUFFER, line->gpuData->VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(corners), corners);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 /** 
@@ -247,6 +203,7 @@ void depthshadow_renderToDepthTexture(RenderState *renderState, AppState *app, G
     myTempVar = false;
 }
 
+
 /** 
  * @brief Setup buffer to render a mesh.
 */
@@ -364,19 +321,40 @@ void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPa
     }
 }
 
-void renderLine(GpuData* buffer,TransformComponent* transformComponent, Camera* camera,Color lineColor){
+void renderLine(
+    TransformComponent* transformComponent, 
+    LineComponent* lineComponent, 
+    Camera* camera, 
+    AppState *app
+){
     // Check if camera is NULL
     if (camera == NULL) {
         fprintf(stderr, "Error: camera is NULL\n");
         return;
     }
+
+    GpuData* buffer = lineComponent->gpuData;
      
    // Set shader
    glUseProgram(buffer->shaderProgram);
 
    // Set uniforms
+   GLint lineWidth = glGetUniformLocation(buffer->shaderProgram, "lineWidth");
+   glUniform1f(lineWidth, lineComponent->width);
+
+   GLint viewport[4];
+   glGetIntegerv(GL_VIEWPORT, viewport);
+
+   GLint viewportSize = glGetUniformLocation(buffer->shaderProgram, "viewportSize");
+   glUniform2f(viewportSize, (float)viewport[2], (float)viewport[3]);
+
+   GLint lineStart = glGetUniformLocation(buffer->shaderProgram, "lineStart");
+   glUniform3fv(lineStart, 1,lineComponent->start);
+   GLint lineEnd = glGetUniformLocation(buffer->shaderProgram, "lineEnd");
+   glUniform3fv(lineEnd,1, lineComponent->end);
+
    GLint lineColorLoc = glGetUniformLocation(buffer->shaderProgram, "lineColor");
-   glUniform4f(lineColorLoc, lineColor.r,lineColor.g,lineColor.b,lineColor.a);
+   glUniform4f(lineColorLoc, lineComponent->color.r,lineComponent->color.g,lineComponent->color.b,lineComponent->color.a);
    
    GLint modelLoc = glGetUniformLocation(buffer->shaderProgram, "model");
    GLint viewLoc =  glGetUniformLocation(buffer->shaderProgram, "view");

@@ -349,7 +349,7 @@ int createLight(
         vec3 endPosition;
         vec3 normalized_direction;
         vec3_norm(normalized_direction,direction);
-        float scalar = 10.0f;
+        float scalar = 15.0f;
         vec3 scaled_direction;
         vec3_scale(scaled_direction, normalized_direction, scalar);
         
@@ -358,10 +358,10 @@ int createLight(
         
         vec3 localStartPosition = {0.0f, 0.0f, 0.0f};
         Entity* entityHelper = addEntity(app, HELPER);
-        setTransformData(entityHelper, position,
-                 (vec3){1, 1, 1}, (vec3){0, 0, 0});
+        setTransformData(entityHelper, position, (vec3){1, 1, 1}, (vec3){0, 0, 0});
 
         createLine(app, entityHelper, localStartPosition, scaled_direction);
+        entityHelper->lineComponent->width = 3.0f; // Pixels in the active viewport.
         
         entityHelper->helperComponent->active = 1;
         entityHelper->helperComponent->entityRefId = entity->id;
@@ -369,43 +369,6 @@ int createLight(
     }
     
     return entity->id;
-}
-void calcLineVertices(AppState *app,vec3 *corners,Entity* entity,vec3 endPosition,vec3 position)
-{
-    vec3 lineDir;
-    vec3_sub(lineDir,endPosition,position);
-    vec3_norm(lineDir, lineDir);
-
-    vec3 midpoint = {
-        (position[0] + endPosition[0]) * 0.5f,
-        (position[1] + endPosition[1]) * 0.5f,
-        (position[2] + endPosition[2]) * 0.5f
-    };
-
-    // Convert world camera pos to local camera pos
-    vec3 localCameraPosition;
-    vec3_sub(
-        localCameraPosition, 
-        app->views.main.camera->position,
-        entity->transformComponent->position // helper entity has the world position
-    );
-
-    vec3 cameraDir;
-    vec3_sub(cameraDir, midpoint, localCameraPosition);
-    vec3_norm(cameraDir, cameraDir);
-
-    vec3 offsetDir;
-    vec3_mul_cross( offsetDir, lineDir, cameraDir );
-    vec3_norm(offsetDir,offsetDir);
-
-    float thickness = 0.05;
-    vec3 offset;
-    vec3_scale(offset, offsetDir, thickness*0.5);
-
-    vec3_sub(corners[0], position, offset);
-    vec3_sub(corners[1], endPosition,   offset);
-    vec3_add(corners[2], position, offset);
-    vec3_add(corners[3], endPosition,   offset);
 }
 
 /**
@@ -424,16 +387,15 @@ void createLine(AppState *app, Entity *entity, vec3 position, vec3 endPosition){
     entity->lineComponent->end[1] = endPosition[1];
     entity->lineComponent->end[2] = endPosition[2];
     entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
-    
-    vec3 corners[4];
-    calcLineVertices(app, corners,entity,endPosition,position);
+    entity->lineComponent->width = 3.0f;
 
     GLfloat vertices[] = {
-        corners[0][0], corners[0][1], corners[0][2], 
-        corners[1][0], corners[1][1], corners[1][2],
-        corners[2][0], corners[2][1], corners[2][2],
-        corners[3][0], corners[3][1], corners[3][2],
+        0.0f, -1.0f,
+        1.0f, -1.0f,
+        0.0f,  1.0f,
+        1.0f,  1.0f
     };
+
 
     // 0 --------- 1
     //
@@ -443,8 +405,8 @@ void createLine(AppState *app, Entity *entity, vec3 position, vec3 endPosition){
         0,1,2, 1,3,2
     };
 
-    setupLine((Vertex*)vertices,4,indicies,6,entity->lineComponent->gpuData);
-    setupMaterial(entity->lineComponent->gpuData,"shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
+    setupLine(vertices, 4, indicies, 6, entity->lineComponent->gpuData);
+    setupMaterial(entity->lineComponent->gpuData, "shaders/mesh_line_vertex.glsl", "shaders/line_fragment.glsl");
 }
 
 /**

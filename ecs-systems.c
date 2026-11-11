@@ -828,7 +828,7 @@ void helperSystem(AppState *app){
                         // Update the indivual points(4) for the line.
                         // This is needed because rectangle representing line
                         // needs to be re-calc. on all camera changes
-                        updateLine(app, helperEntity);
+                        // Geometry is updated for all lines in the render pass.
                     }
                     else 
                     {
