@@ -25,7 +25,7 @@ void setupFontMesh(GpuData *buffer);
 void renderText(AppState *app, GpuData *buffer, char *text, float x, float y, float scale, Color color);
 void renderLine(TransformComponent* transformComponent,LineComponent* lineComponent, Camera* camera,AppState *app);
 void renderPoints(GpuData* buffer, TransformComponent* transformComponent, Camera* camera, Color pointColor,float pointSize);
-void setupLine(GLfloat* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
+void setupLine(GLfloat* vertices, int vertexCount, unsigned int* indices, int indexCount, LineComponent* lineComponent);
 void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
 // Shadow maps

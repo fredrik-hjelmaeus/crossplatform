@@ -28,7 +28,8 @@ void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation){
  *  - transform data
  *  - material data
 */
-void createMesh(AppState *app, 
+void createMesh(
+    AppState *app, 
     GLfloat* verts,
     GLuint num_of_vertex, 
     GLuint* indices, // atm plug in some dummy-data if not used.
@@ -46,7 +47,9 @@ void createMesh(AppState *app,
     entity->meshComponent->active = 1;
 
     // vertex data
-    entity->meshComponent->vertices = (Vertex*)verts; // double cast see createMesh invoke, remove this!!!
+    ASSERT(verts != NULL && num_of_vertex > 0, "Mesh needs vertices");
+    Vertex *vertices = arena_Alloc(&app->meshArena, num_of_vertex * sizeof(*vertices));
+    entity->meshComponent->vertices = vertices; // Own a copy; callers may use local arrays.
     
     int stride = 11;
     int vertexIndex = 0;
@@ -120,24 +123,19 @@ void createMesh(AppState *app,
         exit(1);
     }
     
-    
     entity->meshComponent->vertexCount = num_of_vertex;
     entity->meshComponent->gpuData->vertexCount = num_of_vertex;
 
     // index data
-    entity->meshComponent->indices = (GLuint*)malloc(numIndicies * sizeof(GLuint));
-    if(entity->meshComponent->indices == NULL) {
-        printf("Failed to allocate memory for indices\n");
-        exit(1);
-    }
+    ASSERT(numIndicies == 0 || indices != NULL, "Indexed mesh needs indices");
+    GLuint *indicies = numIndicies > 0
+        ? arena_Alloc(&app->meshArena, (size_t)numIndicies * sizeof(*indicies))
+        : NULL;
+    entity->meshComponent->indices = indicies;
     for(int i = 0; i < numIndicies; i++) {
         entity->meshComponent->indices[i] = indices[i];
     }
     entity->meshComponent->indexCount = numIndicies;
-
-   /*  if(numIndicies == 0){
-        printf("not using indicies\n");
-    } */
 
     // transform data
     setTransformData(entity,position,scale,rotation);
@@ -360,7 +358,10 @@ int createLight(
         Entity* entityHelper = addEntity(app, HELPER);
         setTransformData(entityHelper, position, (vec3){1, 1, 1}, (vec3){0, 0, 0});
 
-        createLine(app, entityHelper, localStartPosition, scaled_direction);
+        vec3 points[2];
+        vec3_dup(points[0], localStartPosition);
+        vec3_dup(points[1], scaled_direction);
+        createLine(app, entityHelper, points, 2);
         entityHelper->lineComponent->width = 3.0f; // Pixels in the active viewport.
         
         entityHelper->helperComponent->active = 1;
@@ -371,21 +372,39 @@ int createLight(
     return entity->id;
 }
 
+void drawLine(AppState *app,vec3* points, int pointCount)
+{
+    ASSERT(points != NULL && pointCount >= 2, "Line needs at least two points");
+    Entity* entity = addEntity(app, MODEL);
+    setTransformData(entity, (vec3){0, 0, 0}, (vec3){1, 1, 1}, (vec3){0, 0, 0});
+    createLine(app,entity,points,pointCount);
+}
+
 /**
  * @brief Create a line segment between two points
  * @param entity - entity to add line to
- * @param position - start position
- * @param endPosition - end position
+ * @param points - points
+ * @param pointCount
  */
-void createLine(AppState *app, Entity *entity, vec3 position, vec3 endPosition){
+void createLine(AppState *app, Entity *entity, vec3* points,int pointCount){
 
+    ASSERT(points != NULL && pointCount >= 2, "Line needs at least two points");
+
+    //We need to abstrac this alloc and fix the free down, arena mem ftw
+    
+    vec3 *ownedPoints = arena_Alloc(&app->meshArena,(size_t)pointCount * sizeof(*ownedPoints));
+
+    //vec3 *ownedPoints = malloc((size_t)pointCount * sizeof(*ownedPoints));
+    //ASSERT(ownedPoints != NULL, "Failed to allocate line points");
+    for (int i = 0; i < pointCount; i++) {
+        vec3_dup(ownedPoints[i], points[i]);
+    }
+    //free(entity->lineComponent->points);
     entity->lineComponent->active = 1;
-    entity->lineComponent->start[0] = position[0];
-    entity->lineComponent->start[1] = position[1];
-    entity->lineComponent->start[2] = position[2];
-    entity->lineComponent->end[0] = endPosition[0];
-    entity->lineComponent->end[1] = endPosition[1];
-    entity->lineComponent->end[2] = endPosition[2];
+    entity->lineComponent->points = ownedPoints;
+    entity->transformComponent->active = 1;
+    entity->transformComponent->modelNeedsUpdate = 1;
+    entity->lineComponent->pointCount = pointCount;
     entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
     entity->lineComponent->width = 3.0f;
 
@@ -405,7 +424,7 @@ void createLine(AppState *app, Entity *entity, vec3 position, vec3 endPosition){
         0,1,2, 1,3,2
     };
 
-    setupLine(vertices, 4, indicies, 6, entity->lineComponent->gpuData);
+    setupLine(vertices, 4, indicies, 6, entity->lineComponent);
     setupMaterial(entity->lineComponent->gpuData, "shaders/mesh_line_vertex.glsl", "shaders/line_fragment.glsl");
 }
 
@@ -563,7 +582,10 @@ void debug_drawFrustum(AppState *app)
     endt[1]   = 10.0f;
     endt[2]   = 0.0f;
     Entity* entityHelper = addEntity(app, HELPER);
-    createLine(app, entityHelper, startt,endt);
+    vec3 starttPoints[2];
+    vec3_dup(starttPoints[0], startt);
+    vec3_dup(starttPoints[1], endt);
+    createLine(app, entityHelper, starttPoints, 2);
     
     // Near plane bottom
     Entity* entity4 = addEntity(app, MODEL);
@@ -588,7 +610,10 @@ void debug_drawFrustum(AppState *app)
     endb[2]   = 1.0f;
     
     Entity* entityHelper2 = addEntity(app, HELPER);
-    createLine(app, entityHelper2, startb,endb);
+    vec3 startbPoints[2];
+    vec3_dup(startbPoints[0], startb);
+    vec3_dup(startbPoints[1], endb);
+    createLine(app, entityHelper2, startbPoints, 2);
    
     // Near plane right
     Entity* entity2 = addEntity(app, MODEL);
@@ -611,7 +636,10 @@ void debug_drawFrustum(AppState *app)
     endr[1] = 10.0f;
     endr[2] = 2.0f;
     Entity* entityHelper3 = addEntity(app, HELPER);
-    createLine(app, entityHelper3, startr,endr);
+    vec3 startrPoints[2];
+    vec3_dup(startrPoints[0], startr);
+    vec3_dup(startrPoints[1], endr);
+    createLine(app, entityHelper3, startrPoints, 2);
 
     // Near plane left
     Entity* entity3 = addEntity(app, MODEL);
@@ -634,7 +662,10 @@ void debug_drawFrustum(AppState *app)
     endl[1] = 10.0f;
     endl[2] = 2.0f;
     Entity* entityHelper4 = addEntity(app, HELPER);
-    createLine(app, entityHelper4, startl,endl);
+    vec3 startlPoints[2];
+    vec3_dup(startlPoints[0], startl);
+    vec3_dup(startlPoints[1], endl);
+    createLine(app, entityHelper4, startlPoints, 2);
     
 }
 

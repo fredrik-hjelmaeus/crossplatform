@@ -10,7 +10,9 @@
  * Draws a mesh line using GL_TRIANGLES
  * For now a segment only, so two vertices max
  */
-void setupLine(GLfloat* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer) {
+void setupLine(GLfloat* vertices, int vertexCount, unsigned int* indices, int indexCount, LineComponent *lineComponent) {
+
+    GpuData *buffer = lineComponent->gpuData;
 
     buffer->numIndicies = indexCount;
     buffer->drawMode = GL_TRIANGLES;
@@ -348,10 +350,8 @@ void renderLine(
    GLint viewportSize = glGetUniformLocation(buffer->shaderProgram, "viewportSize");
    glUniform2f(viewportSize, (float)viewport[2], (float)viewport[3]);
 
-   GLint lineStart = glGetUniformLocation(buffer->shaderProgram, "lineStart");
-   glUniform3fv(lineStart, 1,lineComponent->start);
-   GLint lineEnd = glGetUniformLocation(buffer->shaderProgram, "lineEnd");
-   glUniform3fv(lineEnd,1, lineComponent->end);
+   GLint lineStartLoc = glGetUniformLocation(buffer->shaderProgram, "lineStart");
+   GLint lineEndLoc = glGetUniformLocation(buffer->shaderProgram, "lineEnd");
 
    GLint lineColorLoc = glGetUniformLocation(buffer->shaderProgram, "lineColor");
    glUniform4f(lineColorLoc, lineComponent->color.r,lineComponent->color.g,lineComponent->color.b,lineComponent->color.a);
@@ -368,12 +368,11 @@ void renderLine(
   glBindVertexArray(buffer->VAO);
   
   //glDrawArrays(buffer->drawMode,0,buffer->vertexCount); <-- use this with simpleLine
-  glDrawElements(
-    GL_TRIANGLES,
-    buffer->numIndicies,
-    GL_UNSIGNED_INT,
-    (void*)0
-);
+  for (int i = 0; i < lineComponent->pointCount - 1; i++) {
+      glUniform3fv(lineStartLoc, 1, lineComponent->points[i]);
+      glUniform3fv(lineEndLoc, 1, lineComponent->points[i + 1]);
+      glDrawElements(GL_TRIANGLES, buffer->numIndicies, GL_UNSIGNED_INT, (void*)0);
+  }
 
   // Unbind buffer
   glBindVertexArray(0);

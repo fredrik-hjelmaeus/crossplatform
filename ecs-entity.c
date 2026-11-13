@@ -27,6 +27,12 @@ void deleteEntity(Entity* entity){
     entity->uiComponent->active = 0;
     entity->lightComponent->active = 0;
     entity->lineComponent->active = 0;
+    entity->lineComponent->points = NULL;
+    entity->lineComponent->pointCount = 0;
+    entity->meshComponent->vertices = NULL;
+    entity->meshComponent->vertexCount = 0;
+    entity->meshComponent->indices = NULL;
+    entity->meshComponent->indexCount = 0;
     entity->pointComponent->active = 0;
     entity->boundingBoxComponent->active = 0;
     entity->helperComponent->active = 0;

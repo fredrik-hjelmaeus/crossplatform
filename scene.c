@@ -131,6 +131,14 @@ void initScene(RenderState *renderState, AppState *app){
       (vec3){0.0f, -5.0f, -5.0f}, // Dir
       DIRECTIONAL
     );
+
+    vec3 points[] = {
+      {2.1,2.3,2.3},
+      {4.1,4.3,2.3},
+      {5.1,6.3,2.3},
+      {10.1,20.3,2.3},
+    };
+    drawLine(app, points,4);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);

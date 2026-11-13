@@ -118,7 +118,7 @@ void initializeGroupComponent(GroupComponent* groupComponent){
 void initializeMeshComponent(MeshComponent* meshComponent){
     meshComponent->active = 0;
     meshComponent->vertices = NULL;
-    meshComponent->vertexCount = 5;
+    meshComponent->vertexCount = 0;
     meshComponent->indices = NULL;
     meshComponent->indexCount = 0;
     meshComponent->gpuData = (GpuData*)malloc(sizeof(GpuData)); // TODO: replace with arena alloc?
@@ -224,12 +224,8 @@ void initializeLineComponent(LineComponent* lineComponent){
     lineComponent->color.g = 0.0f;
     lineComponent->color.b = 0.0f;
     lineComponent->color.a = 1.0f;
-    lineComponent->start[0] = 0.0f;
-    lineComponent->start[1] = 0.0f;
-    lineComponent->start[2] = 0.0f;
-    lineComponent->end[0] = 0.0f;
-    lineComponent->end[1] = 0.0f;
-    lineComponent->end[2] = 0.0f;
+    lineComponent->points = NULL;
+    lineComponent->pointCount = 0;
     lineComponent->width = 3.0f;
 }
 

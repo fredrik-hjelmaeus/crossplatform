@@ -62,7 +62,10 @@ void createPlane(AppState *app, Material material,vec3 position,vec3 scale,vec3 
  * @param position - start position
  * @param endPosition - end position
  */
-void createLine(AppState *app, Entity *entity, vec3 position, vec3 endPosition);
+// Copies the points into storage owned by the line component.
+void createLine(AppState *app, Entity *entity, vec3* points, int pointCount);
+
+void drawLine(AppState *app,vec3* points, int pointCount);
 
 void debug_drawFrustum(AppState *app);
 

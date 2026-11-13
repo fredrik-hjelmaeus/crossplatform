@@ -41,6 +41,7 @@ typedef struct AppState {
     int lightsCount;
     Arena assetArena;
     Arena uiArena;
+    Arena meshArena;
     Arena eventArena;
     // For now, asset materials stay here: loading and entity creation own this catalog.
     Material* materials;
@@ -77,6 +78,7 @@ int appRun(AppState *app, RenderState *renderState, InputState *inputState);
 
 #define ASSET_MEMORY_SIZE 5000000
 #define UI_MEMORY_SIZE 5000000
+#define MESH_MEMORY_SIZE 5000000
 
 #ifdef DEV_MODE
  /*    #define ASSERT(Expression,message) if (!(Expression)) { fprintf(stderr, "\x1b[31mAssertion failed: %s\x1b[0m\n", message); *(int *)0 = 0; }

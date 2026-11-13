@@ -276,8 +276,8 @@ typedef struct MeshComponent {
 
 typedef struct LineComponent {
     bool active;
-    vec3 start;
-    vec3 end;
+    vec3* points; // Owned copy in model space; released when the entity is deleted.
+    int pointCount;
     //Vertex* vertices; 
     GpuData* gpuData;
     Color color;

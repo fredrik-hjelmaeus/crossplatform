@@ -7,6 +7,8 @@ uniform vec3 lineEnd;
 uniform float lineWidth;
 uniform vec2 viewportSize;
 
+// Each draw supplies one consecutive pair of polyline points.
+
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;

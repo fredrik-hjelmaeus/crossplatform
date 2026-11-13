@@ -114,6 +114,7 @@ void appInit(AppState *app, RenderState *renderState){
     // Initialize Memory Arenas
     arena_initMemory(&app->assetArena, ASSET_MEMORY_SIZE * sizeof(Vertex));
     arena_initMemory(&app->uiArena, UI_MEMORY_SIZE * sizeof(char));
+    arena_initMemory(&app->meshArena, MESH_MEMORY_SIZE * sizeof(Vertex));
    
     // Sub memory allocations
     app->materials = arena_Alloc(&app->assetArena, app->materialsCapacity * sizeof(Material));
@@ -132,6 +133,7 @@ void appInit(AppState *app, RenderState *renderState){
     initProgram(app);
    
     if (!createOpenGLContext(renderState, app)) exit(1);
+    
     glEnable(GL_DEPTH_TEST);
 
     // Tests
