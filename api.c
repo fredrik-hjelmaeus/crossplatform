@@ -377,7 +377,7 @@ void drawLine(AppState *app,vec3* points, int pointCount)
     ASSERT(points != NULL && pointCount >= 2, "Line needs at least two points");
     Entity* entity = addEntity(app, MODEL);
     setTransformData(entity, (vec3){0, 0, 0}, (vec3){1, 1, 1}, (vec3){0, 0, 0});
-    createLine(app,entity,points,pointCount);
+    createLine(app, entity, points, pointCount);
 }
 
 /**
@@ -390,23 +390,18 @@ void createLine(AppState *app, Entity *entity, vec3* points,int pointCount){
 
     ASSERT(points != NULL && pointCount >= 2, "Line needs at least two points");
 
-    //We need to abstrac this alloc and fix the free down, arena mem ftw
-    
     vec3 *ownedPoints = arena_Alloc(&app->meshArena,(size_t)pointCount * sizeof(*ownedPoints));
 
-    //vec3 *ownedPoints = malloc((size_t)pointCount * sizeof(*ownedPoints));
-    //ASSERT(ownedPoints != NULL, "Failed to allocate line points");
     for (int i = 0; i < pointCount; i++) {
         vec3_dup(ownedPoints[i], points[i]);
     }
-    //free(entity->lineComponent->points);
     entity->lineComponent->active = 1;
     entity->lineComponent->points = ownedPoints;
     entity->transformComponent->active = 1;
     entity->transformComponent->modelNeedsUpdate = 1;
     entity->lineComponent->pointCount = pointCount;
     entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
-    entity->lineComponent->width = 3.0f;
+    entity->lineComponent->width = 60.0f;
 
     GLfloat vertices[] = {
         0.0f, -1.0f,

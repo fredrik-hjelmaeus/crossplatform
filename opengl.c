@@ -374,6 +374,70 @@ void renderLine(
       glDrawElements(GL_TRIANGLES, buffer->numIndicies, GL_UNSIGNED_INT, (void*)0);
   }
 
+    // Temporary visual checkpoint: one triangle at the first bend.
+    if (lineComponent->pointCount >= 3) {
+        static GpuData joinShader = {0};
+
+        if (joinShader.shaderProgram == 0) {
+            setupMaterial(
+                &joinShader,
+                "shaders/mesh_bevel_line_vertex.glsl",
+                "shaders/line_fragment.glsl"
+            );
+        }
+
+        GLuint program = joinShader.shaderProgram;
+        glUseProgram(program);
+
+        glUniformMatrix4fv(glGetUniformLocation(program, "model"),
+                        1, GL_FALSE, &transformComponent->transform[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(program, "view"),
+                        1, GL_FALSE, &camera->view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(program, "projection"),
+                        1, GL_FALSE, &camera->projection[0][0]);
+        
+        glUniform1f(glGetUniformLocation(program, "lineWidth"), lineComponent->width);
+
+       /*  glUniform3fv(glGetUniformLocation(program, "pointA"),
+                    1, lineComponent->points[0]);
+        glUniform3fv(glGetUniformLocation(program, "pointB"),
+                    1, lineComponent->points[1]);
+        glUniform3fv(glGetUniformLocation(program, "pointC"),
+                    1, lineComponent->points[2]); */
+
+        glUniform2f(glGetUniformLocation(program, "viewportSize"),
+                    (float)viewport[2], (float)viewport[3]);
+
+        /* glUniform4f(glGetUniformLocation(program, "lineColor"),
+                    1.0f, 0.0f, 1.0f, 1.0f); */
+        Color color = lineComponent->color;
+
+        glUniform4f(glGetUniformLocation(program, "lineColor"),
+                    color.r, color.g, color.b, color.a);
+
+        // Show the debug marker even where it overlaps existing geometry.
+      // GLboolean depthWasEnabled = glIsEnabled(GL_DEPTH_TEST);
+       // glDisable(GL_DEPTH_TEST);
+
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        GLint pointALoc = glGetUniformLocation(program, "pointA");
+        GLint pointBLoc = glGetUniformLocation(program, "pointB");
+        GLint pointCLoc = glGetUniformLocation(program, "pointC");
+
+        for (int i = 1; i < lineComponent->pointCount - 1; i++) {
+            glUniform3fv(pointALoc, 1, lineComponent->points[i - 1]);
+            glUniform3fv(pointBLoc, 1, lineComponent->points[i]);
+            glUniform3fv(pointCLoc, 1, lineComponent->points[i + 1]);
+
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
+
+        /* if (depthWasEnabled) {
+            glEnable(GL_DEPTH_TEST);
+        } */
+    }
+
+
   // Unbind buffer
   glBindVertexArray(0);
 }

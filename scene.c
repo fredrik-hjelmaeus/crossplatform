@@ -138,7 +138,24 @@ void initScene(RenderState *renderState, AppState *app){
       {5.1,6.3,2.3},
       {10.1,20.3,2.3},
     };
-    drawLine(app, points,4);
+    vec3 pointsRev[] = {
+      {10.1f, 20.3f, 2.3f},
+      { 5.1f,  6.3f, 2.3f},
+      { 4.1f,  4.3f, 2.3f},
+      { 2.1f,  2.3f, 2.3f}
+    };
+    vec3 straigtLinePoints[] = {
+        {0.0f, 2.0f, 2.0f},
+        {2.0f, 2.0f, 2.0f},
+        {4.0f, 2.0f, 2.0f}
+    };
+    vec3 straigtLinePoints2[] = {
+        {0.0f, 2.0f, 2.0f},
+        {2.0f, 2.0f, 2.0f},
+        {4.0f, 1.0f, 2.0f}
+    };
+
+    drawLine(app, straigtLinePoints2,3);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
