@@ -54,7 +54,19 @@ int createOpenGLContext(RenderState *renderState, AppState *app) {
 }
 
 void quit(RenderState *renderState, AppState *app) {
-    if (renderState->gl_context != NULL) SDL_GL_DeleteContext(renderState->gl_context);
+    if (renderState->gl_context != NULL) {
+        GLuint programs[] = {
+            renderState->shaders.mesh, renderState->shaders.line,
+            renderState->shaders.bevel, renderState->shaders.light,
+            renderState->shaders.ui, renderState->shaders.text,
+            renderState->shaders.point, renderState->shaders.depth
+        };
+        for (size_t i = 0; i < sizeof(programs) / sizeof(programs[0]); i++) {
+            if (programs[i]) glDeleteProgram(programs[i]);
+        }
+        renderState->shaders = (Shaders){0};
+        SDL_GL_DeleteContext(renderState->gl_context);
+    }
     if (renderState->renderer != NULL) SDL_DestroyRenderer(renderState->renderer);
     if (app->window != NULL) SDL_DestroyWindow(app->window);
     SDL_Quit();

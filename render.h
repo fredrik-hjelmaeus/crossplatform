@@ -30,6 +30,7 @@ typedef struct RenderState {
     int shadowWidth;
     int shadowHeight;
     bool shadows;
+    Shaders shaders;
 } RenderState;
 
 typedef struct AppState AppState;

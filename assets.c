@@ -9,7 +9,7 @@ struct Material flatColorUiDarkGrayMat;
 struct Material flatColorUiGrayMat;
 struct Material uiBoundingBoxMat;
 
-void initAssets(RenderState *renderState){
+void assets_init(RenderState *renderState){
    TextureData containerTextureData = loadTexture("./Assets/container.jpg");
    GLuint containerMap = setupTexture(renderState, containerTextureData);
    TextureData containerTwoTextureData = loadTexture("./Assets/container2.png");

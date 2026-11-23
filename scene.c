@@ -1,5 +1,6 @@
 #include "render.h"
 #include "scene.h"
+#include "scene-objects.h"
 #include "app.h"
 #include "assets.h"
 #include "ui.h"
@@ -8,8 +9,9 @@
 #include "opengl.h"
 #include "text.h"
 #include "camera.h"
+#include "scene-objects.h"
 
-void changeSceneMode(SceneMode mode,AppState *app){
+void scene_changeMode(SceneMode mode,AppState *app){
   app->currentSceneMode = mode;
 }
 
@@ -20,7 +22,7 @@ void changeSceneMode(SceneMode mode,AppState *app){
  * 3d objects put into main viewport will be in an 3d-enviroment and treated normally.
  * objects created in the ui viewport will be in a 2d-environment and act more like a web ui element.
 */
-void initScene(RenderState *renderState, AppState *app){
+void scene_init(RenderState *renderState, AppState *app){
 
    // Camera setup
    Camera* uiCamera = initCamera();
@@ -38,7 +40,7 @@ void initScene(RenderState *renderState, AppState *app){
    mainCamera->aspectRatio = app->views.main.rect.width / app->views.main.rect.height;
    app->views.main.camera = mainCamera;
 
-   changeSceneMode(SCENE_MODE_NORMAL,app);
+   scene_changeMode(SCENE_MODE_NORMAL,app);
 
    app->views.main.camera->position[1] = 35.0f;
    app->views.main.camera->position[2] = 35.0f;
@@ -49,8 +51,6 @@ void initScene(RenderState *renderState, AppState *app){
     // Assets
     initFont(renderState, app);
    
-    setupMaterial(&renderState->depthMapBuffer, "shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
-  
     // Depth buffer
     depthshadow_createFrameBuffer(&renderState->depthMapBuffer);
     // Depth texture
@@ -58,7 +58,7 @@ void initScene(RenderState *renderState, AppState *app){
     //depthshadow_createDepthCubemap();
   //  depthshadow_configureFrameBuffer(&renderState->depthMapBuffer);
     //depthshadow_configureCubeMapFrameBuffer(&renderState->depthMapBuffer);
-    initAssets(renderState);
+    assets_init(renderState);
   
  //  TextureData oldBricksTest = loadTexture("./Assets/oldbricks.jpg");
   
@@ -94,10 +94,10 @@ void initScene(RenderState *renderState, AppState *app){
         createObject(&truck->objData[i],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     } */
   
-    createObject(app, &skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(app, &skp_arbetsrum->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(app, &skp_arbetsrum->objData[2],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
-    createObject(app, &skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
+    scene_createObject(app, &skp_arbetsrum->objData[0],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    scene_createObject(app, &skp_arbetsrum->objData[1],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    scene_createObject(app, &skp_arbetsrum->objData[2],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
+    scene_createObject(app, &skp_arbetsrum->objData[3],(vec3){0.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
   /*   createObject(&truck->objData[0],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
     createObject(&truck->objData[1],(vec3){1.0f, 0.0f, 0.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f});
@@ -121,7 +121,7 @@ void initScene(RenderState *renderState, AppState *app){
     
 
     // lights
-    int lightId = createLight(
+    int lightId = scene_createLight(
       renderState, 
       app, 
       lightMaterial,
@@ -132,7 +132,7 @@ void initScene(RenderState *renderState, AppState *app){
       DIRECTIONAL
     );
 
-    vec3 points[] = {
+   /*  vec3 points[] = {
       {2.1,2.3,2.3},
       {4.1,4.3,2.3},
       {5.1,6.3,2.3},
@@ -148,14 +148,14 @@ void initScene(RenderState *renderState, AppState *app){
         {0.0f, 2.0f, 2.0f},
         {2.0f, 2.0f, 2.0f},
         {4.0f, 2.0f, 2.0f}
-    };
+    }; */
     vec3 straigtLinePoints2[] = {
         {0.0f, 2.0f, 2.0f},
         {2.0f, 2.0f, 2.0f},
         {4.0f, 1.0f, 2.0f}
     };
 
-    drawLine(app, straigtLinePoints2,3);
+    scene_drawLine(app, straigtLinePoints2,3);
    // createLight(lightMaterial,(vec3){10.7f, 1.2f, 5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT);
    // createLight(lightMaterial,(vec3){-1.0f, 10.0f, 1.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},SPOT);
  /*   createLight(lightMaterial,(vec3){0.25f, 3.5f, 0.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){0.0f, -1.0f, 0.0f},SPOT);
@@ -167,7 +167,7 @@ void initScene(RenderState *renderState, AppState *app){
     createLight(lightMaterial,(vec3){-8.7f, 0.2f, -5.0f}, (vec3){0.25f, 0.25f, 0.25f}, (vec3){0.0f, 0.0f, 0.0f},(vec3){-0.2f, -1.0f, -0.3f},POINT); */
 
     // Primitives
-    createPlane(app, objectMaterial, (vec3){0.0f, -3.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
+    scene_createPlane(app, objectMaterial, (vec3){0.0f, -3.0f, 0.0f}, (vec3){50.0f, 50.0f, 50.0f}, (vec3){-90.0f, 0.0f, 0.0f});
     //createCube(objectMaterial,(vec3){10.0f, 3.0f, 12.0f}, (vec3){1.0f, 1.0f, 1.0f}, (vec3){0.0f, 0.0f, 0.0f}); 
   
     // Frame buffer quad

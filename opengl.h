@@ -11,21 +11,23 @@ typedef struct AppState AppState;
 #include "linmath.h"
 #include "opengl_types.h"
 #include "types.h"
+#include "geometry.h"
 #include "utils.h"
 
 
+Shaders initShaders(void);
 void renderMesh(RenderState *renderState, AppState *app, GpuData* buffer,TransformComponent* transformComponent, Camera* camera,MaterialComponent* material);
 
-void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPath);
+GLuint opengl_setupMaterial(const char* vertexPath,const char* fragmentPath);
 void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount, GpuData* buffer);
 GLuint setupTexture(RenderState *renderState, TextureData textureData);
 
 void setupFontTextures(AppState *app, char* fontPath,int fontSize);
 void setupFontMesh(GpuData *buffer);
 void renderText(AppState *app, GpuData *buffer, char *text, float x, float y, float scale, Color color);
-void renderLine(TransformComponent* transformComponent,LineComponent* lineComponent, Camera* camera,AppState *app);
+void renderLine(RenderState* renderState, TransformComponent* transformComponent,LineComponent* lineComponent, Camera* camera,AppState *app);
 void renderPoints(GpuData* buffer, TransformComponent* transformComponent, Camera* camera, Color pointColor,float pointSize);
-void setupLine(GLfloat* vertices, int vertexCount, unsigned int* indices, int indexCount, LineComponent* lineComponent);
+void setupLine(Geometry geometry, LineComponent* lineComponent);
 void setupPoints(GLfloat* positions,int numPoints, GpuData* buffer);
 
 // Shadow maps

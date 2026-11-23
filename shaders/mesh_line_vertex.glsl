@@ -13,6 +13,9 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform bool capStart;
+uniform bool capEnd;
+
 void main()
 { 
   // Go to clip space
@@ -100,6 +103,28 @@ void main()
   vec4 clipRect = (rectangle.x < 0.5) ? clipStart : clipEnd;
 
   clipRect.xy += halfWidthNdc * rectangle.y * clipRect.w;
+
+  // Add start cap
+  if (capStart && rectangle.x < 0.5 && startNear >= 0.0)
+  {
+      vec2 forward = vec2(dx, dy) / pixelLength;
+
+      vec2 extensionPixels = -forward * halfWidth;
+      vec2 extensionNdc = extensionPixels * 2.0 / viewportSize;
+
+      clipRect.xy += extensionNdc * clipRect.w;
+  }
+
+  // Add end cap
+  if (capEnd && rectangle.x >= 0.5 && endNear >= 0.0)
+  {
+      vec2 forward = vec2(dx, dy) / pixelLength;
+
+      vec2 extensionPixels = forward * halfWidth;
+      vec2 extensionNdc = extensionPixels * 2.0 / viewportSize;
+
+      clipRect.xy += extensionNdc * clipRect.w;
+  }
 
   gl_Position = clipRect;
 

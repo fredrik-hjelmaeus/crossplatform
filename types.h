@@ -147,6 +147,17 @@ typedef enum {
     BLINN_ENABLED =        1 << 4,
 } Material_flags;
 
+typedef struct Shaders {
+    GLuint mesh;
+    GLuint line;
+    GLuint bevel;
+    GLuint light;
+    GLuint text;
+    GLuint point;
+    GLuint depth;
+    GLuint ui;
+} Shaders;
+
 typedef struct Material {
     bool active;
     char* name;

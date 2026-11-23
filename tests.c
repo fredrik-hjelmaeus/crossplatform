@@ -67,7 +67,7 @@ void tests_events(InputState *inputState, AppState *app){
    // 2. input mapping for keyboard input & mouse input etc.
 
    // Test of 1. ui mapping:
-   changeSceneMode(SCENE_MODE_NORMAL,app); // sets mode
+   scene_changeMode(SCENE_MODE_NORMAL,app); // sets mode
    
    LightDirectionAssociation* lightAss = (LightDirectionAssociation*)malloc(sizeof(LightDirectionAssociation));
    

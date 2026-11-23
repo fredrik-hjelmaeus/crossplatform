@@ -12,8 +12,8 @@ typedef enum {
   SCENE_MODE_COUNT,
 } SceneMode;
 
-void changeSceneMode(SceneMode mode,AppState *app);
-void initScene(RenderState *renderState, AppState *app);
+void scene_changeMode(SceneMode mode,AppState *app);
+void scene_init(RenderState *renderState, AppState *app);
 
 void randomizeSceneAmbientColor(AppState *app);
 

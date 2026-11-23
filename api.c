@@ -4,6 +4,7 @@
 #include "opengl.h"
 #include "ecs-entity.h"
 #include "shadows.h"
+#include "scene-objects.h"
 
 
 void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation){
@@ -28,12 +29,9 @@ void setTransformData(Entity* entity,vec3 position,vec3 scale,vec3 rotation){
  *  - transform data
  *  - material data
 */
-void createMesh(
+void scene_createMesh(
     AppState *app, 
-    GLfloat* verts,
-    GLuint num_of_vertex, 
-    GLuint* indices, // atm plug in some dummy-data if not used.
-    GLuint numIndicies, // atm just set to 0 if not used.
+    Geometry geometry,
     vec3 position,
     vec3 scale,
     vec3 rotation,
@@ -44,6 +42,11 @@ void createMesh(
     bool saveMaterial // save material to global list
     ){
  
+    const float *verts = geometry.vertices;
+    size_t num_of_vertex = geometry.vertexCount;
+    const unsigned int *indices = geometry.indices;
+    size_t numIndicies = geometry.indexCount;
+
     entity->meshComponent->active = 1;
 
     // vertex data
@@ -52,17 +55,17 @@ void createMesh(
     entity->meshComponent->vertices = vertices; // Own a copy; callers may use local arrays.
     
     int stride = 11;
-    int vertexIndex = 0;
+    size_t vertexIndex = 0;
 
     // We have three types of vertex data input:
     // - one with color & indices VERT_COLOR_INDICIES
     // - one with color & no indicies VERT_COLOR
     // - one with no color & no indicies VERT
-    if(numIndicies == 0 && vertexDataType == VERTS_ONEUV) {
+    if(vertexDataType == VERTS_ONEUV) {
 
         // vertices + texcoords but no indices and no color
         stride = 11;
-        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+        for(size_t i = 0; i < num_of_vertex * stride; i+=stride) {
             entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
             entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
             entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
@@ -84,7 +87,7 @@ void createMesh(
     }else if(vertexDataType == VERTS_COLOR_ONEUV_INDICIES){
 
         // indexed data with color
-        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+        for(size_t i = 0; i < num_of_vertex * stride; i+=stride) {
             entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
             entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
             entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
@@ -100,7 +103,7 @@ void createMesh(
         }
     }else if(vertexDataType == VERTS_COLOR_ONEUV){
          // not indexed data with color
-        for(int i = 0; i < num_of_vertex * stride; i+=stride) {
+        for(size_t i = 0; i < num_of_vertex * stride; i+=stride) {
              entity->meshComponent->vertices[vertexIndex].position[0] = verts[i];
             entity->meshComponent->vertices[vertexIndex].position[1] = verts[i + 1];
             entity->meshComponent->vertices[vertexIndex].position[2] = verts[i + 2];
@@ -132,7 +135,7 @@ void createMesh(
         ? arena_Alloc(&app->meshArena, (size_t)numIndicies * sizeof(*indicies))
         : NULL;
     entity->meshComponent->indices = indicies;
-    for(int i = 0; i < numIndicies; i++) {
+    for(size_t i = 0; i < numIndicies; i++) {
         entity->meshComponent->indices[i] = indices[i];
     }
     entity->meshComponent->indexCount = numIndicies;
@@ -185,356 +188,9 @@ void createMesh(
                 entity->meshComponent->gpuData
                 );
     
-    if(entity->lightComponent->active == 1){
-        setupMaterial( entity->meshComponent->gpuData,"shaders/light_vertex.glsl", "shaders/light_fragment.glsl" );
-    }else if(entity->materialComponent->isPostProcessMaterial) {
+    // Shared shader selection happens in render(), based on the pass and entity type.
         //setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
-        setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
-        printf("post process mesh quad material id %d \n",entity->meshComponent->gpuData->shaderProgram);
         //setupMaterial(&renderState->postProcessBuffer, "shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl");
-    }else if(entity->uiComponent->active == 1){
-        setupMaterial( entity->meshComponent->gpuData,"shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl" );
-    }else {
-        setupMaterial( entity->meshComponent->gpuData,"shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl" );
-    }
-}
-
-
-//----------------------------------------------------------------------------------------------//
-// 3D API
-//----------------------------------------------------------------------------------------------//
-/**
- * @brief Create a object. Used together with obj-load/parse. Expects data from obj-parser to be of type ObjData.
- * Create a object mesh
- * @param diffuse - color of the rectangle
-*/
-void createObject(AppState *app, ObjData* obj,vec3 position,vec3 scale,vec3 rotation){
-    
-   // vertex data
-  //  int stride = 11;
-  
-    // NOT USED
-    GLuint indices[] = {
-        0, 1, 2,  // first triangle
-        1, 2, 3   // second triangle
-    }; 
-
-    Entity* entity = addEntity(app, MODEL);
-    
-    createMesh(app, (GLfloat*)obj->vertexData,obj->num_of_vertices,indices,0,position,scale,rotation,&app->materials[obj->materialIndex],GL_TRIANGLES,VERTS_COLOR_ONEUV,entity,false);
-}
-/**
- * @brief Create a light
- * Create a light source in the scene.
- * @return {int} Entity id
- */
-int createLight(
-    RenderState *renderState, 
-    AppState *app, 
-    Material material,
-    vec3 position,
-    vec3 scale,
-    vec3 rotation,
-    vec3 direction,
-    LightType type
-)
-{
-    
-   // vertex data
-    /* GLfloat vertices[] = {
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f, 
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  0.0f, -1.0f, 
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
-
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f,  0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f,  0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,  0.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f,
-
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f,  0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f,  0.0f,
-
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  1.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f
-    };  */
-
-
-    
-    // index data NOT USED ATM and not correct anymore
-    /* GLuint indices[] = {
-        // front and back
-        0, 3, 2,
-        2, 1, 0,
-        4, 5, 6,
-        6, 7 ,4,
-        // left and right
-        11, 8, 9,
-        9, 10, 11,
-        12, 13, 14,
-        14, 15, 12,
-        // bottom and top
-        16, 17, 18,
-        18, 19, 16,
-        20, 21, 22,
-        22, 23, 20
-    }; */
-    
-    // cutOff
-    float degrees = 12.5f;
-    float radians = DEG_TO_RAD(degrees);
-    float cosine = cosf(radians);
-
-    // outerCutOff
-    float degreesOC = 17.5f;
-    float radiansOC = DEG_TO_RAD(degreesOC);
-    float cosineOC = cosf(radiansOC);
-
-    Entity* entity = addEntity(app, MODEL);
-    entity->lightComponent->active = 1;
-    entity->lightComponent->direction[0] = direction[0];
-    entity->lightComponent->direction[1] = direction[1];
-    entity->lightComponent->direction[2] = direction[2];
-    entity->lightComponent->intensity = 1.0f;
-    entity->lightComponent->diffuse = material.diffuse;
-    entity->lightComponent->specular = material.specular;
-    entity->lightComponent->ambient = material.ambient;
-    entity->lightComponent->constant = 1.0f;
-    entity->lightComponent->linear = 0.09f;
-    entity->lightComponent->quadratic = 0.032f;
-    entity->lightComponent->cutOff = cosine;
-    entity->lightComponent->outerCutOff = cosineOC;
-    entity->lightComponent->type = type;
-    entity->lightComponent->castShadows = true;
-
-    setTransformData(entity, position, scale, rotation);
-    
-    // TODO: This is a temporary solution, need to implement a better way to handle lights.
-    ASSERT(app->lightsCount < MAX_LIGHTS, "Too many lights");
-    app->lights[app->lightsCount].entityId = entity->id;
-    app->lights[app->lightsCount].lightType = type;
-    
-    createDirectionalLightSpace(renderState, app, app->lightsCount);
-    app->lightsCount++;
-
-    if(type == DIRECTIONAL){
-        vec3 endPosition;
-        vec3 normalized_direction;
-        vec3_norm(normalized_direction,direction);
-        float scalar = 15.0f;
-        vec3 scaled_direction;
-        vec3_scale(scaled_direction, normalized_direction, scalar);
-        
-        // multiply normalized direction with a float here
-        vec3_add(endPosition, scaled_direction, position);
-        
-        vec3 localStartPosition = {0.0f, 0.0f, 0.0f};
-        Entity* entityHelper = addEntity(app, HELPER);
-        setTransformData(entityHelper, position, (vec3){1, 1, 1}, (vec3){0, 0, 0});
-
-        vec3 points[2];
-        vec3_dup(points[0], localStartPosition);
-        vec3_dup(points[1], scaled_direction);
-        createLine(app, entityHelper, points, 2);
-        entityHelper->lineComponent->width = 3.0f; // Pixels in the active viewport.
-        
-        entityHelper->helperComponent->active = 1;
-        entityHelper->helperComponent->entityRefId = entity->id;
-        entityHelper->helperComponent->entityRefGeneration = entity->generation;
-    }
-    
-    return entity->id;
-}
-
-void drawLine(AppState *app,vec3* points, int pointCount)
-{
-    ASSERT(points != NULL && pointCount >= 2, "Line needs at least two points");
-    Entity* entity = addEntity(app, MODEL);
-    setTransformData(entity, (vec3){0, 0, 0}, (vec3){1, 1, 1}, (vec3){0, 0, 0});
-    createLine(app, entity, points, pointCount);
-}
-
-/**
- * @brief Create a line segment between two points
- * @param entity - entity to add line to
- * @param points - points
- * @param pointCount
- */
-void createLine(AppState *app, Entity *entity, vec3* points,int pointCount){
-
-    ASSERT(points != NULL && pointCount >= 2, "Line needs at least two points");
-
-    vec3 *ownedPoints = arena_Alloc(&app->meshArena,(size_t)pointCount * sizeof(*ownedPoints));
-
-    for (int i = 0; i < pointCount; i++) {
-        vec3_dup(ownedPoints[i], points[i]);
-    }
-    entity->lineComponent->active = 1;
-    entity->lineComponent->points = ownedPoints;
-    entity->transformComponent->active = 1;
-    entity->transformComponent->modelNeedsUpdate = 1;
-    entity->lineComponent->pointCount = pointCount;
-    entity->lineComponent->color = (Color){1.0f,1.0f,0.0f,1.0f};
-    entity->lineComponent->width = 60.0f;
-
-    GLfloat vertices[] = {
-        0.0f, -1.0f,
-        1.0f, -1.0f,
-        0.0f,  1.0f,
-        1.0f,  1.0f
-    };
-
-
-    // 0 --------- 1
-    //
-    //
-    // 2 --------- 3
-    GLuint indicies[] = {
-        0,1,2, 1,3,2
-    };
-
-    setupLine(vertices, 4, indicies, 6, entity->lineComponent);
-    setupMaterial(entity->lineComponent->gpuData, "shaders/mesh_line_vertex.glsl", "shaders/line_fragment.glsl");
-}
-
-/**
- * @brief Create a Cube
- * Create a Cube mesh
- * @param diffuse - color of the cube
-*/
-void createCube(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation){
-    // vertex data
-   GLfloat vertices[] = {
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f, -1.0f, 
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  0.0f, -1.0f, 
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, -1.0f, 
-
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,  0.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,  0.0f,  0.0f,
-
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f,  0.0f,
-
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,  1.0f,  0.0f
-}; 
-
-    // index data NOT USED ATM and not correct anymore
-    GLuint indices[] = {
-        // front and back
-        0, 3, 2,
-        2, 1, 0,
-        4, 5, 6,
-        6, 7 ,4,
-        // left and right
-        11, 8, 9,
-        9, 10, 11,
-        12, 13, 14,
-        14, 15, 12,
-        // bottom and top
-        16, 17, 18,
-        18, 19, 16,
-        20, 21, 22,
-        22, 23, 20
-    };
-
-    Entity* entity = addEntity(app, MODEL);
-
-    material.diffuseMapOpacity = 1.0;
-    material.material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
-    
-    createMesh(app, vertices,36,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
-     
-}
-void createPlane(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation){
-    // vertex data
-    GLfloat vertices[] = {
-    // Positions          // Colors           // Texture Coords    // Normals
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f, 0.0f, 1.0f,    // Bottom-left
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,  0.0f, 0.0f, 1.0f,    // Bottom-right
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f, 0.0f, 1.0f,    // Top-right
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f, 0.0f, 1.0f,    // Top-right
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  0.0f, 0.0f, 1.0f,    // Top-left
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f, 0.0f, 1.0f,    // Bottom-left
-};
-// vertex data converted with help of chatgpt, might be wrong so saved above correct data
-/* Vertex vertices[] = {
-    // Position              // Color             // TexCoord  // Normal
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
-    {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Bottom-right
-    {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // Top-right
-    {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // Top-right
-    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}, // Top-left
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
-}; */
-
-    // index data NOT USED ATM
-    GLuint indices[] = {
-    0, 1, 2, // First triangle
-    2, 3, 0  // Second triangle
-    };
-
-    material.diffuseMapOpacity = 1.0;
-    material.material_flags |= MATERIAL_DIFFUSEMAP_ENABLED;
-   
-    Entity* entity = addEntity(app, MODEL);
-
-    createMesh(app, vertices,6,indices,0,position,scale,rotation,&material,GL_TRIANGLES,VERTS_ONEUV,entity,true);
 }
 
 // TODO: unfinished. Supposed to draw the frustum of the camera or light correctly.
@@ -580,7 +236,7 @@ void debug_drawFrustum(AppState *app)
     vec3 starttPoints[2];
     vec3_dup(starttPoints[0], startt);
     vec3_dup(starttPoints[1], endt);
-    createLine(app, entityHelper, starttPoints, 2);
+    scene_createLine(app, entityHelper, starttPoints, 2);
     
     // Near plane bottom
     Entity* entity4 = addEntity(app, MODEL);
@@ -608,7 +264,7 @@ void debug_drawFrustum(AppState *app)
     vec3 startbPoints[2];
     vec3_dup(startbPoints[0], startb);
     vec3_dup(startbPoints[1], endb);
-    createLine(app, entityHelper2, startbPoints, 2);
+    scene_createLine(app, entityHelper2, startbPoints, 2);
    
     // Near plane right
     Entity* entity2 = addEntity(app, MODEL);
@@ -634,7 +290,7 @@ void debug_drawFrustum(AppState *app)
     vec3 startrPoints[2];
     vec3_dup(startrPoints[0], startr);
     vec3_dup(startrPoints[1], endr);
-    createLine(app, entityHelper3, startrPoints, 2);
+    scene_createLine(app, entityHelper3, startrPoints, 2);
 
     // Near plane left
     Entity* entity3 = addEntity(app, MODEL);
@@ -660,7 +316,7 @@ void debug_drawFrustum(AppState *app)
     vec3 startlPoints[2];
     vec3_dup(startlPoints[0], startl);
     vec3_dup(startlPoints[1], endl);
-    createLine(app, entityHelper4, startlPoints, 2);
+    scene_createLine(app, entityHelper4, startlPoints, 2);
     
 }
 
@@ -680,7 +336,6 @@ void createPoints(GLfloat* positions,int numPoints, Entity* entity){
     entity->transformComponent->rotation[2] = 0.0f;
     entity->transformComponent->modelNeedsUpdate = 1;
     setupPoints(positions,numPoints,entity->pointComponent->gpuData);
-    setupMaterial(entity->pointComponent->gpuData,"shaders/point_vertex.glsl", "shaders/point_fragment.glsl");
 }
 
 

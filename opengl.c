@@ -6,11 +6,16 @@
 #include "api.h"
 
 
+
 /**
  * Draws a mesh line using GL_TRIANGLES
  * For now a segment only, so two vertices max
  */
-void setupLine(GLfloat* vertices, int vertexCount, unsigned int* indices, int indexCount, LineComponent *lineComponent) {
+void setupLine(Geometry geometry, LineComponent *lineComponent) {
+    const float *vertices = geometry.vertices;
+    size_t vertexCount = geometry.vertexCount;
+    const unsigned int *indices = geometry.indices;
+    size_t indexCount = geometry.indexCount;
 
     GpuData *buffer = lineComponent->gpuData;
 
@@ -253,77 +258,111 @@ void setupMesh(Vertex* vertices, int vertexCount, unsigned int* indices, int ind
     glBindVertexArray(0);
 }
 
-void setupMaterial(GpuData* buffer,const char* vertexPath,const char* fragmentPath){
-     #ifdef __EMSCRIPTEN__
+GLuint opengl_setupMaterial(const char* vertexPath,const char* fragmentPath)
+{
+    #ifdef __EMSCRIPTEN__
         char* vertexShaderSource = readFile("shaders/wasm/mesh_vertex_wasm.glsl"); // TODO: fix path
-        char* fragmentShaderSource = readFile("shaders/wasm/mesh_fragment_wasm.glsl"); //  TODO: fix path
+        char* fragmentShaderSource = readFile("shaders/wasm/mesh_fragment_wasm.glsl"); // TODO: fix path
     #else
         char* vertexShaderSource = readFile(vertexPath);
         char* fragmentShaderSource = readFile(fragmentPath);
     #endif
-
-    if(fragmentShaderSource == NULL || vertexShaderSource == NULL) {
-        printf("Error loading shader source\n");
-        return;
-    }
-    
-   // printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
-
-    // Compile shaders
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    if(vertexShader == 0) {
-        printf("Error creating vertex shader\n");
-        return;
-    }
-    glShaderSource(vertexShader, 1, (const GLchar* const*)&vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // Check for shader compile errors
+    GLuint vertexShader = 0, fragmentShader = 0, shader = 0;
     GLint success;
     GLchar infoLog[512];
+
+    if (!vertexShaderSource || !fragmentShaderSource) {
+        fprintf(stderr, "Error loading shaders: %s / %s\n", vertexPath, fragmentPath);
+        goto failure;
+    }
+
+    // Compile shaders
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    if (!vertexShader) goto failure;
+    glShaderSource(vertexShader, 1, (const GLchar* const*)&vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    // Check for shader compile errors
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s\n", infoLog);
+        glGetShaderInfoLog(vertexShader, sizeof(infoLog), NULL, infoLog);
+        fprintf(stderr, "ERROR::SHADER::VERTEX::COMPILATION_FAILED %s\n%s\n", vertexPath, infoLog);
+        goto failure;
     }
 
     // Fragment shader
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    if(fragmentShader == 0) {
-        printf("Error creating fragment shader\n");
-        return;
-    }
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    if (!fragmentShader) goto failure;
     glShaderSource(fragmentShader, 1, (const GLchar* const*)&fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
- 
     // Check for shader compile errors
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
+        glGetShaderInfoLog(fragmentShader, sizeof(infoLog), NULL, infoLog);
+        fprintf(stderr, "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED %s\n%s\n", fragmentPath, infoLog);
+        goto failure;
+    }
+
+    // Link shaders
+    shader = glCreateProgram();
+    if (!shader) goto failure;
+    glAttachShader(shader, vertexShader);
+    glAttachShader(shader, fragmentShader);
+    glLinkProgram(shader);
+    // Check for linking errors
+    glGetProgramiv(shader, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shader, sizeof(infoLog), NULL, infoLog);
+        fprintf(stderr, "ERROR::SHADER::PROGRAM::LINKING_FAILED %s / %s\n%s\n", vertexPath, fragmentPath, infoLog);
+        goto failure;
     }
 
     // free memory of shader sources
     free(vertexShaderSource);
     free(fragmentShaderSource);
+    glDetachShader(shader, vertexShader);
+    glDetachShader(shader, fragmentShader);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    return shader;
 
-    // Link shaders
-    buffer->shaderProgram = glCreateProgram();
-    glAttachShader(buffer->shaderProgram, vertexShader);
-    glAttachShader(buffer->shaderProgram, fragmentShader);
-    glLinkProgram(buffer->shaderProgram);
-
-   // printf("Shader program: %d\n", buffer->shaderProgram);
-
-    // Check for linking errors
-    glGetProgramiv(buffer->shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(buffer->shaderProgram, 512, NULL, infoLog);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
-    }
+failure:
+    free(vertexShaderSource);
+    free(fragmentShaderSource);
+    if (shader) glDeleteProgram(shader);
+    if (vertexShader) glDeleteShader(vertexShader);
+    if (fragmentShader) glDeleteShader(fragmentShader);
+    return 0;
 }
 
+Shaders initShaders(void)
+{
+    Shaders shaders = {0};
+    shaders.mesh = opengl_setupMaterial("shaders/mesh_vertex.glsl", "shaders/mesh_fragment.glsl");
+    shaders.bevel = opengl_setupMaterial("shaders/mesh_bevel_line_vertex.glsl","shaders/line_fragment.glsl");
+    shaders.light = opengl_setupMaterial("shaders/light_vertex.glsl", "shaders/light_fragment.glsl");
+    shaders.line = opengl_setupMaterial("shaders/mesh_line_vertex.glsl", "shaders/line_fragment.glsl");
+    shaders.ui = opengl_setupMaterial("shaders/ui_vertex.glsl", "shaders/ui_fragment.glsl");
+    shaders.text = opengl_setupMaterial("shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
+    shaders.point =  opengl_setupMaterial("shaders/point_vertex.glsl", "shaders/point_fragment.glsl");
+    shaders.depth = opengl_setupMaterial("shaders/depthMapBuffer_vert.glsl", "shaders/depthMapBuffer_frag.glsl");
+    ASSERT(shaders.mesh && shaders.bevel && shaders.light && shaders.line &&
+           shaders.ui && shaders.text && shaders.point && shaders.depth,
+           "Failed to initialize shared shader programs");
+    return shaders;
+}
+   // printf("OpenGL ES version: %s\n", glGetString(GL_VERSION));
+   // printf("Shader program: %d\n", buffer->shaderProgram);
+
+/*
+ * Renders a thick line with bevels.
+ * Width is screen pixels adapted.
+ * 
+ * Missing: miter joins,close polyline, transparancy, aa-handling
+ * Cons: separate drawcalls for segment & bevel = (not best performance)
+ * 
+ */
 void renderLine(
+    RenderState* renderState,
     TransformComponent* transformComponent, 
     LineComponent* lineComponent, 
     Camera* camera, 
@@ -366,60 +405,48 @@ void renderLine(
 
   // Bind buffer
   glBindVertexArray(buffer->VAO);
+
+  GLint capStartLoc = glGetUniformLocation(buffer->shaderProgram, "capStart");
+  GLint capEndLoc = glGetUniformLocation(buffer->shaderProgram, "capEnd");
   
-  //glDrawArrays(buffer->drawMode,0,buffer->vertexCount); <-- use this with simpleLine
   for (int i = 0; i < lineComponent->pointCount - 1; i++) {
+      // Start cap
+      glUniform1i(capStartLoc, i == 0);
+
+      // End cap
+      glUniform1i(capEndLoc, i == lineComponent->pointCount - 2);
+
+      // Segment points
       glUniform3fv(lineStartLoc, 1, lineComponent->points[i]);
       glUniform3fv(lineEndLoc, 1, lineComponent->points[i + 1]);
+      
+      // Draw
       glDrawElements(GL_TRIANGLES, buffer->numIndicies, GL_UNSIGNED_INT, (void*)0);
   }
 
-    // Temporary visual checkpoint: one triangle at the first bend.
+    // Render a bevel triangle at each interior point.
     if (lineComponent->pointCount >= 3) {
-        static GpuData joinShader = {0};
-
-        if (joinShader.shaderProgram == 0) {
-            setupMaterial(
-                &joinShader,
-                "shaders/mesh_bevel_line_vertex.glsl",
-                "shaders/line_fragment.glsl"
-            );
-        }
-
-        GLuint program = joinShader.shaderProgram;
+        GLuint program = renderState->shaders.bevel;
         glUseProgram(program);
 
         glUniformMatrix4fv(glGetUniformLocation(program, "model"),
-                        1, GL_FALSE, &transformComponent->transform[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(program, "view"),
-                        1, GL_FALSE, &camera->view[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(program, "projection"),
-                        1, GL_FALSE, &camera->projection[0][0]);
+        1, GL_FALSE,&transformComponent->transform[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, &camera->view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(program, "projection"),1, GL_FALSE, &camera->projection[0][0]);
         
         glUniform1f(glGetUniformLocation(program, "lineWidth"), lineComponent->width);
 
-       /*  glUniform3fv(glGetUniformLocation(program, "pointA"),
-                    1, lineComponent->points[0]);
-        glUniform3fv(glGetUniformLocation(program, "pointB"),
-                    1, lineComponent->points[1]);
-        glUniform3fv(glGetUniformLocation(program, "pointC"),
-                    1, lineComponent->points[2]); */
+        glUniform2f(glGetUniformLocation(program, "viewportSize"), (float)viewport[2], (float)viewport[3]);
 
-        glUniform2f(glGetUniformLocation(program, "viewportSize"),
-                    (float)viewport[2], (float)viewport[3]);
-
-        /* glUniform4f(glGetUniformLocation(program, "lineColor"),
-                    1.0f, 0.0f, 1.0f, 1.0f); */
+      
         Color color = lineComponent->color;
 
         glUniform4f(glGetUniformLocation(program, "lineColor"),
                     color.r, color.g, color.b, color.a);
+        
+      
 
-        // Show the debug marker even where it overlaps existing geometry.
-      // GLboolean depthWasEnabled = glIsEnabled(GL_DEPTH_TEST);
-       // glDisable(GL_DEPTH_TEST);
-
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
+     
         GLint pointALoc = glGetUniformLocation(program, "pointA");
         GLint pointBLoc = glGetUniformLocation(program, "pointB");
         GLint pointCLoc = glGetUniformLocation(program, "pointC");
@@ -428,7 +455,7 @@ void renderLine(
             glUniform3fv(pointALoc, 1, lineComponent->points[i - 1]);
             glUniform3fv(pointBLoc, 1, lineComponent->points[i]);
             glUniform3fv(pointCLoc, 1, lineComponent->points[i + 1]);
-
+            // Draw
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
@@ -725,6 +752,8 @@ void renderMesh(RenderState *renderState, AppState *app, GpuData* buffer,Transfo
             pointLightCount++;
         }
     } 
+
+
    // Spotlights
    /* Entity spotLightEntityOne_ = app->entities[app->lights[4].entityId];
    Entity* spotLightEntityOne = &spotLightEntityOne_;

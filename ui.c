@@ -22,42 +22,16 @@ Entity* ui_createPanel(AppState *app, Material material,vec3 position,vec3 scale
 
     setTransformData(entity,position,scale,rotation);
 
-    // TODO: Create helper entity to display bounding box much like in ui_createButton
-    // vertex data
-    GLfloat vertices[] = {
-        // Positions          // Colors           // Texture Coords    // Normals
-        0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
-        0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-    };
-    GLuint bbIndices[] = {
-        0, 1, 1,2, 2,3 ,3,0, 
-    };
     Entity* boundingBoxEntity = addEntity(app, BOUNDING_BOX);
     ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
     
     entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
     ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    createMesh(app, vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true);
+    scene_createMesh(app, geometry_rect_outline,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true);
     return entity;
 }
 int ui_createRectangle(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation,Entity* parent){
-    // vertex data
-    GLfloat vertices[] = {
-    // Positions          // Colors           // Texture Coords    // Normals
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-    }; 
-
-    //OBSOLETE index data (counterclockwise)
-    GLuint indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
 
     Entity* entity = addEntity(app, MODEL);
     entity->uiComponent->active = 1;
@@ -76,7 +50,7 @@ int ui_createRectangle(AppState *app, Material material,vec3 position,vec3 scale
     entity->boundingBoxComponent->boundingBox.max[2] = position[2] + scale[2];
     entity->uiComponent->uiNeedsUpdate = 1;
     
-    createMesh(app, vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+    scene_createMesh(app, geometry_rect_3d,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
     return entity->id;
 }
@@ -86,20 +60,6 @@ int ui_createRectangle(AppState *app, Material material,vec3 position,vec3 scale
  * @param diffuse - color of the rectangle
 */
 void ui_createButton(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent){
-    // vertex data <- TODO: This rectangle vertices array is used in many places. Move it to a separate file?
-    GLfloat vertices[] = {
-        // Positions          // Colors           // Texture Coords    // Normals
-        0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
-        0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-    }; 
-
-    // OBSOLETE index data (counterclockwise)
-    GLuint indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
 
     Entity* entity = addEntity(app, MODEL);
     
@@ -126,19 +86,15 @@ void ui_createButton(AppState *app, Material material,vec3 position,vec3 scale,v
         
     }
     
-    createMesh(app, vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+    scene_createMesh(app,geometry_rect_3d,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
-    // Bounding box, reuses the vertices from the rectangle
-    GLuint bbIndices[] = {
-        0, 1, 1,2, 2,3 ,3,0, 
-    };
     Entity* boundingBoxEntity = addEntity(app, BOUNDING_BOX);
     ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
     
     entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
     ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    createMesh(app, vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+    scene_createMesh(app, geometry_rect_outline,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 }
 
 /**
@@ -148,20 +104,6 @@ void ui_createButton(AppState *app, Material material,vec3 position,vec3 scale,v
  * @return int - entity id
 */
 int ui_createTextInput(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation, char* text,int eventType,Entity* parent){
-    // vertex data
-    GLfloat vertices[] = {
-    // Positions          // Colors           // Texture Coords    // Normals
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-    }; 
-
-    // OBSOLETE index data (counterclockwise)
-    GLuint indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
 
     Entity* entity = addEntity(app, MODEL);
   
@@ -187,19 +129,15 @@ int ui_createTextInput(AppState *app, Material material,vec3 position,vec3 scale
         parent->uiComponent->children[parent->uiComponent->childCount - 1] = entity->id;
     }
 
-    createMesh(app, vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+    scene_createMesh(app, geometry_rect_3d,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
-    // Bounding box, reuses the vertices from the rectangle
-    GLuint bbIndices[] = {
-        0, 1, 1,2, 2,3 ,3,0, 
-    };
     Entity* boundingBoxEntity = addEntity(app, BOUNDING_BOX);
     ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
     
     entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
     ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    createMesh(app, vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+    scene_createMesh(app, geometry_rect_outline,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 
     return entity->id;
 }
@@ -211,20 +149,6 @@ int ui_createTextInput(AppState *app, Material material,vec3 position,vec3 scale
  * @return int - entity id
 */
 int ui_createTextField(AppState *app, Material material,vec3 position,vec3 scale,vec3 rotation, char* text,Entity* parent){
-    // vertex data
-    GLfloat vertices[] = {
-    // Positions          // Colors           // Texture Coords    // Normals
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-    }; 
-
-    // OBSOLETE index data (counterclockwise)
-    GLuint indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
 
     Entity* entity = addEntity(app, MODEL);
     
@@ -249,19 +173,15 @@ int ui_createTextField(AppState *app, Material material,vec3 position,vec3 scale
         parent->uiComponent->children[parent->uiComponent->childCount - 1] = entity->id;
     }
 
-    createMesh(app, vertices,4,indices,6,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+    scene_createMesh(app,geometry_rect_3d,position,scale,rotation,&material,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
-    // Bounding box, reuses the vertices from the rectangle
-    GLuint bbIndices[] = {
-        0, 1, 1,2, 2,3 ,3,0, 
-    };
     Entity* boundingBoxEntity = addEntity(app, BOUNDING_BOX);
     ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
     
     entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
     ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    createMesh(app, vertices,4,bbIndices,8,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+    scene_createMesh(app, geometry_rect_outline,position,scale,rotation,&material,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 
     return entity->id;
 }
@@ -273,21 +193,7 @@ int ui_createTextField(AppState *app, Material material,vec3 position,vec3 scale
  * @return - int entity id
 */
 int ui_createSlider(AppState *app, Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, EventType eventType, Entity* parent){
-    // vertex data
-    GLfloat vertices[] = {
-        // Positions          // Colors           // Texture Coords    // Normals
-        0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
-        0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-    }; 
-
-    // OBSOLETE index data (counterclockwise)
-    GLuint indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
-
+  
     Entity* entity = addEntity(app, MODEL);
     // Slider consist of :
     // - button rectangle you interact with.
@@ -322,19 +228,15 @@ int ui_createSlider(AppState *app, Material mat1,Material mat2, vec3 position,ve
         parent->uiComponent->children[parent->uiComponent->childCount - 1] = entity->id;
     }
     
-   createMesh(app, vertices,4,indices,6,(vec3){position[0],position[1]+5,position[2]},btnRectangleScale,rotation,&mat1,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+   scene_createMesh(app, geometry_rect_3d,(vec3){position[0],position[1]+5,position[2]},btnRectangleScale,rotation,&mat1,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
-    // Bounding box, reuses the vertices from the rectangle
-    GLuint bbIndices[] = {
-        0, 1, 1,2, 2,3 ,3,0, 
-    };
     Entity* boundingBoxEntity = addEntity(app, BOUNDING_BOX);
     ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
     
     entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
     ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    createMesh(app, vertices,4,bbIndices,8,(vec3){position[0],position[1]+5,position[2]},btnRectangleScale,rotation,&mat2,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+    scene_createMesh(app, geometry_rect_outline,(vec3){position[0],position[1]+5,position[2]},btnRectangleScale,rotation,&mat2,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 
     return entity->id;
 }
@@ -343,20 +245,6 @@ int ui_createSlider(AppState *app, Material mat1,Material mat2, vec3 position,ve
  * Create a button checkbox
 */
 void ui_createCheckbox(AppState *app, Material mat1,Material mat2, vec3 position,vec3 scale,vec3 rotation, int eventType,bool checked,Entity* parent){
-    // vertex data
-    GLfloat vertices[] = {
-        // Positions          // Colors           // Texture Coords    // Normals
-        0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,       0.0f,0.0f,1.0f, // top right
-        0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,       0.0f,0.0f,1.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,       0.0f,0.0f,1.0f,  // top left 
-    }; 
-
-    // OBSOLETE index data (counterclockwise)
-    GLuint indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
 
    Entity* entity = addEntity(app, MODEL);
 
@@ -386,19 +274,15 @@ void ui_createCheckbox(AppState *app, Material mat1,Material mat2, vec3 position
         parent->uiComponent->children[parent->uiComponent->childCount - 1] = entity->id;
     } 
     
-    createMesh(app, vertices,4,indices,6,position,scale,rotation,&mat1,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
+    scene_createMesh(app, geometry_rect_3d,position,scale,rotation,&mat1,GL_TRIANGLES,VERTS_COLOR_ONEUV_INDICIES,entity,true);
 
-    // Visual representation of Bounding box, reuses the vertices from the rectangle
-    GLuint bbIndices[] = {
-        0, 1, 1,2, 2,3 ,3,0, 
-    };
     Entity* boundingBoxEntity = addEntity(app, BOUNDING_BOX);
     ASSERT(boundingBoxEntity != NULL, "Failed to create bounding box entity");
     
     entity->uiComponent->boundingBoxEntityId = boundingBoxEntity->id;
     ASSERT(entity->uiComponent->boundingBoxEntityId != -1, "Failed to set bounding box entity id");
 
-    createMesh(app, vertices,4,bbIndices,8,position,scale,rotation,&mat2,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
+    scene_createMesh(app, geometry_rect_outline,position,scale,rotation,&mat2,GL_LINES,VERTS_COLOR_ONEUV_INDICIES,boundingBoxEntity,true); 
 }
 
 void onButtonClick(AppState *app) {

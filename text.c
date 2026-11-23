@@ -353,6 +353,5 @@ char specialLeftShiftHandling(char c){
 void initFont(RenderState *renderState, AppState *app){
     setupFontTextures(app, "./Assets/ARIAL.TTF",app->fontSize);
     setupFontMesh(&renderState->gpuFontData);
-    setupMaterial(&renderState->gpuFontData,"shaders/text_vertex.glsl", "shaders/text_fragment.glsl");
 }
 

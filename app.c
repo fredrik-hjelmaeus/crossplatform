@@ -1,5 +1,6 @@
 #include "app.h"
 #include "render.h"
+#include "opengl.h"
 #include "utils.h"
 #include "tests.h"
 #include <time.h>
@@ -133,6 +134,10 @@ void appInit(AppState *app, RenderState *renderState){
     initProgram(app);
    
     if (!createOpenGLContext(renderState, app)) exit(1);
+
+    renderState->shaders = initShaders();
+    renderState->gpuFontData.shaderProgram = renderState->shaders.text;
+    renderState->depthMapBuffer.shaderProgram = renderState->shaders.depth;
     
     glEnable(GL_DEPTH_TEST);
 
@@ -142,6 +147,6 @@ void appInit(AppState *app, RenderState *renderState){
     tests_events();
     return 0; */
     
-    initScene(renderState, app);
+    scene_init(renderState, app);
     
 }

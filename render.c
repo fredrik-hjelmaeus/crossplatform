@@ -37,6 +37,7 @@ RenderState renderDefaults(void) {
     .shadowWidth=2048,
     .shadowHeight=2048,
     .shadows = true,
+    .shaders = {0},
     };
 }
 
@@ -106,6 +107,8 @@ void render(RenderState *renderState, AppState *app){
             if(app->entities[i].meshComponent->active == 1) {
                 if(app->entities[i].uiComponent->active != 1){
                    if(!app->entities[i].materialComponent->isPostProcessMaterial){
+                     app->entities[i].meshComponent->gpuData->shaderProgram =
+                         app->entities[i].lightComponent->active ? renderState->shaders.light : renderState->shaders.mesh;
                      renderMesh(renderState, app,  app->entities[i].meshComponent->gpuData, app->entities[i].transformComponent, app->views.main.camera,app->entities[i].materialComponent );
                    }
                     
@@ -121,7 +124,9 @@ void render(RenderState *renderState, AppState *app){
         if((app->entities[i].alive == 1 && app->entities[i].lineComponent->active == 1 && app->entities[i].visible) 
         || (app->entities[i].alive == 1 && app->entities[i].pointComponent->active == 1 && app->entities[i].visible)){
             if(app->entities[i].lineComponent->active == 1){
+                app->entities[i].lineComponent->gpuData->shaderProgram = renderState->shaders.line;
                 renderLine(
+                    renderState,
                     app->entities[i].transformComponent,
                     app->entities[i].lineComponent,
                     app->views.main.camera,
@@ -135,6 +140,7 @@ void render(RenderState *renderState, AppState *app){
                 //glGetFloatv ( GL_ALIASED_POINT_SIZE_RANGE, pointSizeRange );
                 // Print the point size range
                 //printf("Point size range: min = %f, max = %f\n", pointSizeRange[0], pointSizeRange[1]);
+                app->entities[i].pointComponent->gpuData->shaderProgram = renderState->shaders.point;
                 renderPoints(
                     app->entities[i].pointComponent->gpuData,
                     app->entities[i].transformComponent, 
@@ -157,6 +163,7 @@ void render(RenderState *renderState, AppState *app){
         for(int i = 0; i < MAX_ENTITIES; i++) {
             if(app->entities[i].alive == 1 && app->entities[i].visible) {
                 if(app->entities[i].meshComponent->active == 1) {
+                            app->entities[i].meshComponent->gpuData->shaderProgram = renderState->shaders.ui;
                             // render ui, could be overhead with switching viewports?. profile.    
                             if(renderState->drawBoundingBoxes){
                                 if(app->entities[i].tag == BOUNDING_BOX){
